@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Админка</title>
+  <style>
+    body{font-family:sans-serif;padding:20px;background:#f5f7fb}
+    textarea{width:100%;height:300px;font-family:monospace;padding:10px;border:1px solid #ccc;border-radius:8px}
+    .btn{padding:10px 20px;background:#1b365d;color:white;border:none;border-radius:8px;cursor:pointer}
+  </style>
+</head>
+<body>
+<h1>Админка</h1>
+<h2>Мероприятия (JSON)</h2>
+<textarea id="events"></textarea>
+<button class="btn" onclick="saveEvents()">Сохранить</button>
+
+<h2>Настройки (футер, условия)</h2>
+<textarea id="settings"></textarea>
+<button class="btn" onclick="saveSettings()">Сохранить</button>
+
+<div id="status" style="margin-top:20px;color:green;"></div>
+
+<script>
+async function load(){const[e,s]=await Promise.all([fetch('/api/events').then(r=>r.json()),fetch('/api/settings').then(r=>r.json())]);document.getElementById('events').value=JSON.stringify(e,null,2);document.getElementById('settings').value=JSON.stringify(s,null,2);}
+async function saveEvents(){await fetch('/api/events',{method:'POST',headers:{'Content-Type':'application/json'},body:document.getElementById('events').value});document.getElementById('status').textContent='Сохранено!'}
+async function saveSettings(){await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:document.getElementById('settings').value});document.getElementById('status').textContent='Сохранено!'}
+load();
+</script>
+</body>
+</html>
