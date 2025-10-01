@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Международные Олимпиады и Конкурсы</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{--primary:#1b365d;--accent:#2ecc71;--bg:#f5f7fb;--text:#2b2b2b;--muted:#6b7280;--card:#ffffff;--shadow:0 6px 18px rgba(0,0,0,.08);--shadow-hover:0 10px 24px rgba(0,0,0,.12);--radius:14px}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+    header{background:var(--primary);color:#fff;padding:28px 16px;text-align:center}
+    nav{background:#fff;padding:12px 0;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+    nav a{margin:0 12px;text-decoration:none;color:var(--primary);font-weight:600}
+    nav a:hover{text-decoration:underline}
+    .container{max-width:1200px;margin:0 auto;padding:20px}
+    .intro{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-top:-24px}
+    .badge{display:inline-block;background:#eef2ff;color:#3442b5;border:1px solid #dbe2ff;border-radius:999px;padding:6px 12px;font-size:13px;margin-right:8px}
+    .filters{display:flex;justify-content:center;gap:10px;margin:16px 0;flex-wrap:wrap}
+    .filter-btn{padding:8px 16px;border:1px solid var(--primary);background:#fff;color:var(--primary);border-radius:8px;cursor:pointer;font-size:14px}
+    .filter-btn.active{background:var(--primary);color:#fff}
+    .search-wrap{display:flex;gap:10px;justify-content:center;margin:16px 0}
+    .search-wrap input{width:100%;max-width:420px;padding:12px 14px;border:1px solid #d9dbe3;border-radius:10px}
+    .events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;margin-top:10px}
+    .event-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:.2s ease;overflow:hidden}
+    .event-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+    .event-header{padding:18px 18px 10px}
+    .event-title{margin:0;color:var(--primary);font-size:18px;line-height:1.3}
+    .event-desc{color:var(--muted);font-size:14px;padding:0 18px 10px}
+    .card-actions{display:flex;gap:10px;padding:14px 18px 18px;margin-top:auto}
+    .btn{border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600}
+    .btn-info{background:var(--primary);color:#fff}
+    .btn-reg{background:var(--accent);color:#fff}
+    .panel{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:20px;margin:22px 0;display:none}
+    .panel input{width:100%;padding:12px;border:1px solid #d9dbe3;border-radius:10px;margin:6px 0 10px}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px}
+    .modal.open{display:flex}
+    .modal-card{background:#fff;border-radius:16px;max-width:820px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--shadow-hover);position:relative;padding:20px}
+    .modal-close{position:absolute;top:10px;right:12px;background:transparent;border:none;font-size:24px;cursor:pointer}
+    footer{background:var(--primary);color:#fff;padding:16px;text-align:center;font-size:14px;margin-top:40px}
+    footer a{color:#fff;text-decoration:underline}
+  </style>
+</head>
+<body>
+<header><h1>Международные и Всероссийские Олимпиады, Конкурсы и Проекты</h1></header>
+<nav>
+  <a href="#" onclick="showPage('main')">Главная</a>
+  <a href="#" onclick="showPage('payment')">Условия оплаты</a>
+</nav>
+<div class="container" id="mainPage">
+  <div class="intro">
+    <span class="badge">Стоимость участия — бесплатное</span>
+    <span class="badge">Наградные документы — 100 ₽</span>
+    <p>Для учащихся и молодых исследователей...</p>
+  </div>
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">Все</button>
+    <button class="filter-btn" data-filter="students">Студентам и аспирантам</button>
+    <button class="filter-btn" data-filter="school">Школьникам</button>
+    <button class="filter-btn" data-filter="teachers">Преподавателям и учителям</button>
+  </div>
+  <div class="search-wrap"><input id="search" placeholder="Поиск мероприятий..." /></div>
+  <div id="events" class="events-grid"></div>
+  <!-- Панели регистрации, теста, результата -->
+  <div id="regPanel" class="panel"><h3 id="regTitle">Регистрация</h3><input id="fio" placeholder="ФИО"/><input id="region" placeholder="Регион"/><input id="city" placeholder="Город"/><input id="school" placeholder="Учебное заведение"/><button class="btn btn-reg" onclick="startTest()">Начать тест</button></div>
+  <div id="testPanel" class="panel"><h3 id="testTitle">Тест</h3><div id="qBox"></div><button onclick="prevQ()">Назад</button><button onclick="nextQ()">Далее</button><button id="finishBtn" onclick="finishTest()">Завершить</button></div>
+  <div id="resultPanel" class="panel"><h3>Результаты</h3><p>Ваш результат: <b><span id="scoreText">0%</span></b></p><button id="downloadMain" onclick="downloadPDF(false)">Скачать документ</button><input id="supervisor" placeholder="Научный руководитель"/><button onclick="downloadPDF(true)">Скачать с руководителем</button></div>
+</div>
+<div class="container" id="paymentPage" style="display:none;"><div class="panel" style="display:block;"><h3>Условия оплаты</h3><div id="paymentText">Загрузка...</div></div></div>
+<div id="infoModal" class="modal"><div class="modal-card"><button class="modal-close" onclick="closeInfo()">×</button><h3 id="infoTitle"></h3><div id="infoText"></div></div></div>
+<footer id="mainFooter">Загрузка...</footer>
+
+<script>
+let currentEvent = null, currentFilter = 'all', qIndex = 0, answers = [];
+async function loadData() {
+  const [events, settings] = await Promise.all([fetch('/api/events').then(r=>r.json()), fetch('/api/settings').then(r=>r.json())]);
+  document.getElementById('mainFooter').innerHTML = `Почта для связи: <a href="mailto:${settings.footerEmail}">${settings.footerEmail}</a><br>${settings.footerText}`;
+  document.getElementById('paymentText').textContent = settings.paymentText;
+  window.EVENTS = events; renderEvents();
+}
+function showPage(p) {
+  document.getElementById('mainPage').style.display = p==='main'?'block':'none';
+  document.getElementById('paymentPage').style.display = p==='payment'?'block':'none';
+  if(p==='main') renderEvents();
+}
+document.querySelectorAll('.filter-btn').forEach(b=>b.addEventListener('click',e=>{
+  document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));
+  e.target.classList.add('active');
+  currentFilter = e.target.dataset.filter;
+  renderEvents();
+}));
+document.getElementById('search').addEventListener('input',renderEvents);
+function renderEvents() {
+  const v = document.getElementById('search').value.toLowerCase();
+  const f = window.EVENTS.filter(e=>(currentFilter==='all'||e.audience===currentFilter)&&(e.title.toLowerCase().includes(v)||e.short.toLowerCase().includes(v)));
+  document.getElementById('events').innerHTML = f.map(e=>`
+    <div class="event-card">
+      <div class="event-header"><h3 class="event-title">${e.title}</h3></div>
+      <p class="event-desc">${e.short}</p>
+      <div class="card-actions">
+        <button class="btn btn-info" onclick="openInfo('${e.key}')">Подробнее</button>
+        <button class="btn btn-reg" onclick="openReg('${e.key}')">Регистрация</button>
+      </div>
+    </div>
+  `).join('');
+}
+function openInfo(k){currentEvent=window.EVENTS.find(e=>e.key===k);document.getElementById('infoTitle').textContent=currentEvent.title;document.getElementById('infoText').textContent=currentEvent.info;document.getElementById('infoModal').classList.add('open')}
+function closeInfo(){document.getElementById('infoModal').classList.remove('open')}
+function openReg(k){currentEvent=window.EVENTS.find(e=>e.key===k);document.getElementById('regTitle').textContent='Регистрация: '+currentEvent.title;document.getElementById('regPanel').style.display='block';document.getElementById('testPanel').style.display='none';document.getElementById('resultPanel').style.display='none'}
+function startTest(){document.getElementById('regPanel').style.display='none';document.getElementById('testPanel').style.display='block';answers=new Array(currentEvent.questions.length).fill(null);qIndex=0;renderQuestion()}
+function renderQuestion(){const q=currentEvent.questions[qIndex];document.getElementById('testTitle').textContent='Тест: '+currentEvent.title;document.getElementById('qBox').innerHTML=`<p><b>${qIndex+1}/${currentEvent.questions.length}</b>. ${q.q}</p>${q.options.map((o,i)=>`<label><input type="radio" name="opt" value="${i}" ${answers[qIndex]===i?'checked':''}> ${o}</label>`).join('<br>')}`;document.getElementById('finishBtn').style.display=qIndex===currentEvent.questions.length-1?'inline-block':'none'}
+function nextQ(){const s=document.querySelector('input[name="opt"]:checked');if(!s){alert('Выберите ответ');return;}answers[qIndex]=parseInt(s.value);if(qIndex<currentEvent.questions.length-1){qIndex++;renderQuestion();}}
+function prevQ(){if(qIndex>0){qIndex--;renderQuestion();}}
+function finishTest(){const s=document.querySelector('input[name="opt"]:checked');if(s)answers[qIndex]=parseInt(s.value);let c=0;currentEvent.questions.forEach((q,i)=>{if(answers[i]===q.correct)c++});const score=Math.round(c/currentEvent.questions.length*100);document.getElementById('testPanel').style.display='none';document.getElementById('resultPanel').style.display='block';document.getElementById('scoreText').textContent=score+'%';window._resultScore=score;document.getElementById('downloadMain').textContent=score>=51?'Скачать диплом победителя':'Скачать сертификат участника';}
+async function downloadPDF(wS){
+  const data={title:currentEvent.title,fio:document.getElementById('fio').value.trim()||'Участник',school:document.getElementById('school').value.trim(),region:document.getElementById('region').value.trim(),city:document.getElementById('city').value.trim(),supervisor:wS?document.getElementById('supervisor').value.trim():'',date:new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})};
+  const res=await fetch('/api/generate-pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({template:window._resultScore>=51?'diploma':'certificate',data})});
+  if(res.ok){const blob=await res.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${window._resultScore>=51?'diploma':'certificate'}.pdf`;a.click();URL.revokeObjectURL(url);}else{alert('Ошибка генерации PDF');}
+}
+loadData();
+</script>
+</body>
+</html>
