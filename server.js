@@ -2,21 +2,27 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const bodyParser = require('body-parser');
+const multer = require('multer');
 const puppeteer = require('puppeteer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const upload = multer({ dest: 'uploads/' });
+
 app.use(express.static('public'));
 app.use(bodyParser.json());
+app.use('/uploads', express.static('uploads'));
 
 const DATA_DIR = '/tmp/data';
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
 fs.ensureDirSync(DATA_DIR);
+fs.ensureDirSync(UPLOADS_DIR);
 
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 
-// Инициализация данных
+// Инициализация
 if (!fs.existsSync(EVENTS_FILE)) {
   fs.writeJsonSync(EVENTS_FILE, [
     {
@@ -28,7 +34,7 @@ if (!fs.existsSync(EVENTS_FILE)) {
       "questions": [
         {"q": "По формуле (∑p1q1)/(∑p0q1) рассчитывают общий индекс цен", "options": ["Эджворта-Маршалла","Фишера","Ласпейреса","Пааше"], "correct": 3}
       ],
-      "hasOverlay": true
+      "useOverlay": true
     }
   ]);
 }
@@ -40,7 +46,7 @@ if (!fs.existsSync(SETTINGS_FILE)) {
   });
 }
 
-// === API ===
+// API
 app.get('/api/events', (req, res) => res.json(fs.readJsonSync(EVENTS_FILE)));
 app.get('/api/settings', (req, res) => res.json(fs.readJsonSync(SETTINGS_FILE)));
 
@@ -54,14 +60,17 @@ app.post('/api/settings', (req, res) => {
   res.json({ ok: true });
 });
 
+app.post('/api/upload-overlay', upload.single('overlay'), (req, res) => {
+  res.json({ success: true });
+});
+
 // Генерация PDF
 app.post('/api/generate-pdf', async (req, res) => {
   const { template, data } = req.body;
   const events = fs.readJsonSync(EVENTS_FILE);
   const event = events.find(e => e.title === data.title);
-  const hasOverlay = event?.hasOverlay || false;
+  const useOverlay = event?.useOverlay || false;
 
-  // Воссоздаём перенос "универси-тет"
   const schoolWithBreak = data.school.replace(/(универси)(тет)/i, '$1-<br>$2');
 
   let content = '';
@@ -89,7 +98,7 @@ app.post('/api/generate-pdf', async (req, res) => {
   }
 
   // Водяной знак HAYKA MHHOBALMM (как в Подложка.pdf)
-  const watermark = hasOverlay ? `
+  const watermark = useOverlay ? `
     <div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:0; opacity:0.05; pointer-events:none;">
       <div style="font-size:80px; font-weight:900; color:black; transform:rotate(-30deg); position:absolute; top:20%; left:10%;">HAYKA MHHOBALMM</div>
       <div style="font-size:80px; font-weight:900; color:black; transform:rotate(-30deg); position:absolute; top:50%; left:30%;">HAYKA MHHOBALMM</div>
