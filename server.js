@@ -10,7 +10,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static('public'));
 app.use(bodyParser.json());
 
-// Используем /tmp для записи на Render Free
 const DATA_DIR = '/tmp/data';
 fs.ensureDirSync(DATA_DIR);
 
@@ -18,7 +17,7 @@ const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 const TEMPLATES_DIR = path.join(__dirname, 'templates');
 
-// Инициализация данных (для первого запуска)
+// Инициализация данных
 if (!fs.existsSync(EVENTS_FILE)) {
   fs.writeJsonSync(EVENTS_FILE, [
     {
@@ -40,111 +39,28 @@ if (!fs.existsSync(SETTINGS_FILE)) {
   });
 }
 
-// === API ===
 app.get('/api/events', (req, res) => res.json(fs.readJsonSync(EVENTS_FILE)));
 app.get('/api/settings', (req, res) => res.json(fs.readJsonSync(SETTINGS_FILE)));
 
-// === Генерация PDF ===
 app.post('/api/generate-pdf', async (req, res) => {
   const { template, data } = req.body;
+  const templatePath = path.join(TEMPLATES_DIR, `${template}.html`);
+  if (!fs.existsSync(templatePath)) return res.status(404).send('Шаблон не найден');
 
-  // Валидация
-  if (!['certificate', 'diploma', 'thanks'].includes(template)) {
-    return res.status(400).send('Недопустимый шаблон');
-  }
+  let html = fs.readFileSync(templatePath, 'utf8');
+  const replacements = {
+    '{{title}}': data.title || '',
+    '{{fio}}': data.fio || '',
+    '{{school}}': data.school || '',
+    '{{region}}': data.region || '',
+    '{{city}}': data.city || '',
+    '{{supervisor}}': data.supervisor || '',
+    '{{date}}': data.date || '30 сентября 2025 г.',
+    '{{number}}': data.number || '1111111111'
+  };
 
-  let title = data.title || 'Международная Олимпиада по статистике и прикладной математике';
-  let fio = data.fio || 'Иванов Иван Иванович';
-  let school = data.school || 'ФГБОУ ВО Кубанский государственный аграрный университет имени И.Т. Трубилина';
-  let region = data.region || 'Краснодарский край';
-  let city = data.city || 'Краснодар';
-  let supervisor = data.supervisor || 'Лоскутов Лоскут Лоскутович';
-  let date = data.date || '30 сентября 2025 г.';
-  let number = data.number || '1111111111';
-
-  // Воссоздаём перенос как в превью: "универси-<br>тет"
-  const schoolWithBreak = school.replace(/(универси)(тет)/i, '$1-<br>$2');
-
-  let html = '';
-  if (template === 'certificate') {
-    html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { font-family: "Times New Roman", serif; font-size: 16px; margin: 0; padding: 40px 60px; line-height: 1.4; color: black; }
-          .title { text-align: center; margin-bottom: 20px; }
-          .doc-type { font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0; }
-          .fio { font-size: 20px; font-weight: bold; text-align: center; margin: 20px 0; }
-          .school { text-align: center; margin: 10px 0; }
-          .supervisor-line { margin-top: 20px; text-align: center; }
-          .footer { margin-top: 40px; text-align: center; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div class="title">${title}</div>
-        <div class="doc-type">СЕРТИФИКАТ УЧАСТНИКА</div>
-        <div class="fio">${fio}</div>
-        <div class="school">${school}, ${region}, ${city}</div>
-        <div class="supervisor-line">Научный руководитель(преподаватель):<br>${supervisor}</div>
-        <div class="footer">Дата: ${date}<br>№ документа ${number}</div>
-      </body>
-      </html>
-    `;
-  } else if (template === 'diploma') {
-    html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { font-family: "Times New Roman", serif; font-size: 16px; margin: 0; padding: 40px 60px; line-height: 1.4; color: black; }
-          .title { text-align: center; margin-bottom: 20px; }
-          .doc-type { font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0; }
-          .awarded { text-align: center; margin: 10px 0; }
-          .fio { font-size: 20px; font-weight: bold; text-align: center; margin: 10px 0; }
-          .school { text-align: center; margin: 10px 0; }
-          .supervisor-line { margin-top: 20px; text-align: center; }
-          .footer { margin-top: 40px; text-align: center; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div class="title">${title}</div>
-        <div class="doc-type">ДИПЛОМ I СТЕПЕНИ</div>
-        <div class="awarded">награждён(а):</div>
-        <div class="fio">${fio}</div>
-        <div class="school">${schoolWithBreak}, ${region}, ${city}</div>
-        <div class="supervisor-line">Научный руководитель(преподаватель):<br>${supervisor}</div>
-        <div class="footer">Дата: ${date}<br>№ документа ${number}</div>
-      </body>
-      </html>
-    `;
-  } else if (template === 'thanks') {
-    html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { font-family: "Times New Roman", serif; font-size: 16px; margin: 0; padding: 40px 60px; line-height: 1.4; color: black; }
-          .title { text-align: center; margin-bottom: 20px; }
-          .doc-type { font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0; }
-          .supervisor { font-size: 20px; font-weight: bold; text-align: center; margin: 20px 0; }
-          .text { text-align: center; margin: 20px 0; line-height: 1.5; }
-          .participant { font-weight: bold; }
-          .footer { margin-top: 40px; text-align: center; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div class="title">${title}</div>
-        <div class="doc-type">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ<br>(ПРЕПОДАВАТЕЛЮ)</div>
-        <div class="supervisor">${supervisor}</div>
-        <div class="text">Центр науки и инноваций выражает Вам огромную признательность и благодарность за профессиональную подготовку участника Олимпиады<br><span class="participant">(${fio})</span>.</div>
-        <div class="footer">Дата: ${date}<br>№ документа ${number}</div>
-      </body>
-      </html>
-    `;
+  for (const [key, value] of Object.entries(replacements)) {
+    html = html.replace(new RegExp(key, 'g'), value);
   }
 
   try {
@@ -160,7 +76,6 @@ app.post('/api/generate-pdf', async (req, res) => {
         '--disable-features=VizDisplayCompositor'
       ]
     });
-
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
     const pdf = await page.pdf({ format: 'A4', printBackground: true });
@@ -170,20 +85,12 @@ app.post('/api/generate-pdf', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=${template}.pdf`);
     res.send(pdf);
   } catch (e) {
-    console.error('PDF generation error:', e);
-    res.status(500).send('Ошибка генерации PDF: ' + e.message);
+    console.error(e);
+    res.status(500).send('Ошибка генерации PDF');
   }
 });
 
-// === Роуты ===
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.listen(PORT, () => {
-  console.log(`✅ Сервер запущен на порту ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
