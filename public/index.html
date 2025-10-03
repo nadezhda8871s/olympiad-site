@@ -2,427 +2,182 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Международные Олимпиады и Конкурсы</title>
+  <title>Международные Олимпиады</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    :root {
-      --primary: #1b365d;
-      --accent: #2ecc71;
-      --bg: #f5f7fb;
-      --text: #2b2b2b;
-      --muted: #6b7280;
-      --card: #ffffff;
-      --shadow: 0 6px 18px rgba(0,0,0,.08);
-      --radius: 14px;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-    }
-    header {
-      background: var(--primary);
-      color: white;
-      padding: 28px 16px;
-      text-align: center;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .intro {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 22px;
-      margin-top: -24px;
-    }
-    .badge {
-      display: inline-block;
-      background: #eef2ff;
-      color: #3442b5;
-      border: 1px solid #dbe2ff;
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 13px;
-      margin-right: 8px;
-    }
-    .event-card {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 20px;
-      margin: 16px 0;
-    }
-    .event-title {
-      color: var(--primary);
-      font-size: 20px;
-      margin-bottom: 10px;
-    }
-    .event-desc {
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-    .btn {
-      border: none;
-      border-radius: 10px;
-      padding: 10px 16px;
-      cursor: pointer;
-      font-weight: 600;
-      margin: 4px;
-    }
-    .btn-info {
-      background: var(--primary);
-      color: white;
-    }
-    .btn-reg {
-      background: var(--accent);
-      color: white;
-    }
-    .panel {
-      background: white;
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      padding: 20px;
-      margin: 22px 0;
-      display: none;
-    }
-    .panel input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #d9dbe3;
-      border-radius: 10px;
-      margin: 6px 0 10px;
-    }
-    footer {
-      background: var(--primary);
-      color: white;
-      padding: 16px;
-      text-align: center;
-      font-size: 14px;
-      margin-top: 40px;
-    }
-    footer a {
-      color: white;
-      text-decoration: underline;
-    }
-    pre {
-      white-space: pre-wrap;
-      font-family: inherit;
-      background: #f9fafb;
-      padding: 12px;
-      border-radius: 8px;
-      margin: 10px 0;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 800px;
-      width: 90%;
-      max-height: 80vh;
-      overflow: auto;
-    }
-    .close {
-      float: right;
-      font-size: 24px;
-      cursor: pointer;
-    }
+    :root{--primary:#1b365d;--accent:#2ecc71;--bg:#f5f7fb;--text:#2b2b2b}
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{background:var(--primary);color:#fff;padding:20px;text-align:center}
+    nav{background:#fff;padding:12px 0;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+    nav a{margin:0 12px;text-decoration:none;color:var(--primary);font-weight:600}
+    .container{max-width:1200px;margin:0 auto;padding:20px}
+    .filters{display:flex;justify-content:center;gap:10px;margin:16px 0;flex-wrap:wrap}
+    .filter-btn{padding:8px 16px;border:1px solid var(--primary);background:#fff;color:var(--primary);border-radius:8px;cursor:pointer}
+    .filter-btn.active{background:var(--primary);color:#fff}
+    .event-card{background:#fff;padding:20px;margin:16px 0;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+    .btn{padding:10px 16px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;margin:4px}
+    .btn-reg{background:var(--accent)}
+    .panel{display:none;background:#fff;padding:20px;margin:20px 0;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+    input{width:100%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:4px}
   </style>
 </head>
 <body>
 <header>
-  <h1>Международные и Всероссийские Олимпиады, Конкурсы и Проекты</h1>
+  <h1>Международные и Всероссийские Олимпиады</h1>
 </header>
 
+<nav>
+  <a href="/">Главная</a>
+  <a href="/docs">Документы и оплата</a>
+</nav>
+
 <div class="container">
-  <div class="intro">
-    <span class="badge">Стоимость участия — бесплатное</span>
-    <span class="badge">Наградные документы — 100 ₽</span>
-    <p>Для учащихся и молодых исследователей, обладающих значительным научным и интеллектуальным потенциалом, наши мероприятия представляют уникальную возможность реализации собственных способностей на самом высоком уровне.</p>
-    <p><b>Почему стоит участвовать?</b></p>
-    <ul>
-      <li>✅ Подтверждение статуса высококвалифицированного специалиста международными сертификатами</li>
-      <li>✅ Объективное сравнение своих знаний с лучшими представителями научного сообщества</li>
-      <li>✅ Расширение возможностей карьерного роста и профессионального признания</li>
-      <li>✅ Доступ к ведущим научным центрам и образовательным учреждениям</li>
-    </ul>
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">Все</button>
+    <button class="filter-btn" data-filter="students">Студентам и аспирантам</button>
+    <button class="filter-btn" data-filter="school">Школьникам и СПО</button>
+    <button class="filter-btn" data-filter="teachers">Преподавателям и учителям</button>
   </div>
 
-  <!-- Мероприятие 1 -->
-  <div class="event-card">
-    <h3 class="event-title">Международная Олимпиада по статистике и прикладной математике</h3>
-    <p class="event-desc">Современные подходы к анализу данных и статистическим методам.</p>
-    <button class="btn btn-info" onclick="showModal('stat')">Подробнее</button>
-    <button class="btn btn-reg" onclick="openReg('stat')">Регистрация</button>
-  </div>
+  <div id="eventsList"></div>
 
-  <!-- Мероприятие 2 -->
-  <div class="event-card">
-    <h3 class="event-title">Международная Олимпиада по финансовым вычислениям в банковском секторе</h3>
-    <p class="event-desc">Финансовое мастерство и точность расчётов для будущих профессионалов.</p>
-    <button class="btn btn-info" onclick="showModal('fin')">Подробнее</button>
-    <button class="btn btn-reg" onclick="openReg('fin')">Регистрация</button>
-  </div>
-
-  <!-- Мероприятие 3 -->
-  <div class="event-card">
-    <h3 class="event-title">Международная Олимпиада «Применение Теории вероятностей в экономике»</h3>
-    <p class="event-desc">Стохастика, риски и принятие решений в экономике.</p>
-    <button class="btn btn-info" onclick="showModal('prob')">Подробнее</button>
-    <button class="btn btn-reg" onclick="openReg('prob')">Регистрация</button>
-  </div>
-
-  <!-- Регистрация -->
   <div id="regPanel" class="panel">
-    <h3 id="regTitle">Регистрация на мероприятие</h3>
-    <input id="fio" placeholder="Фамилия Имя Отчество" value="Иванов Иван Иванович" />
-    <input id="region" placeholder="Регион" value="Краснодарский край" />
-    <input id="city" placeholder="Город" value="Краснодар" />
-    <input id="school" placeholder="Учебное заведение" value="ФГБОУ ВО Кубанский государственный аграрный университет имени И.Т. Трубилина" />
-    <button class="btn btn-reg" onclick="startTest()">Начать тест</button>
+    <h3 id="regTitle">Регистрация</h3>
+    <input id="fio" placeholder="ФИО" value="Иванов Иван Иванович">
+    <input id="school" placeholder="Учебное заведение" value="ФГБОУ ВО Кубанский государственный аграрный университет имени И.Т. Трубилина">
+    <input id="region" placeholder="Регион" value="Краснодарский край">
+    <input id="city" placeholder="Город" value="Краснодар">
+    <button class="btn" onclick="startTest()">Начать тест</button>
   </div>
 
-  <!-- Тест -->
-  <div id="testPanel" class="panel" style="display:none;">
-    <h3 id="testTitle">Тест</h3>
-    <div id="qBox"></div>
-    <button class="btn" onclick="prevQ()">Назад</button>
-    <button class="btn" onclick="nextQ()">Далее</button>
-    <button class="btn" id="finishBtn" style="display:none;" onclick="finishTest()">Завершить</button>
-  </div>
-
-  <!-- Результат -->
-  <div id="resultPanel" class="panel" style="display:none;">
-    <h3>Результаты</h3>
-    <p>Ваш результат: <b><span id="scoreText">0%</span></b></p>
-    <button class="btn btn-reg" onclick="downloadPDF()">Скачать документ</button>
-  </div>
+  <div id="testPanel" class="panel"></div>
+  <div id="resultPanel" class="panel"></div>
 </div>
 
-<!-- Модальные окна -->
-<div id="modal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closeModal()">&times;</span>
-    <h3 id="modalTitle"></h3>
-    <pre id="modalText"></pre>
-  </div>
-</div>
-
-<footer>
-  Почта для связи: <a href="mailto:naych_kooper@mail.ru">naych_kooper@mail.ru</a><br>
-  © 2025 Все права защищены. Копирование контента без разрешения автора строго ЗАПРЕЩЕНО!
+<footer style="text-align:center;padding:20px;margin-top:40px;background:#1b365d;color:white;">
+  Почта: <a href="mailto:naych_kooper@mail.ru" style="color:white;">naych_kooper@mail.ru</a><br>
+  © 2025 Все права защищены.
 </footer>
 
 <script>
-// Данные мероприятий
-const EVENTS = {
-  stat: {
-    title: "Международная Олимпиада по статистике и прикладной математике",
-    short: "Современные подходы к анализу данных и статистическим методам.",
-    info: `Приглашаем вас принять участие в Международной Олимпиаде по Статистике — «Статистика будущего: искусство анализа данных!»
-
-Сегодня умение анализировать большие объемы информации становится ключевым фактором успеха как в повседневной жизни, так и в профессиональной деятельности. Умение выявлять закономерности, строить прогнозы и принимать обоснованные решения на основе статистических данных определяет вашу конкурентоспособность и перспективы развития. Наша олимпиада объединяет участников со всего мира, предлагая уникальную возможность обменяться опытом и знаниями с коллегами из разных стран.
-
-Мы убеждены, что каждый участник существенно повысит свою компетентность и станет экспертом в области статистики!
-
-✅ Вы освоите современные методы обработки и интерпретации данных.
-✅ Узнаете эффективные подходы к решению практических задач с использованием статистического инструментария.
-✅ Получите ценные навыки критического мышления и способности интерпретировать полученные результаты.
-
-🏆 Наш формат — комфортный и инновационный:
-⭐ Быстрая обратная связь: результаты станут вам известны моментально после окончания испытаний.
-⭐ Призовые места обеспечены: каждому участнику выдается диплом или сертификат.`,
-    questions: [
-      {q: "По формуле (∑p1q1)/(∑p0q1) рассчитывают общий индекс цен", options: ["Эджворта-Маршалла","Фишера","Ласпейреса","Пааше"], correct: 3},
-      {q: "Индекс, отражающий влияние уровня ставок по каждому кредиту на среднее изменение ставки — это индекс…", options: ["Постоянного состава","Структурных сдвигов","Переменного состава","Индивидуальный"], correct: 0},
-      {q: "В общем индексе цен Пааше в качестве весов используется…", options: ["товарооборот отчетного периода","индекс Фишера","товарооборот базисного периода","индекс Эджворта-Маршалла"], correct: 0},
-      {q: "Индекс, характеризующий изменение средней зарплаты за счет изменения зарплаты каждого работника — это индекс…", options: ["Постоянного состава","Произвольного состава","Переменного состава","Структурных сдвигов"], correct: 0},
-      {q: "Выборка называется малой, если ее объем менее…", options: ["30","40","50","100"], correct: 0}
-    ]
-  },
-  fin: {
-    title: "Международная Олимпиада по финансовым вычислениям в банковском секторе",
-    short: "Финансовое мастерство и точность расчётов для будущих профессионалов.",
-    info: `Приглашаем вас принять участие в нашей уникальной олимпиаде по финансовому направлению — «Финансовое мастерство: точность вычислений!»
-
-Сегодня финансовые знания становятся важнейшим инструментом успеха как в личной жизни, так и в профессиональной сфере. От умения грамотно рассчитать проценты, правильно распределять бюджет и планировать инвестиции зависит ваше благополучие и карьерный рост. Мы уверены, что каждый участник сможет значительно повысить свои компетенции и стать настоящим мастером финансового дела!
-
-🔥 Почему стоит участвовать в нашей олимпиаде?
-
-— Вы получите полезные знания и практические навыки в финансовой математике.
-— Узнаете секреты эффективного планирования денежных потоков и принятия взвешенных инвестиционных решений.
-— Получите ценный опыт, участвуя в реальных ситуациях и выполняя интересные задания.
-
-🏅 Наш формат — удобный и современный:
-✨ Результаты известны мгновенно: сразу же после завершения олимпиады вы узнаете точное количество набранных вами баллов.
-✨ Награды доступны сразу: по окончании испытания каждый участник получает диплом или сертификат.`,
-    questions: [
-      {q: "Фактор времени учитывается с помощью", options: ["процентной ставки","дисконта","ренты","конверсии"], correct: 0},
-      {q: "Процесс наращения — это…", options: ["по исходной сумме найти ожидаемую","по будущей сумме найти исходный долг","норма дисконта","расчет доходности"], correct: 0},
-      {q: "Процесс дисконтирования — это…", options: ["по исходной сумме найти ожидаемую","по будущей сумме найти исходный долг","расчет доходности","нет верного ответа"], correct: 1},
-      {q: "Чем выше конкуренция среди заемщиков…", options: ["выше ставки по кредитам","ниже ставки по кредитам","хуже кредиторам","зависимость отсутствует"], correct: 0},
-      {q: "Капитализация процентов — это…", options: ["относительная величина дохода","абсолютная величина дохода","присоединение процентов к сумме","все ответы верны"], correct: 2}
-    ]
-  },
-  prob: {
-    title: "Международная Олимпиада «Применение Теории вероятностей в экономике»",
-    short: "Стохастика, риски и принятие решений в экономике.",
-    info: `Уважаемые студенты и молодые специалисты в сфере экономики!
-Представляем вашему вниманию уникальную возможность проявить себя в мире сложных расчетов и увлекательных научных открытий. Впервые проводится Международная Олимпиада по дисциплине «Теория вероятностей в экономике».
-
-Цель мероприятия — проверка ваших теоретических знаний и практических навыков решения задач, связанных с применением стохастики и статистики в финансовой среде. Вы сможете продемонстрировать своё умение анализировать рынки, оценивать риски и принимать обоснованные управленческие решения.
-
-🏅 Наш формат — удобный и современный:
-✨ Результаты известны мгновенно.
-✨ Награды доступны сразу: по окончании испытания каждый участник получает диплом или сертификат.`,
-    questions: [
-      {q: "Что такое нормальное распределение?", options: ["Нулевое значение риска","Единичное отклонение риска","Распределение Гаусса","Положительная прибыль"], correct: 2},
-      {q: "Плотность вероятности — это…", options: ["Условная доходность","Полимодальная структура","Двумерная функция","Первая производная от функции распределения"], correct: 3},
-      {q: "Случайная экономическая величина — это…", options: ["Критерий Фишера","Теорема Пуассона","Величина, полученная случайным процессом","Формула Бернулли"], correct: 2},
-      {q: "Дискретная случайная величина — это…", options: ["Заданная плотностью","Равномерно распределённая на интервале","Принимающая значения из конечного набора"], correct: 2},
-      {q: "Коэффициент корреляции r = 0 означает…", options: ["Нет линейной связи","Полная линейная зависимость","Один индикатор независим","Все индикаторы положительны"], correct: 0}
-    ]
-  }
-};
-
-let currentEventKey = null;
+let EVENTS = [];
 let currentEvent = null;
-let qIndex = 0;
 let answers = [];
+let currentFilter = 'all';
 
-// Модальные окна
-function showModal(key) {
-  const event = EVENTS[key];
-  document.getElementById('modalTitle').textContent = event.title;
-  document.getElementById('modalText').textContent = event.info;
-  document.getElementById('modal').style.display = 'flex';
-}
-function closeModal() {
-  document.getElementById('modal').style.display = 'none';
+// Загрузка
+fetch('/api/events').then(r=>r.json()).then(data=>{
+  EVENTS = data;
+  renderEvents();
+});
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderEvents();
+  });
+});
+
+function renderEvents() {
+  const filtered = currentFilter==='all' ? EVENTS : EVENTS.filter(e=>e.audience===currentFilter);
+  document.getElementById('eventsList').innerHTML = filtered.map(e=>`
+    <div class="event-card">
+      <h3>${e.title}</h3>
+      <p>${e.short}</p>
+      <button class="btn" onclick="showInfo('${e.key}')">Подробнее</button>
+      <button class="btn btn-reg" onclick="openReg('${e.key}')">Регистрация</button>
+    </div>
+  `).join('');
 }
 
-// Регистрация
-function openReg(key) {
-  currentEventKey = key;
-  currentEvent = EVENTS[key];
+function showInfo(key){
+  const e = EVENTS.find(x=>x.key===key);
+  alert(e.info);
+}
+
+function openReg(key){
+  currentEvent = EVENTS.find(x=>x.key===key);
   document.getElementById('regTitle').textContent = 'Регистрация: ' + currentEvent.title;
   document.getElementById('regPanel').style.display = 'block';
-  document.getElementById('testPanel').style.display = 'none';
-  document.getElementById('resultPanel').style.display = 'none';
-  window.scrollTo({top: document.getElementById('regPanel').offsetTop - 20, behavior:'smooth'});
 }
 
-// Тест
-function startTest() {
+function startTest(){
   document.getElementById('regPanel').style.display = 'none';
   document.getElementById('testPanel').style.display = 'block';
   answers = new Array(currentEvent.questions.length).fill(null);
-  qIndex = 0;
-  renderQuestion();
+  renderQuestion(0);
 }
 
-function renderQuestion() {
-  const q = currentEvent.questions[qIndex];
-  document.getElementById('testTitle').textContent = 'Тест: ' + currentEvent.title;
-  document.getElementById('qBox').innerHTML = `
-    <p><b>${qIndex+1} / ${currentEvent.questions.length}</b>. ${q.q}</p>
-    ${q.options.map((opt, i) => `
-      <label><input type="radio" name="opt" value="${i}" ${answers[qIndex] === i ? 'checked' : ''}> ${opt}</label><br>
-    `).join('')}
+function renderQuestion(i){
+  const q = currentEvent.questions[i];
+  document.getElementById('testPanel').innerHTML = `
+    <h3>Вопрос ${i+1} из ${currentEvent.questions.length}</h3>
+    <p>${q.q}</p>
+    ${q.options.map((opt,idx)=>`<label><input type="radio" name="q" value="${idx}"> ${opt}</label><br>`).join('')}
+    <button class="btn" onclick="submitAnswer(${i})">${i===currentEvent.questions.length-1?'Завершить':'Далее'}</button>
   `;
-  document.getElementById('finishBtn').style.display = qIndex === currentEvent.questions.length - 1 ? 'inline-block' : 'none';
 }
 
-function nextQ() {
-  const sel = document.querySelector('input[name="opt"]:checked');
-  if (!sel) { alert('Выберите ответ'); return; }
-  answers[qIndex] = parseInt(sel.value);
-  if (qIndex < currentEvent.questions.length - 1) {
-    qIndex++;
-    renderQuestion();
-  }
-}
-function prevQ() {
-  if (qIndex > 0) {
-    qIndex--;
-    renderQuestion();
+function submitAnswer(i){
+  const sel = document.querySelector('input[name="q"]:checked');
+  if(!sel){alert('Выберите ответ');return;}
+  answers[i] = parseInt(sel.value);
+  if(i < currentEvent.questions.length-1){
+    renderQuestion(i+1);
+  } else {
+    finishTest();
   }
 }
 
-function finishTest() {
-  const sel = document.querySelector('input[name="opt"]:checked');
-  if (sel) answers[qIndex] = parseInt(sel.value);
+function finishTest(){
   let correct = 0;
-  currentEvent.questions.forEach((q, i) => {
-    if (answers[i] === q.correct) correct++;
+  currentEvent.questions.forEach((q,i)=>{
+    if(answers[i]===q.correct) correct++;
   });
   const score = Math.round(correct / currentEvent.questions.length * 100);
+  const isDiploma = score >= 51;
+  
   document.getElementById('testPanel').style.display = 'none';
   document.getElementById('resultPanel').style.display = 'block';
-  document.getElementById('scoreText').textContent = score + '%';
-  window._resultScore = score;
+  document.getElementById('resultPanel').innerHTML = `
+    <h3>Результат</h3>
+    <p>Ваш результат: <b>${score}%</b></p>
+    <input id="supervisor" placeholder="Научный руководитель (необязательно)">
+    <button class="btn" onclick="payAndDownload('certificate')">Оплатить и скачать сертификат (100 ₽)</button>
+    ${isDiploma ? '<button class="btn" onclick="payAndDownload(\'diploma\')">Оплатить и скачать диплом (100 ₽)</button>' : ''}
+    <button class="btn" onclick="payAndDownload('thanks')">Оплатить и скачать благодарность (100 ₽)</button>
+  `;
 }
 
-// PDF
-function downloadPDF() {
-  const fio = document.getElementById('fio').value || 'Иванов Иван Иванович';
-  const school = document.getElementById('school').value || 'ФГБОУ ВО Кубанский государственный аграрный университет имени И.Т. Трубилина';
-  const region = document.getElementById('region').value || 'Краснодарский край';
-  const city = document.getElementById('city').value || 'Краснодар';
-  const supervisor = 'Лоскутов Лоскут Лоскутович';
-  const date = '30 сентября 2025 г.';
-  const number = '1111111111';
-  const isDiploma = window._resultScore >= 51;
-
-  // Перенос как в превью
-  const schoolWithBreak = school.replace(/(универси)(тет)/i, '$1-<br>$2');
-
-  let content = '';
-  if (isDiploma) {
-    content = `
-      <div style="font-family: 'Times New Roman', serif; font-size: 16px; padding: 40px 60px; line-height: 1.4; color: black; width: 210mm; height: 297mm;">
-        <div style="text-align: center; margin-bottom: 20px;">${currentEvent.title}</div>
-        <div style="font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0;">ДИПЛОМ I СТЕПЕНИ</div>
-        <div style="text-align: center; margin: 10px 0;">награждён(а):</div>
-        <div style="font-size: 20px; font-weight: bold; text-align: center; margin: 10px 0;">${fio}</div>
-        <div style="text-align: center;">${schoolWithBreak}, ${region}, ${city}</div>
-        <div style="margin-top: 20px; text-align: center;">Научный руководитель(преподаватель):<br>${supervisor}</div>
-        <div style="margin-top: 40px; text-align: center; font-size: 14px;">Дата: ${date}<br>№ документа ${number}</div>
-      </div>
-    `;
-  } else {
-    content = `
-      <div style="font-family: 'Times New Roman', serif; font-size: 16px; padding: 40px 60px; line-height: 1.4; color: black; width: 210mm; height: 297mm;">
-        <div style="text-align: center; margin-bottom: 20px;">${currentEvent.title}</div>
-        <div style="font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0;">СЕРТИФИКАТ УЧАСТНИКА</div>
-        <div style="font-size: 20px; font-weight: bold; text-align: center; margin: 20px 0;">${fio}</div>
-        <div style="text-align: center;">${school}, ${region}, ${city}</div>
-        <div style="margin-top: 20px; text-align: center;">Научный руководитель(преподаватель):<br>${supervisor}</div>
-        <div style="margin-top: 40px; text-align: center; font-size: 14px;">Дата: ${date}<br>№ документа ${number}</div>
-      </div>
-    `;
-  }
-
-  const el = document.createElement('div');
-  el.innerHTML = content;
-  document.body.appendChild(el);
-
-  html2pdf().from(el).save().finally(() => {
-    document.body.removeChild(el);
+function payAndDownload(type){
+  alert('Заглушка Робокассы: оплата прошла успешно!');
+  const data = {
+    title: currentEvent.title,
+    fio: document.getElementById('fio').value,
+    school: document.getElementById('school').value,
+    region: document.getElementById('region').value,
+    city: document.getElementById('city').value,
+    supervisor: document.getElementById('supervisor').value || '',
+    date: '30 сентября 2025 г.',
+    number: '1111111111'
+  };
+  fetch('/api/generate-pdf', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({template: type, data})
+  }).then(res=>{
+    if(res.ok){
+      res.blob().then(blob=>{
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${type}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
   });
 }
 </script>
