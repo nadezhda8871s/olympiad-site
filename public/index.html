@@ -115,16 +115,6 @@
       margin: 0 0 16px;
       font-size: 16px;
     }
-    pre {
-      background: #f9fafb;
-      padding: 16px;
-      border-radius: 10px;
-      margin: 16px 0;
-      font-family: inherit;
-      font-size: 15px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
     .btn {
       border: none;
       border-radius: 10px;
@@ -185,14 +175,19 @@
       background: white;
       padding: 30px;
       border-radius: 16px;
-      max-width: 500px;
+      max-width: 600px;
       width: 90%;
-      text-align: center;
     }
     .close {
       float: right;
       font-size: 28px;
       cursor: pointer;
+    }
+    #modalText {
+      white-space: pre-wrap;
+      font-family: inherit;
+      line-height: 1.6;
+      margin-top: 16px;
     }
   </style>
 </head>
@@ -242,13 +237,22 @@
   <div id="resultPanel" class="panel"></div>
 </div>
 
+<!-- Модальное окно "Подробнее" -->
+<div id="infoModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeInfoModal()">&times;</span>
+    <h3 id="modalTitle"></h3>
+    <div id="modalText"></div>
+  </div>
+</div>
+
 <!-- Модальное окно оплаты -->
 <div id="paymentModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closePaymentModal()">&times;</span>
-    <h3 style="margin:0 0 20px;">Оплата документа</h3>
+    <h3>Оплата документа</h3>
     <p>Стоимость: <b>100 ₽</b></p>
-    <p style="margin:15px 0;">Демо-режим: вы можете пропустить оплату для тестирования.</p>
+    <p>Демо-режим: вы можете пропустить оплату для тестирования.</p>
     <button class="btn btn-reg" onclick="proceedWithoutPayment()" style="width:100%;">Пропустить оплату (демо)</button>
   </div>
 </div>
@@ -264,6 +268,7 @@ let answers = [];
 let currentFilter = 'all';
 let pendingPDFType = null;
 
+// Полные данные мероприятий
 const FULL_EVENTS = [
   {
     key: "stat",
@@ -340,7 +345,6 @@ const FULL_EVENTS = [
   }
 ];
 
-// Инициализация
 EVENTS = FULL_EVENTS;
 renderEvents();
 
@@ -361,7 +365,6 @@ function renderEvents() {
     <div class="event-card">
       <h3 class="event-title">${e.title}</h3>
       <p class="event-desc">${e.short}</p>
-      <pre>${e.info}</pre>
       <button class="btn btn-info" onclick="showInfo('${e.key}')">Подробнее</button>
       <button class="btn btn-reg" onclick="openReg('${e.key}')">Регистрация</button>
     </div>
@@ -370,7 +373,13 @@ function renderEvents() {
 
 function showInfo(key) {
   const e = EVENTS.find(x => x.key === key);
-  alert(e.info);
+  document.getElementById('modalTitle').textContent = e.title;
+  document.getElementById('modalText').textContent = e.info;
+  document.getElementById('infoModal').style.display = 'flex';
+}
+
+function closeInfoModal() {
+  document.getElementById('infoModal').style.display = 'none';
 }
 
 function openReg(key) {
@@ -418,70 +427,4 @@ function finishTest() {
   currentEvent.questions.forEach((q, i) => {
     if (answers[i] === q.correct) correct++;
   });
-  const score = Math.round(correct / currentEvent.questions.length * 100);
-  const isDiploma = score >= 51;
-  
-  document.getElementById('testPanel').style.display = 'none';
-  document.getElementById('resultPanel').style.display = 'block';
-  document.getElementById('resultPanel').innerHTML = `
-    <h3>Результаты</h3>
-    <p>Ваш результат: <b>${score}%</b></p>
-    <input id="supervisor" placeholder="Научный руководитель (преподаватель)" style="width:100%;padding:14px;margin:10px 0;border:1px solid #d9dbe3;border-radius:10px;font-size:16px;">
-    <button class="btn btn-reg" onclick="requestPayment('certificate')">Оплатить и скачать сертификат (100 ₽)</button>
-    ${isDiploma ? '<button class="btn btn-reg" onclick="requestPayment(\'diploma\')">Оплатить и скачать диплом (100 ₽)</button>' : ''}
-    <button class="btn btn-reg" onclick="requestPayment('thanks')">Оплатить и скачать благодарность (100 ₽)</button>
-  `;
-}
-
-function requestPayment(type) {
-  pendingPDFType = type;
-  document.getElementById('paymentModal').style.display = 'flex';
-}
-
-function closePaymentModal() {
-  document.getElementById('paymentModal').style.display = 'none';
-}
-
-function proceedWithoutPayment() {
-  closePaymentModal();
-  const data = {
-    title: currentEvent.title,
-    fio: document.getElementById('fio').value,
-    school: document.getElementById('school').value,
-    region: document.getElementById('region').value,
-    city: document.getElementById('city').value,
-    supervisor: document.getElementById('supervisor').value || '',
-    date: '30 сентября 2025 г.',
-    number: '1111111111'
-  };
-
-  fetch('/api/generate-pdf', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ template: pendingPDFType, data })
-  })
-  .then(res => {
-    if (res.ok) {
-      return res.blob();
-    } else {
-      return res.json().then(err => { throw new Error(err.error || 'Ошибка сервера'); });
-    }
-  })
-  .then(blob => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${pendingPDFType}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  })
-  .catch(err => {
-    alert('Ошибка: ' + err.message);
-    console.error(err);
-  });
-}
-</script>
-</body>
-</html>
+  const score =
