@@ -1,97 +1,98 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Международные Олимпиады</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{--primary:#1b365d;--accent:#2ecc71;--bg:#f5f7fb;--text:#2b2b2b}
     *{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
     header{background:var(--primary);color:#fff;padding:20px;text-align:center}
     .container{max-width:800px;margin:20px auto;padding:0 16px}
-    .btn{padding:10px 16px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer}
+    .btn{padding:10px 16px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;margin:4px}
     .panel{background:#fff;padding:20px;margin:20px 0;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
     input{width:100%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:4px}
+    footer{background:var(--primary);color:#fff;padding:16px;text-align:center;font-size:14px;margin-top:40px}
+    footer a{color:#fff;text-decoration:underline}
+    pre{white-space:pre-wrap;background:#f9fafb;padding:12px;border-radius:8px;margin:10px 0}
   </style>
 </head>
 <body>
 <header><h1>Международные Олимпиады</h1></header>
 <div class="container">
-  <div id="regPanel" class="panel">
-    <h2>Регистрация</h2>
-    <input id="fio" placeholder="ФИО (например: Иванов Иван Иванович)">
-    <input id="school" placeholder="Учебное заведение">
-    <input id="region" placeholder="Регион">
-    <input id="city" placeholder="Город">
-    <button class="btn" onclick="startTest()">Начать тест</button>
+  <div class="panel">
+    <h3>Международная Олимпиада по статистике и прикладной математике</h3>
+    <pre>Полный текст олимпиады...</pre>
+    <button class="btn" onclick="openReg('stat')">Регистрация</button>
+  </div>
+  <div class="panel">
+    <h3>Международная Олимпиада по финансовым вычислениям</h3>
+    <pre>Полный текст олимпиады...</pre>
+    <button class="btn" onclick="openReg('fin')">Регистрация</button>
+  </div>
+  <div class="panel">
+    <h3>Международная Олимпиада «Теория вероятностей в экономике»</h3>
+    <pre>Полный текст олимпиады...</pre>
+    <button class="btn" onclick="openReg('prob')">Регистрация</button>
   </div>
 
-  <div id="testPanel" class="panel" style="display:none;">
-    <h2>Тест</h2>
-    <div id="qBox"></div>
-    <button class="btn" onclick="finishTest()">Завершить</button>
-  </div>
-
-  <div id="resultPanel" class="panel" style="display:none;">
-    <h2>Результат</h2>
-    <p>Ваш результат: <b><span id="score">100%</span></b></p>
-    <button class="btn" onclick="downloadPDF(false)">Скачать документ</button>
-    <br><br>
-    <input id="supervisor" placeholder="Научный руководитель (необязательно)">
-    <button class="btn" onclick="downloadPDF(true)">Скачать с научным руководителем</button>
+  <div id="regPanel" class="panel" style="display:none;">
+    <h3 id="regTitle">Регистрация</h3>
+    <input id="fio" placeholder="ФИО" value="Иванов Иван Иванович">
+    <input id="school" placeholder="Учебное заведение" value="ФГБОУ ВО Кубанский государственный аграрный университет имени И.Т. Трубилина">
+    <input id="region" placeholder="Регион" value="Краснодарский край">
+    <input id="city" placeholder="Город" value="Краснодар">
+    <button class="btn" onclick="generateAll()">Сформировать документы</button>
   </div>
 </div>
+<footer>
+  Почта для связи: <a href="mailto:naych_kooper@mail.ru">naych_kooper@mail.ru</a><br>
+  © 2025 Все права защищены. Копирование контента без разрешения автора строго ЗАПРЕЩЕНО!
+</footer>
 
 <script>
-let currentEvent = { questions: [{q:"По формуле (∑p1q1)/(∑p0q1) рассчитывают общий индекс цен",options:["Эджворта-Маршалла","Фишера","Ласпейреса","Пааше"],correct:3}] };
+let currentEvent = null;
 
-function startTest(){
-  document.getElementById('regPanel').style.display='none';
-  document.getElementById('testPanel').style.display='block';
-  document.getElementById('qBox').innerHTML = `
-    <p><b>1/1.</b> ${currentEvent.questions[0].q}</p>
-    ${currentEvent.questions[0].options.map((opt,i)=>
-      `<label><input type="radio" name="ans" value="${i}"> ${opt}</label><br>`
-    ).join('')}
-  `;
-}
-
-function finishTest(){
-  const sel = document.querySelector('input[name="ans"]:checked');
-  const score = sel && sel.value == 3 ? 100 : 0;
-  document.getElementById('score').textContent = score + '%';
-  document.getElementById('testPanel').style.display='none';
-  document.getElementById('resultPanel').style.display='block';
-  window._score = score;
-}
-
-async function downloadPDF(withSup){
-  const data = {
-    title: "Международная Олимпиада по статистике и прикладной математике",
-    fio: document.getElementById('fio').value || 'Иванов Иван Иванович',
-    school: document.getElementById('school').value || 'ФГБОУ ВО Кубанский государственный аграрный университет имени И.Т. Трубилина',
-    region: document.getElementById('region').value || 'Краснодарский край',
-    city: document.getElementById('city').value || 'Краснодар',
-    supervisor: withSup ? document.getElementById('supervisor').value || 'Лоскутов Лоскут Лоскутович' : ''
+function openReg(key) {
+  const titles = {
+    'stat': 'Международная Олимпиада по статистике и прикладной математике',
+    'fin': 'Международная Олимпиада по финансовым вычислениям в банковском секторе',
+    'prob': 'Международная Олимпиада «Применение Теории вероятностей в экономике»'
   };
-  const template = window._score >= 51 ? 'diploma' : 'certificate';
+  currentEvent = titles[key];
+  document.getElementById('regTitle').textContent = 'Регистрация: ' + currentEvent;
+  document.getElementById('regPanel').style.display = 'block';
+}
+
+async function generatePDF(type) {
+  const data = {
+    title: currentEvent,
+    fio: document.getElementById('fio').value,
+    school: document.getElementById('school').value,
+    region: document.getElementById('region').value,
+    city: document.getElementById('city').value,
+    supervisor: 'Лоскутов Лоскут Лоскутович'
+  };
   const res = await fetch('/api/generate-pdf', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({template, data})
+    body: JSON.stringify({template: type, data})
   });
-  if(res.ok){
+  if (res.ok) {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${template}.pdf`;
+    a.download = `${type}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
-  } else {
-    const err = await res.text();
-    alert('Ошибка: ' + err);
   }
+}
+
+function generateAll() {
+  generatePDF('certificate');
+  generatePDF('diploma');
+  generatePDF('thanks');
 }
 </script>
 </body>
