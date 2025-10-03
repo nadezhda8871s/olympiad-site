@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Документы и оплата</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#f5f7fb;color:#2b2b2b}
+    .container{max-width:800px;margin:0 auto;padding:20px}
+    header{background:#1b365d;color:#fff;padding:20px;text-align:center}
+  </style>
+</head>
+<body>
+<header><h1>Документы и оплата</h1></header>
+<div class="container">
+  <div id="paymentText">Загрузка...</div>
+</div>
+<script>
+fetch('/api/settings').then(r=>r.json()).then(s=>{
+  document.getElementById('paymentText').textContent = s.paymentText;
+});
+</script>
+</body>
+</html>
