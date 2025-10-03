@@ -1,0 +1,9 @@
+<div class="container">
+  <h2>Документы и оплата</h2>
+  <div id="paymentText">Загрузка...</div>
+</div>
+<script>
+fetch('/api/settings').then(r=>r.json()).then(s=>{
+  document.getElementById('paymentText').textContent = s.paymentText;
+});
+</script>
