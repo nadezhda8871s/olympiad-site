@@ -22,7 +22,7 @@ fs.ensureDirSync(UPLOADS_DIR);
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 
-// Инициализация
+// === Инициализация данных ===
 if (!fs.existsSync(EVENTS_FILE)) {
   fs.writeJsonSync(EVENTS_FILE, [
     {
@@ -33,8 +33,7 @@ if (!fs.existsSync(EVENTS_FILE)) {
       "info": "Приглашаем вас принять участие в Международной Олимпиаде по Статистике — «Статистика будущего: искусство анализа данных!»\n\nСегодня умение анализировать большие объемы информации становится ключевым фактором успеха...",
       "questions": [
         {"q": "По формуле (∑p1q1)/(∑p0q1) рассчитывают общий индекс цен", "options": ["Эджворта-Маршалла","Фишера","Ласпейреса","Пааше"], "correct": 3}
-      ],
-      "useOverlay": true
+      ]
     }
   ]);
 }
@@ -42,14 +41,17 @@ if (!fs.existsSync(EVENTS_FILE)) {
 if (!fs.existsSync(SETTINGS_FILE)) {
   fs.writeJsonSync(SETTINGS_FILE, {
     "paymentText": "За участие в мероприятиях плата не взимается, а стоимость документов с индивидуальным номером 100 руб. Оплатить можно Онлайн на сайте через платежную систему Робокасса.",
-    "footerEmail": "naych_kooper@mail.ru"
+    "footerEmail": "naych_kooper@mail.ru",
+    "useOverlay": false,
+    "overlayPath": null
   });
 }
 
-// API
+// === API: получение данных ===
 app.get('/api/events', (req, res) => res.json(fs.readJsonSync(EVENTS_FILE)));
 app.get('/api/settings', (req, res) => res.json(fs.readJsonSync(SETTINGS_FILE)));
 
+// === API: сохранение данных ===
 app.post('/api/events', (req, res) => {
   fs.writeJsonSync(EVENTS_FILE, req.body);
   res.json({ ok: true });
@@ -60,19 +62,27 @@ app.post('/api/settings', (req, res) => {
   res.json({ ok: true });
 });
 
+// === Загрузка подложки ===
 app.post('/api/upload-overlay', upload.single('overlay'), (req, res) => {
-  res.json({ success: true });
+  if (!req.file) {
+    return res.status(400).json({ error: 'Файл не загружен' });
+  }
+  const settings = fs.readJsonSync(SETTINGS_FILE);
+  settings.overlayPath = req.file.filename;
+  settings.useOverlay = true;
+  fs.writeJsonSync(SETTINGS_FILE, settings);
+  res.json({ success: true, filename: req.file.filename });
 });
 
-// Генерация PDF
+// === Генерация PDF с подложкой ===
 app.post('/api/generate-pdf', async (req, res) => {
   const { template, data } = req.body;
-  const events = fs.readJsonSync(EVENTS_FILE);
-  const event = events.find(e => e.title === data.title);
-  const useOverlay = event?.useOverlay || false;
+  const settings = fs.readJsonSync(SETTINGS_FILE);
+  const useOverlay = settings.useOverlay || false;
+  const overlayPath = settings.overlayPath ? path.join(UPLOADS_DIR, settings.overlayPath) : null;
 
+  // Генерация текста документа
   const schoolWithBreak = data.school.replace(/(универси)(тет)/i, '$1-<br>$2');
-
   let content = '';
   if (template === 'thanks') {
     content = `
@@ -97,14 +107,25 @@ app.post('/api/generate-pdf', async (req, res) => {
     `;
   }
 
-  // Водяной знак HAYKA MHHOBALMM (как в Подложка.pdf)
-  const watermark = useOverlay ? `
-    <div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:0; opacity:0.05; pointer-events:none;">
-      <div style="font-size:80px; font-weight:900; color:black; transform:rotate(-30deg); position:absolute; top:20%; left:10%;">HAYKA MHHOBALMM</div>
-      <div style="font-size:80px; font-weight:900; color:black; transform:rotate(-30deg); position:absolute; top:50%; left:30%;">HAYKA MHHOBALMM</div>
-      <div style="font-size:80px; font-weight:900; color:black; transform:rotate(-30deg); position:absolute; top:80%; left:50%;">HAYKA MHHOBALMM</div>
-    </div>
-  ` : '';
+  // Фон из загруженной подложки
+  let backgroundHtml = '';
+  if (useOverlay && overlayPath && fs.existsSync(overlayPath)) {
+    try {
+      const { convert } = require('pdf2pic');
+      const convertOptions = {
+        density: 150,
+        width: 1654,
+        height: 2339,
+        format: "png",
+        save: false,
+      };
+      const result = await convert(overlayPath, convertOptions)(1);
+      const base64Image = result.base64;
+      backgroundHtml = `<img src="data:image/png;base64,${base64Image}" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:0;">`;
+    } catch (e) {
+      console.error('Ошибка конвертации подложки:', e);
+    }
+  }
 
   const html = `
     <!DOCTYPE html>
@@ -113,14 +134,14 @@ app.post('/api/generate-pdf', async (req, res) => {
       <meta charset="UTF-8">
       <style>
         @page { size: A4; margin: 0; }
-        body { margin: 0; padding: 0; font-family: "Times New Roman", serif; background: white; }
+        body { margin: 0; padding: 0; font-family: "Times New Roman", serif; }
         .container { position: relative; width: 210mm; height: 297mm; }
         .content { position: relative; z-index: 1; padding: 40px 60px; color: black; line-height: 1.4; font-size: 16px; }
       </style>
     </head>
     <body>
       <div class="container">
-        ${watermark}
+        ${backgroundHtml}
         <div class="content">${content}</div>
       </div>
     </body>
@@ -151,7 +172,7 @@ app.post('/api/generate-pdf', async (req, res) => {
   }
 });
 
-// Роуты
+// === Роуты ===
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/docs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'docs.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
