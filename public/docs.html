@@ -4,15 +4,19 @@
   <meta charset="UTF-8">
   <title>Документы и оплата</title>
   <style>
-    body{font-family:Arial,sans-serif;background:#f5f7fb;color:#2b2b2b}
+    :root{--primary:#1b365d;--bg:#f5f7fb;--text:#2b2b2b}
+    body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
     .container{max-width:800px;margin:0 auto;padding:20px}
-    header{background:#1b365d;color:#fff;padding:20px;text-align:center}
+    header{background:var(--primary);color:#fff;padding:20px;text-align:center}
+    .panel{background:#fff;padding:20px;margin:20px 0;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
   </style>
 </head>
 <body>
 <header><h1>Документы и оплата</h1></header>
 <div class="container">
-  <div id="paymentText">Загрузка...</div>
+  <div class="panel">
+    <div id="paymentText">Загрузка...</div>
+  </div>
 </div>
 <script>
 fetch('/api/settings').then(r=>r.json()).then(s=>{
