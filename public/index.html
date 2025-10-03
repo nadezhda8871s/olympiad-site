@@ -427,4 +427,74 @@ function finishTest() {
   currentEvent.questions.forEach((q, i) => {
     if (answers[i] === q.correct) correct++;
   });
-  const score =
+  const score = Math.round(correct / currentEvent.questions.length * 100);
+  const isDiploma = score >= 51;
+  
+  document.getElementById('testPanel').style.display = 'none';
+  document.getElementById('resultPanel').style.display = 'block';
+  document.getElementById('resultPanel').innerHTML = `
+    <h3>Результаты</h3>
+    <p>Ваш результат: <b>${score}%</b></p>
+    <input id="supervisor" placeholder="Научный руководитель (преподаватель)" style="width:100%;padding:14px;margin:10px 0;border:1px solid #d9dbe3;border-radius:10px;font-size:16px;">
+    <button class="btn btn-reg" onclick="requestPayment('certificate')">Оплатить и скачать сертификат (100 ₽)</button>
+    ${isDiploma ? '<button class="btn btn-reg" onclick="requestPayment(\'diploma\')">Оплатить и скачать диплом (100 ₽)</button>' : ''}
+    <button class="btn btn-reg" onclick="requestPayment('thanks')">Оплатить и скачать благодарность (100 ₽)</button>
+  `;
+}
+
+function requestPayment(type) {
+  pendingPDFType = type;
+  document.getElementById('paymentModal').style.display = 'flex';
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').style.display = 'none';
+}
+
+function proceedWithoutPayment() {
+  closePaymentModal();
+  const data = {
+    title: currentEvent.title,
+    fio: document.getElementById('fio').value,
+    school: document.getElementById('school').value,
+    region: document.getElementById('region').value,
+    city: document.getElementById('city').value,
+    supervisor: document.getElementById('supervisor').value || '',
+    date: '30 сентября 2025 г.',
+    number: '1111111111'
+  };
+
+  fetch('/api/generate-pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ template: pendingPDFType, data })
+  })
+  .then(res => {
+    if (res.ok) {
+      return res.blob();
+    } else {
+      return res.json().then(err => { throw new Error(err.error || 'Ошибка сервера'); });
+    }
+  })
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${pendingPDFType}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  })
+  .catch(err => {
+    alert('Ошибка: ' + err.message);
+    console.error(err);
+  });
+}
+</script>
+</body>
+</html>
+
+
+
+  
