@@ -2,20 +2,27 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const bodyParser = require('body-parser');
+const multer = require('multer');
 const puppeteer = require('puppeteer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Настройка загрузки файлов
+const upload = multer({ dest: 'uploads/' });
+
 app.use(express.static('public'));
 app.use(bodyParser.json());
+app.use('/uploads', express.static('uploads'));
 
+// Директории
 const DATA_DIR = '/tmp/data';
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
 fs.ensureDirSync(DATA_DIR);
+fs.ensureDirSync(UPLOADS_DIR);
 
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
-const TEMPLATES_DIR = path.join(__dirname, 'templates');
 
 // Инициализация данных
 if (!fs.existsSync(EVENTS_FILE)) {
@@ -25,42 +32,82 @@ if (!fs.existsSync(EVENTS_FILE)) {
       "title": "Международная Олимпиада по статистике и прикладной математике",
       "short": "Современные подходы к анализу данных и статистическим методам.",
       "audience": "students",
-      "info": "Полный текст олимпиады...",
-      "questions": []
+      "info": "Полный текст...",
+      "questions": [
+        {"q": "Вопрос?", "options": ["1","2","3","4"], "correct": 0}
+      ],
+      "overlay": null // путь к подложке
     }
   ]);
 }
 
 if (!fs.existsSync(SETTINGS_FILE)) {
   fs.writeJsonSync(SETTINGS_FILE, {
-    "footerEmail": "naych_kooper@mail.ru",
-    "footerText": "© 2025 Все права защищены. Копирование контента без разрешения автора строго ЗАПРЕЩЕНО!",
-    "paymentText": "За участие в мероприятиях плата не взимается, а стоимость документов с индивидуальным номером 100 руб. Оплатить можно Онлайн на сайте через платежную систему Робокасса, реквизиты для оплаты: номер счета 40817810547119031524 Банк - получатель ФИЛИАЛ \"ЮЖНЫЙ\" ПАО \"БАНК УРАЛСИБ\". Краснодар БИК Банка 040349700, кор. счет Банка 30101810400000000700, ИНН Банка 0274062111, КПП Банка 231043001."
+    "paymentText": "Оплата через Робокассу. Стоимость — 100 руб за документ.",
+    "footerEmail": "naych_kooper@mail.ru"
   });
 }
 
+// === API ===
 app.get('/api/events', (req, res) => res.json(fs.readJsonSync(EVENTS_FILE)));
 app.get('/api/settings', (req, res) => res.json(fs.readJsonSync(SETTINGS_FILE)));
 
+// Сохранение мероприятий
+app.post('/api/events', (req, res) => {
+  fs.writeJsonSync(EVENTS_FILE, req.body);
+  res.json({ ok: true });
+});
+
+// Сохранение настроек
+app.post('/api/settings', (req, res) => {
+  fs.writeJsonSync(SETTINGS_FILE, req.body);
+  res.json({ ok: true });
+});
+
+// Загрузка подложки
+app.post('/api/upload-overlay', upload.single('overlay'), (req, res) => {
+  if (!req.file) return res.status(400).send('Файл не загружен');
+  res.json({ filename: req.file.filename });
+});
+
+// Генерация PDF с подложкой
 app.post('/api/generate-pdf', async (req, res) => {
   const { template, data } = req.body;
-  const templatePath = path.join(TEMPLATES_DIR, `${template}.html`);
-  if (!fs.existsSync(templatePath)) return res.status(404).send('Шаблон не найден');
+  const events = fs.readJsonSync(EVENTS_FILE);
+  const event = events.find(e => e.title === data.title);
+  const overlayPath = event?.overlay ? path.join(UPLOADS_DIR, event.overlay) : null;
 
-  let html = fs.readFileSync(templatePath, 'utf8');
-  const replacements = {
-    '{{title}}': data.title || '',
-    '{{fio}}': data.fio || '',
-    '{{school}}': data.school || '',
-    '{{region}}': data.region || '',
-    '{{city}}': data.city || '',
-    '{{supervisor}}': data.supervisor || '',
-    '{{date}}': data.date || '30 сентября 2025 г.',
-    '{{number}}': data.number || '1111111111'
-  };
+  let html = `
+    <div style="position:relative; width:210mm; height:297mm;">
+      ${overlayPath ? `<img src="file://${overlayPath}" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.05;">` : ''}
+      <div style="position:relative; z-index:1; padding:40px 60px; font-family:'Times New Roman',serif; font-size:16px; color:black; line-height:1.4;">
+        <div style="text-align:center; margin-bottom:20px;">${data.title}</div>
+        <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">${template === 'diploma' ? 'ДИПЛОМ I СТЕПЕНИ' : 'СЕРТИФИКАТ УЧАСТНИКА'}</div>
+        ${template === 'diploma' ? '<div style="text-align:center; margin:10px 0;">награждён(а):</div>' : ''}
+        <div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">${data.fio}</div>
+        <div style="text-align:center;">${data.school}, ${data.region}, ${data.city}</div>
+        ${data.supervisor ? `<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>${data.supervisor}</div>` : ''}
+        <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
+      </div>
+    </div>
+  `;
 
-  for (const [key, value] of Object.entries(replacements)) {
-    html = html.replace(new RegExp(key, 'g'), value);
+  if (template === 'thanks') {
+    html = `
+      <div style="position:relative; width:210mm; height:297mm;">
+        ${overlayPath ? `<img src="file://${overlayPath}" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.05;">` : ''}
+        <div style="position:relative; z-index:1; padding:40px 60px; font-family:'Times New Roman',serif; font-size:16px; color:black; line-height:1.4;">
+          <div style="text-align:center; margin-bottom:20px;">${data.title}</div>
+          <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ<br>(ПРЕПОДАВАТЕЛЮ)</div>
+          <div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">${data.supervisor}</div>
+          <div style="text-align:center; margin:20px 0; line-height:1.5;">
+            Центр науки и инноваций выражает Вам огромную признательность и благодарность за профессиональную подготовку участника Олимпиады<br>
+            <b>(${data.fio})</b>.
+          </div>
+          <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
+        </div>
+      </div>
+    `;
   }
 
   try {
@@ -70,10 +117,7 @@ app.post('/api/generate-pdf', async (req, res) => {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--single-process',
-        '--no-zygote',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
+        '--single-process'
       ]
     });
     const page = await browser.newPage();
@@ -90,7 +134,9 @@ app.post('/api/generate-pdf', async (req, res) => {
   }
 });
 
+// Роуты
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/docs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'docs.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
