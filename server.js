@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const bodyParser = require('body-parser');
+const puppeteer = require('puppeteer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,8 +33,7 @@ if (!fs.existsSync(EVENTS_FILE)) {
 if (!fs.existsSync(SETTINGS_FILE)) {
   fs.writeJsonSync(SETTINGS_FILE, {
     "paymentText": "За участие в мероприятиях плата не взимается, а стоимость документов с индивидуальным номером 100 руб.",
-    "footerEmail": "naych_kooper@mail.ru",
-    "useOverlay": true  // ← включено по умолчанию
+    "footerEmail": "naych_kooper@mail.ru"
   });
 }
 
@@ -51,11 +51,9 @@ app.post('/api/settings', (req, res) => {
   res.json({ ok: true });
 });
 
-// Генерация PDF
+// Генерация PDF — БЕЗ ПОДЛОЖКИ
 app.post('/api/generate-pdf', async (req, res) => {
   const { template, data } = req.body;
-  const settings = fs.readJsonSync(SETTINGS_FILE);
-  const useOverlay = settings.useOverlay || false;
 
   const schoolWithBreak = data.school.replace(/(универси)(тет)/i, '$1-<br>$2');
   let content = '';
@@ -82,15 +80,6 @@ app.post('/api/generate-pdf', async (req, res) => {
     `;
   }
 
-  // Водяной знак HAYKA MHHOBALMM (как в Подложка.pdf)
-  const watermark = useOverlay ? `
-    <div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:0; opacity:0.05; pointer-events:none;">
-      <div style="font-size:80px; font-weight:900; color:black; transform:rotate(-30deg); position:absolute; top:20%; left:10%;">HAYKA MHHOBALMM</div>
-      <div style="font-size:80px; font-weight:900; color:black; transform:rotate(-30deg); position:absolute; top:50%; left:30%;">HAYKA MHHOBALMM</div>
-      <div style="font-size:80px; font-weight:900; color:black; transform:rotate(-30deg); position:absolute; top:80%; left:50%;">HAYKA MHHOBALMM</div>
-    </div>
-  ` : '';
-
   const html = `
     <!DOCTYPE html>
     <html>
@@ -105,7 +94,6 @@ app.post('/api/generate-pdf', async (req, res) => {
     </head>
     <body>
       <div class="container">
-        ${watermark}
         <div class="content">${content}</div>
       </div>
     </body>
