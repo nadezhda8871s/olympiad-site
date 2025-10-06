@@ -1,29 +1,170 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Документы и оплата</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    :root{--primary:#1b365d;--bg:#f5f7fb;--text:#2b2b2b}
-    body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
-    .container{max-width:800px;margin:0 auto;padding:20px}
-    header{background:var(--primary);color:#fff;padding:20px;text-align:center}
-    .panel{background:#fff;padding:28px;margin:28px 0;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
-    .btn{display:inline-block;padding:12px 24px;background:#1b365d;color:white;text-decoration:none;border-radius:10px;margin-top:16px}
+    :root {
+      --primary: #1b365d;
+      --accent: #2ecc71;
+      --bg: #f5f7fb;
+      --text: #2b2b2b;
+      --muted: #6b7280;
+      --card: #ffffff;
+      --shadow: 0 6px 18px rgba(0,0,0,.08);
+      --shadow-hover: 0 10px 24px rgba(0,0,0,.12);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 28px 16px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: .2px;
+    }
+    nav {
+      background: white;
+      padding: 12px 0;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,.05);
+    }
+    nav a {
+      margin: 0 12px;
+      text-decoration: none;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 16px;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .panel {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      margin: 22px 0;
+    }
+    .panel h2 {
+      margin: 0 0 16px;
+      color: var(--primary);
+    }
+    .panel p {
+      margin: 10px 0;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      margin-top: 16px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+    .btn:hover {
+      opacity: 0.92;
+    }
+    footer {
+      background: var(--primary);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 14px;
+      margin-top: 40px;
+    }
+    footer a {
+      color: white;
+      text-decoration: underline;
+    }
+    pre {
+      white-space: pre-wrap;
+      font-family: inherit;
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #eef2ff;
+      margin: 16px 0;
+    }
   </style>
 </head>
 <body>
-<header><h1>Документы и оплата</h1></header>
+<header>
+  <h1>Документы и оплата</h1>
+</header>
+
+<nav>
+  <a href="/">Главная</a>
+  <a href="/docs">Документы и оплата</a>
+  <a href="/admin">Админка</a>
+</nav>
+
 <div class="container">
   <div class="panel">
-    <div id="paymentText">Загрузка...</div>
+    <h2>Условия оплаты</h2>
+    <div id="paymentText">
+      <p>Загрузка...</p>
+    </div>
     <a href="/" class="btn">← Вернуться на главную</a>
   </div>
+
+  <div class="panel">
+    <h2>Загрузка фонов для документов</h2>
+    <p>Фоновые изображения (PNG) используются как водяные знаки в генерируемых PDF-документах.</p>
+    <p><b>Текущие фоны:</b></p>
+    <ul>
+      <li><b>Общий фон:</b> <span id="bg-all-status">Не загружен</span></li>
+      <li><b>Фон для дипломов:</b> <span id="bg-diploma-status">Не загружен</span></li>
+      <li><b>Фон для сертификатов:</b> <span id="bg-certificate-status">Не загружен</span></li>
+      <li><b>Фон для благодарностей:</b> <span id="bg-thanks-status">Не загружен</span></li>
+    </ul>
+    <p><i>Перейдите в <a href="/admin">Админку</a>, чтобы загрузить фоны.</i></p>
+  </div>
 </div>
+
+<footer>
+  Почта для связи: <a href="mailto:naych_kooper@mail.ru">naych_kooper@mail.ru</a><br>
+  © 2025 Все права защищены. Копирование контента без разрешения автора строго ЗАПРЕЩЕНО!
+</footer>
+
 <script>
-fetch('/api/settings').then(r=>r.json()).then(s=>{
-  document.getElementById('paymentText').textContent = s.paymentText;
-});
+// Загрузка текста оплаты
+fetch('/api/settings')
+  .then(response => response.json())
+  .then(settings => {
+    document.getElementById('paymentText').innerHTML = `<pre>${settings.paymentText}</pre>`;
+  })
+  .catch(error => {
+    console.error('Ошибка загрузки текста оплаты:', error);
+    document.getElementById('paymentText').innerHTML = '<p style="color:red;">Ошибка загрузки текста.</p>';
+  });
+
+// Проверка статуса фонов (для демонстрации)
+// В реальном приложении можно сделать API endpoint для получения этой информации
+// Пока просто покажем заглушку
+document.getElementById('bg-all-status').textContent = 'Загружен';
+document.getElementById('bg-diploma-status').textContent = 'Не загружен';
+document.getElementById('bg-certificate-status').textContent = 'Не загружен';
+document.getElementById('bg-thanks-status').textContent = 'Не загружен';
 </script>
 </body>
 </html>
