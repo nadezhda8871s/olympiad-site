@@ -92,10 +92,11 @@
   </div>
 
   <div class="upload-section">
-    <h3>Подложка для PDF</h3>
-    <p>Активируйте водяной знак «HAYKA MHHOBALMM» для всех документов:</p>
-    <button onclick="toggleOverlay()">Включить/выключить подложку</button>
-    <div id="overlayStatus" style="margin-top:10px; color:green;"></div>
+    <h3>Загрузка подложки PDF</h3>
+    <p>Загрузите PDF-файл (например, Подложка.pdf). Он будет использован как фон для всех документов.</p>
+    <input type="file" id="overlayFile" accept=".pdf">
+    <button onclick="uploadOverlay()">Загрузить подложку</button>
+    <div id="overlayStatus" style="margin-top:10px;"></div>
   </div>
 
   <div id="status" style="margin-top:20px; color:green; font-weight:bold;"></div>
@@ -174,7 +175,7 @@ async function saveEvent() {
     return { q, options: parts, correct: correctIndex };
   });
   
-  events[index] = { key: `event${index}`, title, short, info, audience, questions, useOverlay: events[index]?.useOverlay || false };
+  events[index] = { key: `event${index}`, title, short, info, audience, questions };
   
   await fetch('/api/events', {
     method: 'POST',
@@ -191,8 +192,7 @@ async function addNewEvent() {
     short: "Краткое описание",
     info: "Полный текст...",
     audience: "students",
-    questions: [{"q": "Вопрос?", "options": ["1","2","3","4"], "correct": 0}],
-    useOverlay: false
+    questions: [{"q": "Вопрос?", "options": ["1","2","3","4"], "correct": 0}]
   };
   events.push(newEvent);
   await fetch('/api/events', {
@@ -204,17 +204,29 @@ async function addNewEvent() {
   document.getElementById('status').textContent = '✅ Новое мероприятие добавлено!';
 }
 
-async function toggleOverlay() {
-  // Включаем подложку для всех мероприятий
-  events = events.map(ev => ({ ...ev, useOverlay: !ev.useOverlay }));
-  await fetch('/api/events', {
+// === ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ПОДЛОЖКИ ===
+async function uploadOverlay() {
+  const fileInput = document.getElementById('overlayFile');
+  const file = fileInput.files[0];
+  if (!file) {
+    document.getElementById('overlayStatus').textContent = '❌ Выберите файл PDF';
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('overlay', file);
+
+  const res = await fetch('/api/upload-overlay', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(events)
+    body: formData
   });
-  const isActive = events[0]?.useOverlay;
-  document.getElementById('overlayStatus').textContent = 
-    isActive ? '✅ Подложка ВКЛЮЧЕНА' : '❌ Подложка ВЫКЛЮЧЕНА';
+
+  if (res.ok) {
+    document.getElementById('overlayStatus').innerHTML = '✅ Подложка загружена и активна для всех мероприятий!';
+  } else {
+    const err = await res.json();
+    document.getElementById('overlayStatus').textContent = '❌ Ошибка: ' + (err.error || 'неизвестная');
+  }
 }
 
 loadData();
