@@ -2,16 +2,22 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const bodyParser = require('body-parser');
+const multer = require('multer');
 const puppeteer = require('puppeteer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const upload = multer({ dest: 'uploads/' });
+
 app.use(express.static('public'));
 app.use(bodyParser.json());
+app.use('/uploads', express.static('uploads'));
 
 const DATA_DIR = '/tmp/data';
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
 fs.ensureDirSync(DATA_DIR);
+fs.ensureDirSync(UPLOADS_DIR);
 
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
@@ -33,7 +39,8 @@ if (!fs.existsSync(EVENTS_FILE)) {
 if (!fs.existsSync(SETTINGS_FILE)) {
   fs.writeJsonSync(SETTINGS_FILE, {
     "paymentText": "За участие в мероприятиях плата не взимается, а стоимость документов с индивидуальным номером 100 руб.",
-    "footerEmail": "naych_kooper@mail.ru"
+    "footerEmail": "naych_kooper@mail.ru",
+    "backgroundImage": null
   });
 }
 
@@ -51,9 +58,22 @@ app.post('/api/settings', (req, res) => {
   res.json({ ok: true });
 });
 
-// Генерация PDF — БЕЗ ПОДЛОЖКИ
+// Загрузка фона
+app.post('/api/upload-background', upload.single('background'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Файл не загружен' });
+  }
+  const settings = fs.readJsonSync(SETTINGS_FILE);
+  settings.backgroundImage = req.file.filename;
+  fs.writeJsonSync(SETTINGS_FILE, settings);
+  res.json({ success: true, filename: req.file.filename });
+});
+
+// Генерация PDF
 app.post('/api/generate-pdf', async (req, res) => {
   const { template, data } = req.body;
+  const settings = fs.readJsonSync(SETTINGS_FILE);
+  const backgroundImage = settings.backgroundImage ? `/uploads/${settings.backgroundImage}` : null;
 
   const schoolWithBreak = data.school.replace(/(универси)(тет)/i, '$1-<br>$2');
   let content = '';
@@ -80,6 +100,11 @@ app.post('/api/generate-pdf', async (req, res) => {
     `;
   }
 
+  let backgroundHtml = '';
+  if (backgroundImage) {
+    backgroundHtml = `<img src="file://${path.join(__dirname, backgroundImage)}" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:0; opacity:0.1;">`;
+  }
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -94,6 +119,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     </head>
     <body>
       <div class="container">
+        ${backgroundHtml}
         <div class="content">${content}</div>
       </div>
     </body>
