@@ -4,53 +4,14 @@
   <meta charset="UTF-8">
   <title>Админка</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f7fb;
-      padding: 20px;
-    }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    }
-    h2 {
-      color: #1b365d;
-      margin-bottom: 20px;
-    }
-    textarea, input, select {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 15px;
-    }
-    button {
-      background: #1b365d;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      margin: 10px 5px;
-    }
+    body { font-family: Arial, sans-serif; background: #f5f7fb; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    h2 { color: #1b365d; margin-bottom: 20px; }
+    textarea, input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; }
+    button { background: #1b365d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
     button:hover { opacity: 0.9; }
-    .section {
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #eee;
-    }
-    .upload-section {
-      background: #f0f7ff;
-      padding: 20px;
-      border-radius: 10px;
-      margin-top: 20px;
-    }
+    .section { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+    .upload-section { background: #f0f7ff; padding: 20px; border-radius: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -67,36 +28,30 @@
     <h3>Управление мероприятиями</h3>
     <p>Выберите мероприятие для редактирования:</p>
     <select id="eventSelect"></select>
-    
     <h4>Название мероприятия</h4>
     <input type="text" id="eventTitle" placeholder="Название">
-    
     <h4>Краткое описание</h4>
     <input type="text" id="eventShort" placeholder="Краткое описание">
-    
-    <h4>Полный текст (отображается при нажатии «Подробнее»)</h4>
-    <textarea id="eventInfo" rows="10" placeholder="Полный текст мероприятия..."></textarea>
-    
+    <h4>Полный текст</h4>
+    <textarea id="eventInfo" rows="10" placeholder="Полный текст..."></textarea>
     <h4>Ярлык аудитории</h4>
     <select id="eventAudience">
       <option value="students">Студентам и аспирантам</option>
       <option value="school">Школьникам и СПО</option>
       <option value="teachers">Преподавателям и учителям</option>
     </select>
-    
-    <h4>Вопросы (по одному на строку, в формате: Вопрос?;Вариант1;Вариант2;...;Номер_правильного_ответа)</h4>
-    <textarea id="eventQuestions" rows="8" placeholder="Пример:&#10;Что такое нормальное распределение?;Нулевое значение риска;Единичное отклонение риска;Распределение Гаусса;Положительная прибыль;2"></textarea>
-    
+    <h4>Вопросы</h4>
+    <textarea id="eventQuestions" rows="8" placeholder="Вопрос?;Вариант1;Вариант2;Вариант3;Вариант4;2"></textarea>
     <button onclick="saveEvent()">Сохранить мероприятие</button>
     <button onclick="addNewEvent()">Добавить новое мероприятие</button>
   </div>
 
   <div class="upload-section">
-    <h3>Загрузка подложки PDF</h3>
-    <p>Загрузите PDF-файл (например, Подложка.pdf). Он будет использован как фон для всех документов.</p>
-    <input type="file" id="overlayFile" accept=".pdf">
-    <button onclick="uploadOverlay()">Загрузить подложку</button>
-    <div id="overlayStatus" style="margin-top:10px;"></div>
+    <h3>Загрузка фонового изображения (PNG)</h3>
+    <p>Загрузите PNG-файл с логотипом или узором. Он будет использован как фон (прозрачность 10%) для всех документов.</p>
+    <input type="file" id="bgFile" accept=".png">
+    <button onclick="uploadBackground()">Загрузить фон</button>
+    <div id="bgStatus" style="margin-top:10px;"></div>
   </div>
 
   <div id="status" style="margin-top:20px; color:green; font-weight:bold;"></div>
@@ -106,15 +61,10 @@
 let events = [];
 let settings = {};
 
-// Загрузка данных
 async function loadData() {
-  const [eRes, sRes] = await Promise.all([
-    fetch('/api/events'),
-    fetch('/api/settings')
-  ]);
+  const [eRes, sRes] = await Promise.all([fetch('/api/events'), fetch('/api/settings')]);
   events = await eRes.json();
   settings = await sRes.json();
-  
   document.getElementById('paymentText').value = settings.paymentText;
   
   const select = document.getElementById('eventSelect');
@@ -125,10 +75,7 @@ async function loadData() {
     opt.textContent = ev.title;
     select.appendChild(opt);
   });
-  
-  if (events.length > 0) {
-    loadEvent(0);
-  }
+  if (events.length > 0) loadEvent(0);
 }
 
 function loadEvent(index) {
@@ -137,25 +84,15 @@ function loadEvent(index) {
   document.getElementById('eventShort').value = ev.short;
   document.getElementById('eventInfo').value = ev.info;
   document.getElementById('eventAudience').value = ev.audience;
-  
-  // Преобразуем вопросы в читаемый формат
-  const qText = ev.questions.map(q => {
-    return `${q.q};${q.options.join(';')};${q.correct}`;
-  }).join('\n');
+  const qText = ev.questions.map(q => `${q.q};${q.options.join(';')};${q.correct}`).join('\n');
   document.getElementById('eventQuestions').value = qText;
 }
 
-document.getElementById('eventSelect').addEventListener('change', (e) => {
-  loadEvent(e.target.value);
-});
+document.getElementById('eventSelect').addEventListener('change', (e) => loadEvent(e.target.value));
 
 async function savePaymentText() {
   settings.paymentText = document.getElementById('paymentText').value;
-  await fetch('/api/settings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings)
-  });
+  await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
   document.getElementById('status').textContent = '✅ Текст оплаты сохранён!';
 }
 
@@ -165,8 +102,6 @@ async function saveEvent() {
   const short = document.getElementById('eventShort').value;
   const info = document.getElementById('eventInfo').value;
   const audience = document.getElementById('eventAudience').value;
-  
-  // Парсим вопросы
   const qLines = document.getElementById('eventQuestions').value.split('\n').filter(l => l.trim());
   const questions = qLines.map(line => {
     const parts = line.split(';');
@@ -174,58 +109,33 @@ async function saveEvent() {
     const q = parts.shift();
     return { q, options: parts, correct: correctIndex };
   });
-  
   events[index] = { key: `event${index}`, title, short, info, audience, questions };
-  
-  await fetch('/api/events', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(events)
-  });
+  await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(events) });
   document.getElementById('status').textContent = '✅ Мероприятие сохранено!';
 }
 
 async function addNewEvent() {
-  const newEvent = {
-    key: `event${events.length}`,
-    title: "Новое мероприятие",
-    short: "Краткое описание",
-    info: "Полный текст...",
-    audience: "students",
-    questions: [{"q": "Вопрос?", "options": ["1","2","3","4"], "correct": 0}]
-  };
+  const newEvent = { key: `event${events.length}`, title: "Новое мероприятие", short: "Краткое описание", info: "Полный текст...", audience: "students", questions: [{"q": "Вопрос?", "options": ["1","2","3","4"], "correct": 0}] };
   events.push(newEvent);
-  await fetch('/api/events', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(events)
-  });
+  await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(events) });
   loadData();
   document.getElementById('status').textContent = '✅ Новое мероприятие добавлено!';
 }
 
-// === ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ПОДЛОЖКИ ===
-async function uploadOverlay() {
-  const fileInput = document.getElementById('overlayFile');
-  const file = fileInput.files[0];
+// Загрузка фона
+async function uploadBackground() {
+  const file = document.getElementById('bgFile').files[0];
   if (!file) {
-    document.getElementById('overlayStatus').textContent = '❌ Выберите файл PDF';
+    document.getElementById('bgStatus').textContent = '❌ Выберите PNG-файл';
     return;
   }
-
   const formData = new FormData();
-  formData.append('overlay', file);
-
-  const res = await fetch('/api/upload-overlay', {
-    method: 'POST',
-    body: formData
-  });
-
+  formData.append('background', file);
+  const res = await fetch('/api/upload-background', { method: 'POST', body: formData });
   if (res.ok) {
-    document.getElementById('overlayStatus').innerHTML = '✅ Подложка загружена и активна для всех мероприятий!';
+    document.getElementById('bgStatus').textContent = '✅ Фон загружен и активен для всех документов!';
   } else {
-    const err = await res.json();
-    document.getElementById('overlayStatus').textContent = '❌ Ошибка: ' + (err.error || 'неизвестная');
+    document.getElementById('bgStatus').textContent = '❌ Ошибка загрузки';
   }
 }
 
