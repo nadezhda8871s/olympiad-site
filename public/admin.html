@@ -9,128 +9,50 @@
     h2 { color: #1b365d; margin-bottom: 20px; }
     textarea, input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; }
     button { background: #1b365d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
-    button:hover { opacity: 0.9; }
-    .section { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
     .upload-section { background: #f0f7ff; padding: 20px; border-radius: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
 <div class="container">
-  <h2>Админка — Управление сайтом</h2>
+  <h2>Админка</h2>
 
   <div class="section">
-    <h3>Текст для страницы «Документы и оплата»</h3>
-    <textarea id="paymentText" rows="6" placeholder="Введите текст об оплате..."></textarea>
-    <button onclick="savePaymentText()">Сохранить текст оплаты</button>
-  </div>
-
-  <div class="section">
-    <h3>Управление мероприятиями</h3>
-    <p>Выберите мероприятие для редактирования:</p>
-    <select id="eventSelect"></select>
-    <h4>Название мероприятия</h4>
-    <input type="text" id="eventTitle" placeholder="Название">
-    <h4>Краткое описание</h4>
-    <input type="text" id="eventShort" placeholder="Краткое описание">
-    <h4>Полный текст</h4>
-    <textarea id="eventInfo" rows="10" placeholder="Полный текст..."></textarea>
-    <h4>Ярлык аудитории</h4>
-    <select id="eventAudience">
-      <option value="students">Студентам и аспирантам</option>
-      <option value="school">Школьникам и СПО</option>
-      <option value="teachers">Преподавателям и учителям</option>
-    </select>
-    <h4>Вопросы</h4>
-    <textarea id="eventQuestions" rows="8" placeholder="Вопрос?;Вариант1;Вариант2;Вариант3;Вариант4;2"></textarea>
-    <button onclick="saveEvent()">Сохранить мероприятие</button>
-    <button onclick="addNewEvent()">Добавить новое мероприятие</button>
+    <h3>Текст для «Документы и оплата»</h3>
+    <textarea id="paymentText" rows="4"></textarea>
+    <button onclick="savePaymentText()">Сохранить</button>
   </div>
 
   <div class="upload-section">
     <h3>Загрузка фонового изображения (PNG)</h3>
-    <p>Загрузите PNG-файл с логотипом или узором. Он будет использован как фон (прозрачность 10%) для всех документов.</p>
+    <p>Загрузите PNG-файл (например, логотип). Он будет отображаться как фон (10% прозрачность) во всех документах.</p>
     <input type="file" id="bgFile" accept=".png">
     <button onclick="uploadBackground()">Загрузить фон</button>
     <div id="bgStatus" style="margin-top:10px;"></div>
   </div>
-
-  <div id="status" style="margin-top:20px; color:green; font-weight:bold;"></div>
 </div>
 
 <script>
-let events = [];
 let settings = {};
 
 async function loadData() {
-  const [eRes, sRes] = await Promise.all([fetch('/api/events'), fetch('/api/settings')]);
-  events = await eRes.json();
-  settings = await sRes.json();
+  const res = await fetch('/api/settings');
+  settings = await res.json();
   document.getElementById('paymentText').value = settings.paymentText;
-  
-  const select = document.getElementById('eventSelect');
-  select.innerHTML = '';
-  events.forEach((ev, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = ev.title;
-    select.appendChild(opt);
-  });
-  if (events.length > 0) loadEvent(0);
 }
-
-function loadEvent(index) {
-  const ev = events[index];
-  document.getElementById('eventTitle').value = ev.title;
-  document.getElementById('eventShort').value = ev.short;
-  document.getElementById('eventInfo').value = ev.info;
-  document.getElementById('eventAudience').value = ev.audience;
-  const qText = ev.questions.map(q => `${q.q};${q.options.join(';')};${q.correct}`).join('\n');
-  document.getElementById('eventQuestions').value = qText;
-}
-
-document.getElementById('eventSelect').addEventListener('change', (e) => loadEvent(e.target.value));
 
 async function savePaymentText() {
   settings.paymentText = document.getElementById('paymentText').value;
   await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
-  document.getElementById('status').textContent = '✅ Текст оплаты сохранён!';
+  document.getElementById('bgStatus').textContent = '✅ Текст сохранён';
 }
 
-async function saveEvent() {
-  const index = document.getElementById('eventSelect').value;
-  const title = document.getElementById('eventTitle').value;
-  const short = document.getElementById('eventShort').value;
-  const info = document.getElementById('eventInfo').value;
-  const audience = document.getElementById('eventAudience').value;
-  const qLines = document.getElementById('eventQuestions').value.split('\n').filter(l => l.trim());
-  const questions = qLines.map(line => {
-    const parts = line.split(';');
-    const correctIndex = parseInt(parts.pop());
-    const q = parts.shift();
-    return { q, options: parts, correct: correctIndex };
-  });
-  events[index] = { key: `event${index}`, title, short, info, audience, questions };
-  await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(events) });
-  document.getElementById('status').textContent = '✅ Мероприятие сохранено!';
-}
-
-async function addNewEvent() {
-  const newEvent = { key: `event${events.length}`, title: "Новое мероприятие", short: "Краткое описание", info: "Полный текст...", audience: "students", questions: [{"q": "Вопрос?", "options": ["1","2","3","4"], "correct": 0}] };
-  events.push(newEvent);
-  await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(events) });
-  loadData();
-  document.getElementById('status').textContent = '✅ Новое мероприятие добавлено!';
-}
-
-// Загрузка фона
 async function uploadBackground() {
   const file = document.getElementById('bgFile').files[0];
-  if (!file) {
-    document.getElementById('bgStatus').textContent = '❌ Выберите PNG-файл';
-    return;
-  }
+  if (!file) return alert('Выберите PNG-файл');
+  
   const formData = new FormData();
   formData.append('background', file);
+  
   const res = await fetch('/api/upload-background', { method: 'POST', body: formData });
   if (res.ok) {
     document.getElementById('bgStatus').textContent = '✅ Фон загружен и активен для всех документов!';
