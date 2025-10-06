@@ -8,21 +8,25 @@ const puppeteer = require('puppeteer');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Настройка multer для загрузки файлов
 const upload = multer({ dest: 'uploads/' });
 
+// Статические файлы
 app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use('/uploads', express.static('uploads'));
 
+// Папка для данных и загрузок
 const DATA_DIR = '/tmp/data';
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 fs.ensureDirSync(DATA_DIR);
 fs.ensureDirSync(UPLOADS_DIR);
 
+// Файлы данных
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 
-// Инициализация
+// Инициализация данных
 if (!fs.existsSync(EVENTS_FILE)) {
   fs.writeJsonSync(EVENTS_FILE, [
     {
@@ -44,21 +48,25 @@ if (!fs.existsSync(SETTINGS_FILE)) {
   });
 }
 
-// API
+// API: получение мероприятий
 app.get('/api/events', (req, res) => res.json(fs.readJsonSync(EVENTS_FILE)));
+
+// API: получение настроек
 app.get('/api/settings', (req, res) => res.json(fs.readJsonSync(SETTINGS_FILE)));
 
+// API: сохранение мероприятий
 app.post('/api/events', (req, res) => {
   fs.writeJsonSync(EVENTS_FILE, req.body);
   res.json({ ok: true });
 });
 
+// API: сохранение настроек
 app.post('/api/settings', (req, res) => {
   fs.writeJsonSync(SETTINGS_FILE, req.body);
   res.json({ ok: true });
 });
 
-// Загрузка фона
+// Загрузка фонового изображения (PNG)
 app.post('/api/upload-background', upload.single('background'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Файл не загружен' });
@@ -75,7 +83,7 @@ app.post('/api/generate-pdf', async (req, res) => {
   const settings = fs.readJsonSync(SETTINGS_FILE);
   const bgPath = settings.backgroundImage ? path.join(UPLOADS_DIR, settings.backgroundImage) : null;
 
-  // Текст как в превью
+  // Перенос "универси-тет"
   const schoolWithBreak = data.school.replace(/(универси)(тет)/i, '$1-<br>$2');
   let content = '';
   if (template === 'thanks') {
