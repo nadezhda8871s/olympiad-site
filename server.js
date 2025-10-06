@@ -309,141 +309,99 @@ app.get('/api/export-participants', (req, res) => {
     res.send(buffer);
 });
 
-// Генерация PDF
+// Генерация PDF с помощью Playwright
 app.post('/api/generate-pdf', async (req, res) => {
-    const { template, data } = req.body; // template: 'diploma', 'certificate', 'thanks'
+  const { template, data } = req.body;
 
-    try {
-        // Загружаем настройки для получения фона
-        const settings = fs.readJsonSync(SETTINGS_FILE);
-        const backgrounds = settings.backgrounds;
+  try {
+    // === Подготовка HTML ===
+    const schoolWithBreak = data.school.replace(/(универси)(тет)/gi, '$1-<br>$2');
 
-        // Определяем, какой фон использовать
-        let backgroundImageDataUrl = null;
-        if (backgrounds[template]) {
-            backgroundImageDataUrl = backgrounds[template]; // Конкретный для типа
-        } else if (backgrounds.all) {
-            backgroundImageDataUrl = backgrounds.all; // Общий фон
-        }
-
-        // Перенос "универси-тет"
-        const schoolWithBreak = data.school.replace(/(универси)(тет)/gi, '$1-<br>$2');
-
-        let contentHtml = '';
-        if (template === 'thanks') {
-            contentHtml = `
-                <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${data.title}</div>
-                <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ<br>(ПРЕПОДАВАТЕЛЮ)</div>
-                <div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">${data.supervisor}</div>
-                <div style="text-align:center; margin:20px 0; line-height:1.5;">
-                    Центр науки и инноваций выражает Вам огромную признательность и благодарность за профессиональную подготовку участника Олимпиады<br>
-                    <b>(${data.fio})</b>.
-                </div>
-                <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
-            `;
-        } else {
-            contentHtml = `
-                <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${data.title}</div>
-                <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">${template === 'diploma' ? 'ДИПЛОМ I СТЕПЕНИ' : 'СЕРТИФИКАТ УЧАСТНИКА'}</div>
-                ${template === 'diploma' ? '<div style="text-align:center; margin:10px 0;">награждён(а):</div>' : ''}
-                <div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">${data.fio}</div>
-                <div style="text-align:center;">${schoolWithBreak}, ${data.region}, ${data.city}</div>
-                ${data.supervisor ? `<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>${data.supervisor}</div>` : ''}
-                <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
-            `;
-        }
-
-        // HTML для PDF
-        const fullHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                @page {
-                    size: A4 landscape; /* Альбомная ориентация */
-                    margin: 0;
-                }
-                body {
-                    margin: 0;
-                    padding: 0;
-                    font-family: "Times New Roman", serif;
-                    background-color: white;
-                    position: relative;
-                    width: 297mm; /* Ширина A4 альбомная */
-                    height: 210mm; /* Высота A4 альбомная */
-                }
-                .background {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    z-index: 0;
-                    opacity: 0.1; /* Прозрачность 10% */
-                    object-fit: cover; /* Растягиваем на весь лист */
-                }
-                .content {
-                    position: relative;
-                    z-index: 1;
-                    padding: 40px 60px;
-                    color: black;
-                    line-height: 1.4;
-                    font-size: 16px;
-                    height: 100%;
-                    box-sizing: border-box;
-                }
-            </style>
-        </head>
-        <body>
-            ${backgroundImageDataUrl ? `<img src="${backgroundImageDataUrl}" class="background" alt="Фон">` : ''}
-            <div class="content">
-                ${contentHtml}
-            </div>
-        </body>
-        </html>
-        `;
-
-        // Запуск Puppeteer
-        const browser = await puppeteer.launch({
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--single-process'
-            ]
-        });
-
-        const page = await browser.newPage();
-        await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
-        const pdfBuffer = await page.pdf({
-            format: 'A4',
-            printBackground: true,
-            landscape: true // Альбомная ориентация
-        });
-        await browser.close();
-
-        // Сохраняем участника в "базу данных"
-        const participantRecord = {
-            id: Date.now().toString(),
-            timestamp: new Date().toISOString(),
-            template: template,
-            data: { ...data } // Копируем данные
-        };
-        const db = fs.readJsonSync(DB_FILE);
-        db.push(participantRecord);
-        fs.writeJsonSync(DB_FILE, db);
-
-        // Отправляем PDF
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${template}_${data.fio.replace(/\s+/g, '_')}.pdf"`);
-        res.send(pdfBuffer);
-
-    } catch (error) {
-        console.error('Ошибка генерации PDF:', error);
-        res.status(500).json({ error: 'Ошибка генерации PDF', message: error.message });
+    let contentHtml = '';
+    if (template === 'thanks') {
+      contentHtml = `
+        <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${data.title}</div>
+        <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ<br>(ПРЕПОДАВАТЕЛЮ)</div>
+        <div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">${data.supervisor}</div>
+        <div style="text-align:center; margin:20px 0; line-height:1.5;">
+          Центр науки и инноваций выражает Вам огромную признательность и благодарность за профессиональную подготовку участника Олимпиады<br>
+          <b>(${data.fio})</b>.
+        </div>
+        <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
+      `;
+    } else {
+      contentHtml = `
+        <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${data.title}</div>
+        <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">${template === 'diploma' ? 'ДИПЛОМ I СТЕПЕНИ' : 'СЕРТИФИКАТ УЧАСТНИКА'}</div>
+        ${template === 'diploma' ? '<div style="text-align:center; margin:10px 0;">награждён(а):</div>' : ''}
+        <div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">${data.fio}</div>
+        <div style="text-align:center;">${schoolWithBreak}, ${data.region}, ${data.city}</div>
+        ${data.supervisor ? `<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>${data.supervisor}</div>` : ''}
+        <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
+      `;
     }
+
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          @page { size: A4 landscape; margin: 0; }
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: "Times New Roman", serif;
+            background: white;
+            width: 297mm;
+            height: 210mm;
+          }
+          .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+          }
+          .content {
+            position: relative;
+            z-index: 1;
+            padding: 40px 60px;
+            color: black;
+            line-height: 1.4;
+            font-size: 16px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="content">${contentHtml}</div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // === Генерация PDF через Playwright ===
+    const { chromium } = require('playwright');
+    const browser = await chromium.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
+    const page = await browser.newPage();
+    await page.setContent(fullHtml, { waitUntil: 'networkidle' });
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      landscape: true
+    });
+    await browser.close();
+
+    // Отправка PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${template}.pdf`);
+    res.send(pdf);
+
+  } catch (e) {
+    console.error('PDF Error:', e);
+    res.status(500).json({ error: 'Ошибка генерации PDF', message: e.message });
+  }
 });
 
 // --- Статические файлы и маршруты ---
