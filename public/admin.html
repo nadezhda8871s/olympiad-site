@@ -1,67 +1,464 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Админка</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: Arial, sans-serif; background: #f5f7fb; padding: 20px; }
-    .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-    h2 { color: #1b365d; margin-bottom: 20px; }
-    textarea, input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; }
-    button { background: #1b365d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
-    .upload-section { background: #f0f7ff; padding: 20px; border-radius: 10px; margin-top: 20px; }
+    :root {
+      --primary: #1b365d;
+      --accent: #2ecc71;
+      --bg: #f5f7fb;
+      --text: #2b2b2b;
+      --muted: #6b7280;
+      --card: #ffffff;
+      --shadow: 0 6px 18px rgba(0,0,0,.08);
+      --shadow-hover: 0 10px 24px rgba(0,0,0,.12);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 28px 16px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: .2px;
+    }
+    nav {
+      background: white;
+      padding: 12px 0;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,.05);
+    }
+    nav a {
+      margin: 0 12px;
+      text-decoration: none;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 16px;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .panel {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      margin: 22px 0;
+    }
+    .panel h2 {
+      margin: 0 0 16px;
+      color: var(--primary);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .form-group textarea,
+    .form-group input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d9dbe3;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 16px;
+    }
+    .form-group textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+    .btn {
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    .btn:hover {
+      opacity: 0.92;
+    }
+    .btn-accent {
+      background: var(--accent);
+    }
+    .upload-section {
+      background: #f0f7ff;
+      border: 1px solid #dbe2ff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .upload-section h3 {
+      margin-top: 0;
+    }
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      margin-right: 10px;
+    }
+    .file-input-wrapper input[type=file] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    .file-input-button {
+      display: inline-block;
+      padding: 10px 16px;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      display: none;
+    }
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+    footer {
+      background: var(--primary);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 14px;
+      margin-top: 40px;
+    }
+    footer a {
+      color: white;
+      text-decoration: underline;
+    }
+    /* Modal for Export */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal.open {
+      display: flex;
+    }
+    .modal-card {
+      background: white;
+      border-radius: 16px;
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+      box-shadow: var(--shadow-hover);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .export-options {
+      margin-top: 20px;
+    }
+    .export-option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .export-option input {
+      margin-right: 10px;
+    }
   </style>
 </head>
 <body>
-<div class="container">
-  <h2>Админка</h2>
+<header>
+  <h1>Админка</h1>
+</header>
 
-  <div class="section">
-    <h3>Текст для «Документы и оплата»</h3>
-    <textarea id="paymentText" rows="4"></textarea>
-    <button onclick="savePaymentText()">Сохранить</button>
+<nav>
+  <a href="/">Главная</a>
+  <a href="/docs">Документы и оплата</a>
+  <a href="/admin">Админка</a>
+</nav>
+
+<div class="container">
+  <!-- Управление текстом "Документы и оплата" -->
+  <div class="panel">
+    <h2>Редактирование текста «Документы и оплата»</h2>
+    <div class="form-group">
+      <label for="paymentText">Текст:</label>
+      <textarea id="paymentText" placeholder="Введите текст для страницы 'Документы и оплата'..."></textarea>
+    </div>
+    <button class="btn" onclick="savePaymentText()">Сохранить текст</button>
+    <div id="paymentTextStatus" class="status"></div>
   </div>
 
-  <div class="upload-section">
-    <h3>Загрузка фонового изображения (PNG)</h3>
-    <p>Загрузите PNG-файл (например, логотип). Он будет отображаться как фон (10% прозрачность) во всех документах.</p>
-    <input type="file" id="bgFile" accept=".png">
-    <button onclick="uploadBackground()">Загрузить фон</button>
-    <div id="bgStatus" style="margin-top:10px;"></div>
+  <!-- Управление мероприятиями -->
+  <div class="panel">
+    <h2>Управление мероприятияями</h2>
+    <p><i>Для редактирования мероприятий, пожалуйста, измените соответствующие данные в файле <code>server.js</code> или используйте API.</i></p>
+    <p><i>В данной версии админки редактирование мероприятий не реализовано.</i></p>
+  </div>
+
+  <!-- Загрузка фонов -->
+  <div class="panel">
+    <h2>Загрузка фоновых изображений</h2>
+    <p>Загрузите PNG-файлы, которые будут использоваться как полупрозрачный фон (водяной знак) в генерируемых PDF-документах.</p>
+    <p><b>Важно:</b> Формат изображения должен быть <b>PNG</b>. Рекомендуемый размер: 297мм x 210мм (A4 альбомная ориентация).</p>
+
+    <div class="upload-section">
+      <h3>Фон для всех документов</h3>
+      <div class="form-group">
+        <label>Выберите файл (PNG):</label>
+        <div class="file-input-wrapper">
+          <div class="file-input-button">Выбрать файл</div>
+          <input type="file" id="bg-all-file" accept=".png">
+        </div>
+        <span id="bg-all-filename">Файл не выбран</span>
+      </div>
+      <button class="btn" onclick="uploadBackground('all')">Загрузить общий фон</button>
+      <div id="bg-all-status" class="status"></div>
+    </div>
+
+    <div class="upload-section">
+      <h3>Фон для дипломов</h3>
+      <div class="form-group">
+        <label>Выберите файл (PNG):</label>
+        <div class="file-input-wrapper">
+          <div class="file-input-button">Выбрать файл</div>
+          <input type="file" id="bg-diploma-file" accept=".png">
+        </div>
+        <span id="bg-diploma-filename">Файл не выбран</span>
+      </div>
+      <button class="btn" onclick="uploadBackground('diploma')">Загрузить фон для дипломов</button>
+      <div id="bg-diploma-status" class="status"></div>
+    </div>
+
+    <div class="upload-section">
+      <h3>Фон для сертификатов</h3>
+      <div class="form-group">
+        <label>Выберите файл (PNG):</label>
+        <div class="file-input-wrapper">
+          <div class="file-input-button">Выбрать файл</div>
+          <input type="file" id="bg-certificate-file" accept=".png">
+        </div>
+        <span id="bg-certificate-filename">Файл не выбран</span>
+      </div>
+      <button class="btn" onclick="uploadBackground('certificate')">Загрузить фон для сертификатов</button>
+      <div id="bg-certificate-status" class="status"></div>
+    </div>
+
+    <div class="upload-section">
+      <h3>Фон для благодарностей</h3>
+ <div class="form-group">
+        <label>Выберите файл (PNG):</label>
+        <div class="file-input-wrapper">
+          <div class="file-input-button">Выбрать файл</div>
+          <input type="file" id="bg-thanks-file" accept=".png">
+        </div>
+        <span id="bg-thanks-filename">Файл не выбран</span>
+      </div>
+      <button class="btn" onclick="uploadBackground('thanks')">Загрузить фон для благодарностей</button>
+      <div id="bg-thanks-status" class="status"></div>
+    </div>
+  </div>
+
+  <!-- Экспорт данных -->
+  <div class="panel">
+    <h2>Экспорт данных участников</h2>
+    <p>Экспортируйте данные всех участников, которые прошли тест и сгенерировали документы.</p>
+    <button class="btn btn-accent" onclick="openExportModal()">Экспорт в Excel (CSV)</button>
   </div>
 </div>
 
+<!-- Модальное окно экспорта -->
+<div id="exportModal" class="modal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeExportModal()">×</button>
+    <h2>Экспорт данных</h2>
+    <p>Выберите формат для экспорта:</p>
+    <div class="export-options">
+      <div class="export-option">
+        <input type="radio" id="format-xlsx" name="export-format" value="xlsx" checked>
+        <label for="format-xlsx">Excel (.xlsx)</label>
+      </div>
+      <div class="export-option">
+        <input type="radio" id="format-csv" name="export-format" value="csv">
+        <label for="format-csv">CSV</label>
+      </div>
+    </div>
+    <button class="btn btn-accent" onclick="exportParticipants()">Скачать</button>
+  </div>
+</div>
+
+<footer>
+  Почта для связи: <a href="mailto:naych_kooper@mail.ru">naych_kooper@mail.ru</a><br>
+  © 2025 Все права защищены. Копирование контента без разрешения автора строго ЗАПРЕЩЕНО!
+</footer>
+
 <script>
-let settings = {};
+// --- Загрузка текущего текста оплаты ---
+fetch('/api/settings')
+  .then(response => {
+    if (!response.ok) throw new Error('Ошибка сети');
+    return response.json();
+  })
+  .then(settings => {
+    document.getElementById('paymentText').value = settings.paymentText || '';
+  })
+  .catch(error => {
+    console.error('Ошибка загрузки текста оплаты:', error);
+    showStatus('paymentTextStatus', 'Ошибка загрузки текста: ' + error.message, 'error');
+  });
 
-async function loadData() {
-  const res = await fetch('/api/settings');
-  settings = await res.json();
-  document.getElementById('paymentText').value = settings.paymentText;
+// --- Сохранение текста оплаты ---
+function savePaymentText() {
+  const text = document.getElementById('paymentText').value;
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ paymentText: text })
+  })
+  .then(response => {
+    if (response.ok) {
+      showStatus('paymentTextStatus', 'Текст успешно сохранен!', 'success');
+    } else {
+      throw new Error('Ошибка сервера');
+    }
+  })
+  .catch(error => {
+    console.error('Ошибка сохранения текста оплаты:', error);
+    showStatus('paymentTextStatus', 'Ошибка сохранения: ' + error.message, 'error');
+  });
 }
 
-async function savePaymentText() {
-  settings.paymentText = document.getElementById('paymentText').value;
-  await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
-  document.getElementById('bgStatus').textContent = '✅ Текст сохранён';
-}
+// --- Управление файлами ---
+document.getElementById('bg-all-file').addEventListener('change', function(e) {
+  document.getElementById('bg-all-filename').textContent = e.target.files[0] ? e.target.files[0].name : 'Файл не выбран';
+});
+document.getElementById('bg-diploma-file').addEventListener('change', function(e) {
+  document.getElementById('bg-diploma-filename').textContent = e.target.files[0] ? e.target.files[0].name : 'Файл не выбран';
+});
+document.getElementById('bg-certificate-file').addEventListener('change', function(e) {
+  document.getElementById('bg-certificate-filename').textContent = e.target.files[0] ? e.target.files[0].name : 'Файл не выбран';
+});
+document.getElementById('bg-thanks-file').addEventListener('change', function(e) {
+  document.getElementById('bg-thanks-filename').textContent = e.target.files[0] ? e.target.files[0].name : 'Файл не выбран';
+});
 
-async function uploadBackground() {
-  const file = document.getElementById('bgFile').files[0];
-  if (!file) return alert('Выберите PNG-файл');
-  
-  const formData = new FormData();
-  formData.append('background', file);
-  
-  const res = await fetch('/api/upload-background', { method: 'POST', body: formData });
-  if (res.ok) {
-    document.getElementById('bgStatus').textContent = '✅ Фон загружен и активен для всех документов!';
-  } else {
-    document.getElementById('bgStatus').textContent = '❌ Ошибка загрузки';
+// --- Загрузка фона ---
+function uploadBackground(docType) {
+  const fileInputId = `bg-${docType}-file`;
+  const statusId = `bg-${docType}-status`;
+  const fileInput = document.getElementById(fileInputId);
+
+  if (!fileInput.files[0]) {
+    showStatus(statusId, 'Пожалуйста, выберите файл.', 'error');
+    return;
   }
+
+  const formData = new FormData();
+  formData.append('background', fileInput.files[0]);
+  formData.append('docType', docType);
+
+  fetch('/api/upload-background', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => {
+    if (response.ok) {
+      return response.json();
+    } else {
+      return response.json().then(err => { throw new Error(err.error || 'Ошибка сервера'); });
+    }
+  })
+  .then(data => {
+    showStatus(statusId, data.message || 'Фон успешно загружен!', 'success');
+    // Очищаем выбор файла после успешной загрузки
+    fileInput.value = '';
+    document.getElementById(`bg-${docType}-filename`).textContent = 'Файл не выбран';
+  })
+  .catch(error => {
+    console.error(`Ошибка загрузки фона для ${docType}:`, error);
+    showStatus(statusId, 'Ошибка загрузки: ' + error.message, 'error');
+  });
 }
 
-loadData();
+// --- Вспомогательная функция для отображения статуса ---
+function showStatus(elementId, message, type) {
+  const statusEl = document.getElementById(elementId);
+  statusEl.textContent = message;
+  statusEl.className = 'status ' + type;
+  // Автоматически скрыть сообщение через 5 секунд
+  setTimeout(() => {
+    statusEl.className = 'status';
+  }, 5000);
+}
+
+// --- Модальное окно экспорта ---
+function openExportModal() {
+  document.getElementById('exportModal').classList.add('open');
+}
+
+function closeExportModal() {
+  document.getElementById('exportModal').classList.remove('open');
+}
+
+// --- Экспорт участников ---
+function exportParticipants() {
+  const format = document.querySelector('input[name="export-format"]:checked').value;
+  // В реальном приложении здесь был бы запрос к серверу, например:
+  // window.location.href = `/api/export-participants?format=${format}`;
+  // Но для демонстрации просто покажем сообщение
+  alert(`Экспорт в формате ${format.toUpperCase()} запущен. В реальном приложении файл начнет скачиваться.`);
+  closeExportModal();
+}
 </script>
 </body>
 </html>
