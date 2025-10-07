@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const { chromium } = require('playwright');
+const XLSX = require('xlsx');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -189,6 +190,47 @@ app.post('/api/upload-background', upload.single('background'), (req, res) => {
   res.json({ success: true, message: `Фон для ${docType} успешно загружен.` });
 });
 
+// Получить список участников (для экспорта)
+app.get('/api/participants', (req, res) => {
+  const participants = fs.readJsonSync(DB_FILE);
+  res.json(participants);
+});
+
+// Экспорт участников в Excel
+app.get('/api/export-participants', (req, res) => {
+  const participants = fs.readJsonSync(DB_FILE);
+
+  if (participants.length === 0) {
+    return res.status(400).json({ error: 'Нет данных для экспорта.' });
+  }
+
+  // Подготавливаем данные для Excel
+  const worksheetData = participants.map(p => ({
+    "ID": p.id,
+    "Время": p.timestamp,
+    "ФИО": p.data.fio,
+    "Учебное заведение": p.data.school,
+    "Регион": p.data.region,
+    "Город": p.data.city,
+    "Научный руководитель": p.data.supervisor || '',
+    "Тип документа": p.template,
+    "Номер документа": p.data.number,
+    "Дата": p.data.date
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Участники");
+
+  // Записываем в буфер
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+  // Отправляем файл
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="participants.xlsx"');
+  res.send(buffer);
+});
+
 // Генерация PDF
 app.post('/api/generate-pdf', async (req, res) => {
   const { template, data } = req.body;
@@ -241,7 +283,8 @@ app.post('/api/generate-pdf', async (req, res) => {
       <meta charset="UTF-8">
       <style>
         @page { size: A4 landscape; margin: 0; }
-        body { margin: 0; padding: 0; font-family: "Times New Roman", serif; background: white; position: relative; width: 297mm; height: 210mm; }
+        body { margin: 0; padding: 0; font-family: "Times New Roman", serif; background: white; }
+        .container { position: relative; width: 297mm; height: 210mm; }
         .background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.1; object-fit: cover; }
         .content { position: relative; z-index: 1; padding: 40px 60px; color: black; line-height: 1.4; font-size: 16px; height: 100%; box-sizing: border-box; }
       </style>
@@ -287,7 +330,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     res.send(pdf);
 
   } catch (e) {
-    console.error('Ошибка генерации PDF:', e);
+    console.error('PDF Error:', e);
     res.status(500).json({ error: 'Ошибка генерации PDF', message: e.message });
   }
 });
