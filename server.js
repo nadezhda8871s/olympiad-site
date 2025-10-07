@@ -1,392 +1,225 @@
-const express = require("express");
-const path = require("path");
-const fs = require("fs-extra");
-const bodyParser = require("body-parser");
-const multer = require("multer");
-const XLSX = require("xlsx");
-const { chromium } = require("playwright");
+// server.js
+const express = require('express');
+const path = require('path');
+const fs = require('fs-extra');
+const bodyParser = require('body-parser');
+const multer = require('multer');
+const { chromium } = require('playwright');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Admin credentials from env
-const ADMIN_USER = process.env.ADMIN_USER || "admin";
-const ADMIN_PASS = process.env.ADMIN_PASS || "adminpass";
-
-// Data dir (safe default: project data folder)
-const DATA_DIR = path.join(__dirname, "data");
-const EVENTS_FILE = path.join(DATA_DIR, "events.json");
-const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
-const PARTICIPANTS_FILE = path.join(DATA_DIR, "participants.json");
-
-// Ensure folder exists
-fs.ensureDirSync(DATA_DIR);
-
-// ---------- Default data (if files missing) ----------
-const DEFAULT_EVENTS = [
-{
-key: "stat",
-title: "Международная Олимпиада по статистике и прикладной математике",
-short: "Современные подходы к анализу данных и статистическим методам.",
-audience: "students",
-info: "Приглашаем вас принять участие в Международной Олимпиаде по Статистике — «Статистика будущего: искусство анализа данных!». Участники освоят современные методы обработки данных и получат сертификат или диплом.",
-questions: [
-{ q: "По формуле (∑p1q1)/(∑p0q1) рассчитывают общий индекс цен", options: ["Эджворта-Маршалла","Фишера","Ласпейреса","Пааше"], correct: 3 },
-{ q: "Индекс, отражающий влияние уровня ставок по каждому кредиту на среднее изменение ставки — это индекс…", options: ["Постоянного состава","Структурных сдвигов","Переменного состава","Индивидуальный"], correct: 0 },
-{ q: "В общем индексе цен Пааше в качестве весов используется…", options: ["товарооборот отчетного периода","индекс Фишера","товарооборот базисного периода","индекс Эджворта-Маршалла"], correct: 0 },
-{ q: "Индекс, характеризующий изменение средней зарплаты за счет изменения зарплаты каждого работника — это индекс…", options: ["Постоянного состава","Произвольного состава","Переменного состава","Структурных сдвигов"], correct: 0 },
-{ q: "Выборка называется малой, если ее объем менее…", options: ["30","40","50","100"], correct: 0 }
-]
-},
-{
-key: "fin",
-title: "Международная Олимпиада по финансовым вычислениям в банковском секторе",
-short: "Финансовое мастерство и точность расчётов для будущих профессионалов.",
-audience: "students",
-info: "Практические задания по финансовой математике, начислению процентов, дисконтированию и оценке рисков. Участники получают дипломы и сертификаты.",
-questions: [
-{ q: "Фактор времени учитывается с помощью", options: ["процентной ставки","дисконта","ренты","конверсии"], correct: 0 },
-{ q: "Процесс наращения — это…", options: ["по исходной сумме найти ожидаемую","по будущей сумме найти исходный долг","норма дисконта","расчет доходности"], correct: 0 },
-{ q: "Процесс дисконтирования — это…", options: ["по исходной сумме найти ожидаемую","по будущей сумме найти исходный долг","расчет доходности","нет верного ответа"], correct: 1 },
-{ q: "Чем выше конкуренция среди заемщиков…", options: ["выше ставки по кредитам","ниже ставки по кредитам","хуже кредиторам","зависимость отсутствует"], correct: 0 },
-{ q: "Капитализация процентов — это…", options: ["относительная величина дохода","абсолютная величина дохода","присоединение процентов к сумме","все ответы верны"], correct: 2 }
-]
-},
-{
-key: "prob",
-title: "Международная Олимпиада «Применение Теории вероятностей в экономике»",
-short: "Стохастика, риски и принятие решений в экономике.",
-audience: "students",
-info: "Темы: случайные процессы, распределения, оценка рисков. Участники получают оперативные результаты и документы.",
-questions: [
-{ q: "Что такое нормальное распределение?", options: ["Нулевое значение риска","Единичное отклонение риска","Распределение Гаусса","Положительная прибыль"], correct: 2 },
-{ q: "Плотность вероятности — это…", options: ["Условная доходность","Полимодальная структура","Двумерная функция","Первая производная от функции распределения"], correct: 3 },
-{ q: "Случайная экономическая величина — это…", options: ["Критерий Фишера","Теорема Пуассона","Величина, полученная случайным процессом","Формула Бернулли"], correct: 2 },
-{ q: "Дискретная случайная величина — это…", options: ["Заданная плотностью","Равномерно распределённая на интервале","Принимающая значения из конечного набора"], correct: 2 },
-{ q: "Коэффициент корреляции r = 0 означает…", options: ["Нет линейной связи","Полная линейная зависимость","Один индикатор независим","Все индикаторы положительны"], correct: 0 }
-]
-}
-];
-
-const DEFAULT_SETTINGS = {
-paymentText: "За участие плата не взимается. Документы (диплом/сертификат) выдаются при оплате — 100 руб.",
-footerEmail: "[naych_kooper@mail.ru](mailto:naych_kooper@mail.ru)",
-footerText: "© 2025 Все права защищены.",
-backgrounds: {
-all: null,
-diploma_1: null,
-diploma_2: null,
-diploma_3: null,
-certificate: null,
-thanks: null
-},
-legal: {
-termsTitle: "Пользовательское соглашение и Правила",
-termsText: "1. Общие положения. 1.1. Отправка данных означает согласие с условиями. 2. Предмет: участие в онлайн-олимпиадах и конкурсах. 2.1. Услуги предоставляются бесплатно; документы — платно.",
-privacyTitle: "Политика конфиденциальности",
-privacyText: "Мы собираем ФИО, e-mail, учебное заведение и другие данные для оформления участия и отправки документов. Данные не передаются третьим лицам без основания."
-}
-};
-
-// Write files if missing
-if (!fs.existsSync(EVENTS_FILE)) {
-fs.writeJsonSync(EVENTS_FILE, DEFAULT_EVENTS, { spaces: 2 });
-console.log("Created events.json");
-}
-if (!fs.existsSync(SETTINGS_FILE)) {
-fs.writeJsonSync(SETTINGS_FILE, DEFAULT_SETTINGS, { spaces: 2 });
-console.log("Created settings.json");
-}
-if (!fs.existsSync(PARTICIPANTS_FILE)) {
-fs.writeJsonSync(PARTICIPANTS_FILE, [], { spaces: 2 });
-console.log("Created participants.json");
-}
-
-// Multer for uploads
+// Настройка Multer для загрузки файлов в память
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Express middleware
-app.use(express.static(path.join(__dirname, "public")));
-app.use(bodyParser.json({ limit: "30mb" }));
-app.use(bodyParser.urlencoded({ extended: true, limit: "30mb" }));
+app.use(express.static('public'));
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Auth helpers (Basic)
-function isValidAuthToken(b64token) {
-if (!b64token) return false;
-try {
-const decoded = Buffer.from(b64token, "base64").toString();
-const parts = decoded.split(":");
-return parts[0] === ADMIN_USER && parts[1] === ADMIN_PASS;
-} catch (e) {
-return false;
-}
-}
-function checkAuthFromRequest(req) {
-const header = req.headers.authorization;
-if (header && header.startsWith("Basic ")) {
-const token = header.split(" ")[1];
-return isValidAuthToken(token);
-}
-if (req.query && req.query.auth) {
-return isValidAuthToken(req.query.auth);
-}
-return false;
-}
-function requireAuth(req, res, next) {
-if (checkAuthFromRequest(req)) return next();
-res.status(401).json({ error: "Unauthorized" });
+const DATA_DIR = process.env.RENDER ? '/tmp/data' : path.join(__dirname, 'data');
+const DB_FILE = path.join(DATA_DIR, 'participants.json');
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const TEMPLATES_DIR = path.join(__dirname, 'templates');
+
+// Убедимся, что директория существует
+fs.ensureDirSync(DATA_DIR);
+
+// Инициализация файлов данных, если их нет
+if (!fs.existsSync(DB_FILE)) {
+  fs.writeJsonSync(DB_FILE, []);
 }
 
-// ---------- API: EVENTS ----------
-app.get("/api/events", (req, res) => {
-try {
-const ev = fs.readJsonSync(EVENTS_FILE);
-res.json(ev);
-} catch (e) {
-console.error("Read events error:", e);
-res.status(500).json({ error: "Failed to read events" });
+if (!fs.existsSync(SETTINGS_FILE)) {
+  fs.writeJsonSync(SETTINGS_FILE, {
+    "paymentText": "За участие в мероприятиях плата не взимается, а стоимость документов с индивидуальным номером 100 руб. Оплатить можно Онлайн на сайте через платежную систему Робокасса, реквизиты для оплаты: номер счета 40817810547119031524 Банк - получатель ФИЛИАЛ \"ЮЖНЫЙ\" ПАО \"БАНК УРАЛСИБ\". Краснодар БИК Банка 040349700, кор. счет Банка 30101810400000000700, ИНН Банка 0274062111, КПП Банка 231043001.",
+    "footerEmail": "naych_kooper@mail.ru",
+    "footerText": "© 2025 Все права защищены. Копирование контента без разрешения автора строго ЗАПРЕЩЕНО!",
+    "backgrounds": {
+      "all": null,
+      "diploma": null,
+      "certificate": null,
+      "thanks": null
+    }
+  });
 }
+
+// === API маршруты ===
+
+// Получить список мероприятий
+app.get('/api/events', (req, res) => {
+  res.json([
+    {
+      "key": "stat",
+      "title": "Международная Олимпиада по статистике и прикладной математике",
+      "short": "Современные подходы к анализу данных и статистическим методам.",
+      "audience": "students",
+      "info": "Приглашаем вас принять участие в Международной Олимпиаде по Статистике — «Статистика будущего: искусство анализа данных!»\n\nСегодня умение анализировать большие объемы информации становится ключевым фактором успеха как в повседневной жизни, так и в профессиональной деятельности. Умение выявлять закономерности, строить прогнозы и принимать обоснованные решения на основе статистических данных определяет вашу конкурентоспособность и перспективы развития. Наша олимпиада объединяет участников со всего мира, предлагая уникальную возможность обменяться опытом и знаниями с коллегами из разных стран.\n\nМы убеждены, что каждый участник существенно повысит свою компетентность и станет экспертом в области статистики!\n\n✅ Вы освоите современные методы обработки и интерпретации данных.\n✅ Узнаете эффективные подходы к решению практических задач с использованием статистического инструментария.\n✅ Получите ценные навыки критического мышления и способности интерпретировать полученные результаты.\n\n🏆 Наш формат — комфортный и инновационный:\n⭐ Быстрая обратная связь: результаты станут вам известны моментально после окончания испытаний.\n⭐ Призовые места обеспечены: каждому участнику выдается диплом или сертификат.",
+      "questions": [
+        {"q": "По формуле (∑p1q1)/(∑p0q1) рассчитывают общий индекс цен", "options": ["Эджворта-Маршалла","Фишера","Ласпейреса","Пааше"], "correct": 3},
+        {"q": "Индекс, отражающий влияние уровня ставок по каждому кредиту на среднее изменение ставки — это индекс…", "options": ["Постоянного состава","Структурных сдвигов","Переменного состава","Индивидуальный"], "correct": 0},
+        {"q": "В общем индексе цен Пааше в качестве весов используется…", "options": ["товарооборот отчетного периода","индекс Фишера","товарооборот базисного периода","индекс Эджворта-Маршалла"], "correct": 0},
+        {"q": "Индекс, характеризующий изменение средней зарплаты за счет изменения зарплаты каждого работника — это индекс…", "options": ["Постоянного состава","Произвольного состава","Переменного состава","Структурных сдвигов"], "correct": 0},
+        {"q": "Выборка называется малой, если ее объем менее…", "options": ["30","40","50","100"], "correct": 0}
+      ]
+    },
+    {
+      "key": "fin",
+      "title": "Международная Олимпиада по финансовым вычислениям в банковском секторе",
+      "short": "Финансовое мастерство и точность расчётов для будущих профессионалов.",
+      "audience": "students",
+      "info": "Приглашаем вас принять участие в нашей уникальной олимпиаде по финансовому направлению — «Финансовое мастерство: точность вычислений!»\n\nСегодня финансовые знания становятся важнейшим инструментом успеха как в личной жизни, так и в профессиональной сфере. От умения грамотно рассчитать проценты, правильно распределять бюджет и планировать инвестиции зависит ваше благополучие и карьерный рост. Мы уверены, что каждый участник сможет значительно повысить свои компетенции и стать настоящим мастером финансового дела!\n\n🔥 Почему стоит участвовать в нашей олимпиаде?\n\n— Вы получите полезные знания и практические навыки в финансовой математике.\n— Узнаете секреты эффективного планирования денежных потоков и принятия взвешенных инвестиционных решений.\n— Получите ценный опыт, участвуя в реальных ситуациях и выполняя интересные задания.\n\n🏅 Наш формат — удобный и современный:\n✨ Результаты известны мгновенно: сразу же после завершения олимпиады вы узнаете точное количество набранных вами баллов.\n✨ Награды доступны сразу: по окончании испытания каждый участник получает диплом или сертификат.",
+      "questions": [
+        {"q": "Фактор времени учитывается с помощью", "options": ["процентной ставки","дисконта","ренты","конверсии"], "correct": 0},
+        {"q": "Процесс наращения — это…", "options": ["по исходной сумме найти ожидаемую","по будущей сумме найти исходный долг","норма дисконта","расчет доходности"], "correct": 0},
+        {"q": "Процесс дисконтирования — это…", "options": ["по исходной сумме найти ожидаемую","по будущей сумме найти исходный долг","расчет доходности","нет верного ответа"], "correct": 1},
+        {"q": "Чем выше конкуренция среди заемщиков…", "options": ["выше ставки по кредитам","ниже ставки по кредитам","хуже кредиторам","зависимость отсутствует"], "correct": 0},
+        {"q": "Капитализация процентов — это…", "options": ["относительная величина дохода","абсолютная величина дохода","присоединение процентов к сумме","все ответы верны"], "correct": 2}
+      ]
+    },
+    {
+      "key": "prob",
+      "title": "Международная Олимпиада «Применение Теории вероятностей в экономике»",
+      "short": "Стохастика, риски и принятие решений в экономике.",
+      "audience": "students",
+      "info": "Уважаемые студенты и молодые специалисты в сфере экономики!\nПредставляем вашему вниманию уникальную возможность проявить себя в мире сложных расчетов и увлекательных научных открытий. Впервые проводится Международная Олимпиада по дисциплине «Теория вероятностей в экономике».\n\nЦель мероприятия — проверка ваших теоретических знаний и практических навыков решения задач, связанных с применением стохастики и статистики в финансовой среде. Вы сможете продемонстрировать своё умение анализировать рынки, оценивать риски и принимать обоснованные управленческие решения.\n\n🏅 Наш формат — удобный и современный:\n✨ Результаты известны мгновенно.\n✨ Награды доступны сразу: по окончании испытания каждый участник получает диплом или сертификат.",
+      "questions": [
+        {"q": "Что такое нормальное распределение?", "options": ["Нулевое значение риска","Единичное отклонение риска","Распределение Гаусса","Положительная прибыль"], "correct": 2},
+        {"q": "Плотность вероятности — это…", "options": ["Условная доходность","Полимодальная структура","Двумерная функция","Первая производная от функции распределения"], "correct": 3},
+        {"q": "Случайная экономическая величина — это…", "options": ["Критерий Фишера","Теорема Пуассона","Величина, полученная случайным процессом","Формула Бернулли"], "correct": 2},
+        {"q": "Дискретная случайная величина — это…", "options": ["Заданная плотностью","Равномерно распределённая на интервале","Принимающая значения из конечного набора"], "correct": 2},
+        {"q": "Коэффициент корреляции r = 0 означает…", "options": ["Нет линейной связи","Полная линейная зависимость","Один индикатор независим","Все индикаторы положительны"], "correct": 0}
+      ]
+    }
+  ]);
 });
 
-app.post("/api/events", requireAuth, (req, res) => {
-try {
-const events = req.body;
-if (!Array.isArray(events)) return res.status(400).json({ error: "Invalid payload" });
-fs.writeJsonSync(EVENTS_FILE, events, { spaces: 2 });
-res.json({ ok: true });
-} catch (e) {
-console.error("Save events error:", e);
-res.status(500).json({ error: "Failed to save events" });
-}
+// Получить настройки
+app.get('/api/settings', (req, res) => res.json(fs.readJsonSync(SETTINGS_FILE)));
+
+// Сохранить настройки
+app.post('/api/settings', (req, res) => {
+  fs.writeJsonSync(SETTINGS_FILE, req.body);
+  res.json({ ok: true });
 });
 
-// ---------- API: SETTINGS ----------
-app.get("/api/settings", (req, res) => {
-try {
-const s = fs.readJsonSync(SETTINGS_FILE);
-res.json(s);
-} catch (e) {
-console.error("Read settings error:", e);
-res.status(500).json({ error: "Failed to read settings" });
-}
+// Загрузить фон
+app.post('/api/upload-background', upload.single('background'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Файл не загружен.' });
+  const docType = req.body.docType;
+  const validTypes = ['all', 'diploma', 'certificate', 'thanks'];
+  if (!validTypes.includes(docType)) return res.status(400).json({ error: 'Неверный тип документа.' });
+
+  const base64String = req.file.buffer.toString('base64');
+  const dataUrl = `${req.file.mimetype};base64,${base64String}`;
+
+  const settings = fs.readJsonSync(SETTINGS_FILE);
+  settings.backgrounds[docType] = dataUrl;
+  fs.writeJsonSync(SETTINGS_FILE, settings);
+
+  res.json({ success: true, message: `Фон для ${docType} успешно загружен.` });
 });
 
-app.post("/api/settings", requireAuth, (req, res) => {
-try {
-const incoming = req.body || {};
-const settings = fs.readJsonSync(SETTINGS_FILE);
-const merged = Object.assign({}, settings, incoming);
-if (incoming.backgrounds) merged.backgrounds = Object.assign({}, settings.backgrounds, incoming.backgrounds);
-if (incoming.legal) merged.legal = Object.assign({}, settings.legal, incoming.legal);
-fs.writeJsonSync(SETTINGS_FILE, merged, { spaces: 2 });
-res.json({ ok: true });
-} catch (e) {
-console.error("Save settings error:", e);
-res.status(500).json({ error: "Failed to save settings" });
-}
+// Генерация PDF
+app.post('/api/generate-pdf', async (req, res) => {
+  const { template, data } = req.body;
+
+  try {
+    const settings = fs.readJsonSync(SETTINGS_FILE);
+    const backgrounds = settings.backgrounds;
+
+    let backgroundImageDataUrl = null;
+    if (backgrounds[template]) {
+      backgroundImageDataUrl = backgrounds[template];
+    } else if (backgrounds.all) {
+      backgroundImageDataUrl = backgrounds.all;
+    }
+
+    const schoolWithBreak = data.school.replace(/(универси)(тет)/gi, '$1-<br>$2');
+
+    let contentHtml = '';
+    if (template === 'thanks') {
+      contentHtml = `
+        <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${data.title}</div>
+        <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ<br>(ПРЕПОДАВАТЕЛЮ)</div>
+        <div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">${data.supervisor}</div>
+        <div style="text-align:center; margin:20px 0; line-height:1.5;">
+          Центр науки и инноваций выражает Вам огромную признательность и благодарность за профессиональную подготовку участника Олимпиады<br>
+          <b>(${data.fio})</b>.
+        </div>
+        <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
+      `;
+    } else {
+      contentHtml = `
+        <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${data.title}</div>
+        <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">${template === 'diploma' ? 'ДИПЛОМ I СТЕПЕНИ' : 'СЕРТИФИКАТ УЧАСТНИКА'}</div>
+        ${template === 'diploma' ? '<div style="text-align:center; margin:10px 0;">награждён(а):</div>' : ''}
+        <div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">${data.fio}</div>
+        <div style="text-align:center;">${schoolWithBreak}, ${data.region}, ${data.city}</div>
+        ${data.supervisor ? `<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>${data.supervisor}</div>` : ''}
+        <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
+      `;
+    }
+
+    const fullHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        @page { size: A4 landscape; margin: 0; }
+        body { margin: 0; padding: 0; font-family: "Times New Roman", serif; background: white; }
+        .container { position: relative; width: 297mm; height: 210mm; }
+        .background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.1; object-fit: cover; }
+        .content { position: relative; z-index: 1; padding: 40px 60px; color: black; line-height: 1.4; font-size: 16px; height: 100%; box-sizing: border-box; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        ${backgroundImageDataUrl ? `<img src="${backgroundImageDataUrl}" class="background" alt="Фон">` : ''}
+        <div class="content">${contentHtml}</div>
+      </div>
+    </body>
+    </html>
+    `;
+
+    const browser = await chromium.launch({
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--single-process'
+      ]
+    });
+    const page = await browser.newPage();
+    await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+    const pdf = await page.pdf({ format: 'A4', printBackground: true, landscape: true });
+    await browser.close();
+
+    const participantRecord = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      template: template,
+       { ...data }
+    };
+    const db = fs.readJsonSync(DB_FILE);
+    db.push(participantRecord);
+    fs.writeJsonSync(DB_FILE, db);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${template}.pdf"`);
+    res.send(pdf);
+
+  } catch (e) {
+    console.error('PDF Error:', e);
+    res.status(500).json({ error: 'Ошибка генерации PDF', message: e.message });
+  }
 });
 
-// Upload background (admin) - expects multipart form-data with field 'background' and 'docType'
-app.post("/api/upload-background", requireAuth, upload.single("background"), (req, res) => {
-try {
-if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-const docType = req.body.docType;
-const valid = ["all","diploma_1","diploma_2","diploma_3","certificate","thanks"];
-if (!valid.includes(docType)) return res.status(400).json({ error: "Invalid docType" });
-const dataUrl = req.file.mimetype + ";base64," + req.file.buffer.toString("base64");
-const settings = fs.readJsonSync(SETTINGS_FILE);
-settings.backgrounds = settings.backgrounds || {};
-settings.backgrounds[docType] = dataUrl;
-fs.writeJsonSync(SETTINGS_FILE, settings, { spaces: 2 });
-res.json({ ok: true });
-} catch (e) {
-console.error("Upload bg error:", e);
-res.status(500).json({ error: "Upload failed" });
-}
-});
+// Роуты
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/docs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'docs.html')));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-app.get("/api/backgrounds-status", (req, res) => {
-try {
-const settings = fs.readJsonSync(SETTINGS_FILE);
-const b = settings.backgrounds || {};
-res.json({
-backgrounds: {
-all: !!b.all,
-diploma_1: !!b.diploma_1,
-diploma_2: !!b.diploma_2,
-diploma_3: !!b.diploma_3,
-certificate: !!b.certificate,
-thanks: !!b.thanks
-}
-});
-} catch (e) {
-console.error("bg status error:", e);
-res.status(500).json({ error: "Failed to read backgrounds" });
-}
-});
-
-// ---------- Participants ----------
-app.post("/api/save-participant", (req, res) => {
-try {
-const payload = req.body || {};
-if (!payload.fio) return res.status(400).json({ error: "Missing fio" });
-const db = fs.readJsonSync(PARTICIPANTS_FILE);
-const record = Object.assign({ id: Date.now().toString(), timestamp: new Date().toISOString() }, payload);
-db.push(record);
-fs.writeJsonSync(PARTICIPANTS_FILE, db, { spaces: 2 });
-res.json({ ok: true, id: record.id });
-} catch (e) {
-console.error("Save participant error:", e);
-res.status(500).json({ error: "Failed to save participant" });
-}
-});
-
-app.get("/api/export-participants", requireAuth, (req, res) => {
-try {
-const data = fs.readJsonSync(PARTICIPANTS_FILE);
-const wb = XLSX.utils.book_new();
-const ws = XLSX.utils.json_to_sheet(data);
-XLSX.utils.book_append_sheet(wb, ws, "participants");
-const buf = XLSX.write(wb, { bookType: "xlsx", type: "buffer" });
-res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-res.setHeader("Content-Disposition", 'attachment; filename="participants.xlsx"');
-res.send(buf);
-} catch (e) {
-console.error("Export error:", e);
-res.status(500).send("Export failed");
-}
-});
-
-// ---------- Generate PDF ----------
-app.post("/api/generate-pdf", async (req, res) => {
-const body = req.body || {};
-const data = body.data || {};
-if (!data.fio) return res.status(400).json({ error: "Missing fio" });
-
-try {
-const settings = fs.readJsonSync(SETTINGS_FILE);
-let template = body.template || "auto";
-if (template === "auto") {
-const score = Number(data.score || 0);
-if (score > 70) template = "diploma_1";
-else if (score > 50) template = "diploma_2";
-else if (score > 20) template = "diploma_3";
-else template = "certificate";
-}
-
-```
-const background = (settings.backgrounds && (settings.backgrounds[template] || settings.backgrounds.all)) || null;
-const today = data.date || new Date().toLocaleDateString("ru-RU");
-const number = data.number || ("2025-" + String(Math.floor(Math.random() * 100000)).padStart(5, "0"));
-const schoolWithBreak = (data.school || "").replace(/(универси)(тет)/gi, "$1-<br>$2");
-
-let titleBlock = "";
-if (template === "diploma_1") titleBlock = '<div style="font-size:28px;font-weight:bold;text-align:center;margin:20px 0;">ДИПЛОМ I СТЕПЕНИ</div>';
-else if (template === "diploma_2") titleBlock = '<div style="font-size:26px;font-weight:bold;text-align:center;margin:20px 0;">ДИПЛОМ II СТЕПЕНИ</div>';
-else if (template === "diploma_3") titleBlock = '<div style="font-size:24px;font-weight:bold;text-align:center;margin:20px 0;">ДИПЛОМ III СТЕПЕНИ</div>';
-else if (template === "thanks") titleBlock = '<div style="font-size:24px;font-weight:bold;text-align:center;margin:20px 0;">БЛАГОДАРНОСТЬ</div>';
-else titleBlock = '<div style="font-size:24px;font-weight:bold;text-align:center;margin:20px 0;">СЕРТИФИКАТ УЧАСТНИКА</div>';
-
-let contentInner = "";
-if (template === "thanks") {
-  contentInner = ""
-    + '<div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">' + escapeHtml(data.title || "") + "</div>"
-    + '<div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ</div>'
-    + '<div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">' + escapeHtml(data.supervisor || "") + "</div>"
-    + '<div style="text-align:center; margin:20px 0; line-height:1.5;">Центр науки и инноваций выражает признательность за подготовку участника (' + escapeHtml(data.fio || "") + ').</div>'
-    + '<div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ' + escapeHtml(today) + '<br>№ документа ' + escapeHtml(number) + "</div>";
-} else {
-  contentInner = ""
-    + '<div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">' + escapeHtml(data.title || "") + "</div>"
-    + titleBlock
-    + (template.indexOf("diploma") === 0 ? '<div style="text-align:center; margin:10px 0;">награждён(а):</div>' : "")
-    + '<div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">' + escapeHtml(data.fio || "") + "</div>"
-    + '<div style="text-align:center;">' + (schoolWithBreak ? schoolWithBreak : "") + (schoolWithBreak ? ", " : "") + escapeHtml(data.region || "") + ", " + escapeHtml(data.city || "") + "</div>"
-    + (data.supervisor ? ('<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>' + escapeHtml(data.supervisor) + "</div>") : "")
-    + '<div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ' + escapeHtml(today) + '<br>№ документа ' + escapeHtml(number) + "</div>";
-}
-
-const fullHtml = ""
-  + "<!DOCTYPE html><html><head><meta charset='utf-8' />"
-  + "<style>@page{size:A4 landscape;margin:0;}html,body{margin:0;padding:0;height:100%;}body{font-family:'Times New Roman',serif;} .page{width:297mm;height:210mm;position:relative;overflow:hidden;} .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:1;} .content{position:relative;z-index:1;padding:40px 60px;box-sizing:border-box;height:100%;color:#000;}</style>"
-  + "</head><body>"
-  + "<div class='page'>"
-  + (background ? ("<img src='" + background + "' class='bg' alt='bg' />") : "")
-  + "<div class='content'>" + contentInner + "</div></div></body></html>";
-
-const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
-const pagePlay = await browser.newPage();
-await pagePlay.setContent(fullHtml, { waitUntil: "networkidle" });
-const pdfBuffer = await pagePlay.pdf({ format: "A4", printBackground: true, landscape: true });
-await browser.close();
-
-// Save participant record
-try {
-  const db = fs.readJsonSync(PARTICIPANTS_FILE);
-  const record = {
-    id: Date.now().toString(),
-    timestamp: new Date().toISOString(),
-    template: template,
-    fio: data.fio || "",
-    email: data.email || "",
-    school: data.school || "",
-    region: data.region || "",
-    city: data.city || "",
-    supervisor: data.supervisor || "",
-    score: data.score != null ? data.score : null,
-    date: today,
-    number: number,
-    eventKey: data.eventKey || null,
-    eventTitle: data.title || null
-  };
-  db.push(record);
-  fs.writeJsonSync(PARTICIPANTS_FILE, db, { spaces: 2 });
-} catch (e) {
-  console.warn("Could not save participant record:", e);
-}
-
-// Send PDF
-const filename = template + "-" + number + ".pdf";
-// also save pdf to disk under data/pdfs
-try {
-  const pdfsDir = path.join(DATA_DIR, "pdfs");
-  fs.ensureDirSync(pdfsDir);
-  const savePath = path.join(pdfsDir, filename);
-  fs.writeFileSync(savePath, pdfBuffer);
-} catch (e) {
-  console.warn("Failed to save PDF to disk:", e);
-}
-
-res.setHeader("Content-Type", "application/pdf");
-res.setHeader("Content-Disposition", 'attachment; filename="' + filename + '"');
-res.send(pdfBuffer);
-```
-
-} catch (e) {
-console.error("generate-pdf error:", e);
-res.status(500).json({ error: "PDF generation failed", message: String(e && e.message ? e.message : e) });
-}
-});
-
-// helpers
-function escapeHtml(str) {
-if (str === undefined || str === null) return "";
-return String(str)
-  .replace(/&/g, "&amp;")
-  .replace(/</g, "&lt;")
-  .replace(/>/g, "&gt;")
-  .replace(/"/g, "&quot;")
-  .replace(/'/g, "&#39;");
-}
-
-// static routes
-app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
-app.get("/docs", (req, res) => res.sendFile(path.join(__dirname, "public", "docs.html")));
-app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
-
-// start
-app.listen(PORT, () => {
-console.log("Server started on port " + PORT);
-console.log("Data directory: " + DATA_DIR);
-});
+app.listen(PORT, () => console.log(`✅ Сервер запущен на порту ${PORT}`));
