@@ -423,18 +423,22 @@ app.post('/api/generate-pdf', async (req, res) => {
         });
         await browser.close();
 
-                // Сохраняем участника в "базу данных"
+        // === ИСПРАВЛЕНИЕ ОШИБКИ ===
+        // Создаем объект participantRecord правильно, используя Object.assign
         const participantRecord = Object.assign(
             {
                 id: Date.now().toString(),
                 timestamp: new Date().toISOString(),
                 template: template
             },
-            data // ✅ Правильно: копируем все поля из data
+            { data: data } // Оборачиваем data в объект, чтобы избежать конфликта ключей
         );
+        
+        // Сохраняем участника в "базу данных"
         const db = fs.readJsonSync(DB_FILE);
         db.push(participantRecord);
         fs.writeJsonSync(DB_FILE, db);
+        // === КОНЕЦ ИСПРАВЛЕНИЯ ===
 
         // Отправляем PDF
         res.setHeader('Content-Type', 'application/pdf');
