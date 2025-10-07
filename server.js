@@ -1,7 +1,11 @@
-// server.js — ЧАСТЬ 1
-// Полный сервер для Render: Express + Playwright PDF генерация, автозакачка дефолтных данных.
-// ВНИМАНИЕ: убедитесь, что playwright указан в package.json и что сборка запускает
-// npx playwright install --with-deps (требуется для headless браузеров).
+```javascript
+// server.js — финальная версия (Single-file)
+// Express + Playwright PDF generation + events/settings/participants persistence
+// IMPORTANT:
+// - Use Node 20+
+// - package.json should include playwright dependency and postinstall: "npx playwright install chromium"
+// - On Render set environment variables DATA_DIR (optional), ADMIN_USER, ADMIN_PASS
+// - This file avoids backticks and multiline template literals to be safe for Render
 
 const express = require("express");
 const path = require("path");
@@ -14,11 +18,12 @@ const { chromium } = require("playwright");
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Админ логин-пароль. На Render рекомендуется задать как секретные переменные окружения.
-const ADMIN_USER = process.env.ADMIN_USER || "nadezhda8871s";
-const ADMIN_PASS = process.env.ADMIN_PASS || "1988NAna";
+// Admin credentials (set these in Render Environment variables)
+const ADMIN_USER = process.env.ADMIN_USER || "admin";
+const ADMIN_PASS = process.env.ADMIN_PASS || "adminpass";
 
-// Папка данных: либо DATA_DIR, либо /tmp/data (на Render рекомендуется persistent volume)
+// DATA_DIR: prefer env var; on Render you can set DATA_DIR to a persistent volume mount point.
+// Fallback: if running locally, uses ./data
 const DATA_DIR = process.env.DATA_DIR || (process.env.RENDER ? "/tmp/data" : path.join(__dirname, "data"));
 const EVENTS_FILE = path.join(DATA_DIR, "events.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
@@ -26,14 +31,14 @@ const PARTICIPANTS_FILE = path.join(DATA_DIR, "participants.json");
 
 fs.ensureDirSync(DATA_DIR);
 
-// ====== ДЕФОЛТНЫЕ МЕРОПРИЯТИЯ (будут записаны при первом запуске, потом можно редактировать через админку) ======
+// ----------------- DEFAULT DATA (written at first run if files missing) -----------------
 const DEFAULT_EVENTS = [
   {
     key: "stat",
     title: "Международная Олимпиада по статистике и прикладной математике",
     short: "Современные подходы к анализу данных и статистическим методам.",
     audience: "students",
-    info: "Приглашаем вас принять участие в Международной Олимпиаде по Статистике — «Статистика будущего: искусство анализа данных!». Сегодня умение анализировать большие объемы информации становится ключевым фактором успеха как в повседневной жизни, так и в профессиональной деятельности. Умение выявлять закономерности, строить прогнозы и принимать обоснованные решения на основе статистических данных определяет вашу конкурентоспособность и перспективы развития.",
+    info: "Приглашаем вас принять участие в Международной Олимпиаде по Статистике — «Статистика будущего: искусство анализа данных!». Сегодня умение анализировать большие объемы информации становится ключевым фактором успеха как в повседневной жизни, так и в профессиональной деятельности. Умение выявлять закономерности, строить прогнозы и принимать обоснованные решения на основе статистических данных определяет вашу конкурентоспособность и перспективы развития. Наша олимпиада объединяет участников со всего мира, предлагая уникальную возможность обменяться опытом и знаниями с коллегами из разных стран. Каждый участник получит диплом или сертификат.",
     questions: [
       { q: "По формуле (∑p1q1)/(∑p0q1) рассчитывают общий индекс цен", options: ["Эджворта-Маршалла", "Фишера", "Ласпейреса", "Пааше"], correct: 3 },
       { q: "Индекс, отражающий влияние уровня ставок по каждому кредиту на среднее изменение ставки — это индекс…", options: ["Постоянного состава", "Структурных сдвигов", "Переменного состава", "Индивидуальный"], correct: 0 },
@@ -47,7 +52,7 @@ const DEFAULT_EVENTS = [
     title: "Международная Олимпиада по финансовым вычислениям в банковском секторе",
     short: "Финансовое мастерство и точность расчётов для будущих профессионалов.",
     audience: "students",
-    info: "Приглашаем вас принять участие в Международной Олимпиаде по финансовому направлению — «Финансовое мастерство: точность вычислений!». Участие позволит получить практические навыки в финансовой математике и улучшить навыки планирования денежных потоков.",
+    info: "Приглашаем вас принять участие в Международной Олимпиаде по финансовым вычислениям — «Финансовое мастерство: точность вычислений!». Участие даст практические навыки в финансовой математике, планировании денежных потоков и оценке доходности. После окончания участникам выдаются дипломы или сертификаты.",
     questions: [
       { q: "Фактор времени учитывается с помощью", options: ["процентной ставки", "дисконта", "ренты", "конверсии"], correct: 0 },
       { q: "Процесс наращения — это…", options: ["по исходной сумме найти ожидаемую", "по будущей сумме найти исходный долг", "норма дисконта", "расчет доходности"], correct: 0 },
@@ -61,7 +66,7 @@ const DEFAULT_EVENTS = [
     title: "Международная Олимпиада «Применение Теории вероятностей в экономике»",
     short: "Стохастика, риски и принятие решений в экономике.",
     audience: "students",
-    info: "Уважаемые студенты и молодые специалисты! Предлагаем участие в олимпиаде по теории вероятностей в экономике. Проверьте свои знания по стохастике, оценке рисков и моделированию.",
+    info: "Уважаемые студенты и молодые специалисты! Приглашаем принять участие в олимпиаде по теории вероятностей в экономике. Проверьте свои знания по стохастике, оценке рисков и моделированию. Участникам гарантированы дипломы и сертификаты после окончания испытаний.",
     questions: [
       { q: "Что такое нормальное распределение?", options: ["Нулевое значение риска", "Единичное отклонение риска", "Распределение Гаусса", "Положительная прибыль"], correct: 2 },
       { q: "Плотность вероятности — это…", options: ["Условная доходность", "Полимодальная структура", "Двумерная функция", "Первая производная от функции распределения"], correct: 3 },
@@ -72,7 +77,6 @@ const DEFAULT_EVENTS = [
   }
 ];
 
-// ====== ДЕФОЛТНЫЕ НАСТРОЙКИ И ЮРИДИЧЕСКИЕ ТЕКСТЫ (one-line или с \n) ======
 const DEFAULT_SETTINGS = {
   paymentText: "За участие в мероприятиях плата не взимается. Документ (диплом/сертификат) с индивидуальным номером - 100 руб.",
   footerEmail: "naych_kooper@mail.ru",
@@ -87,13 +91,13 @@ const DEFAULT_SETTINGS = {
   },
   legal: {
     termsTitle: "Пользовательское соглашение (публичная оферта) и Правила проведения олимпиады",
-    termsText: "1. Общие положения\\n1.1. Настоящее Пользовательское соглашение регулирует отношения между Организатором и Участником.\\n2. Предмет соглашения\\n2.1. Организатор предоставляет возможность участия в онлайн-олимпиадах бесплатно.\\n2.2. Документы (дипломы/сертификаты) выдаются за плату в размере 100 руб.",
+    termsText: "1. Общие положения\\n1.1. Настоящее Пользовательское соглашение регулирует отношения между Организатором и Участником.\\n2. Предмет соглашения\\n2.1. Организатор предоставляет возможность участия в онлайн-олимпиадах бесплатно.\\n2.2. Документы выдаются за плату в размере 100 руб.",
     privacyTitle: "Политика конфиденциальности и Согласие на обработку персональных данных",
     privacyText: "1. Какие данные мы собираем: ФИО, e-mail, учебное заведение и др.\\n2. Цели обработки: оформление участия, направление результатов, отправка документов после оплаты.\\n3. Защита данных: данные хранятся и не передаются третьим лицам без необходимости."
   }
 };
 
-// Записываем дефолтные файлы, если их нет
+// initialize files if missing
 if (!fs.existsSync(EVENTS_FILE)) {
   fs.writeJsonSync(EVENTS_FILE, DEFAULT_EVENTS, { spaces: 2 });
 }
@@ -103,19 +107,17 @@ if (!fs.existsSync(SETTINGS_FILE)) {
 if (!fs.existsSync(PARTICIPANTS_FILE)) {
   fs.writeJsonSync(PARTICIPANTS_FILE, [], { spaces: 2 });
 }
-// server.js — ЧАСТЬ 2
-// Middleware и эндпоинты для events
 
-// Multer memory storage для загрузок
+// multer memory storage
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Express middleware
+// express middleware
 app.use(express.static("public"));
 app.use(bodyParser.json({ limit: "30mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "30mb" }));
 
-// ---- ХЕЛПЕРЫ АВТОРИЗАЦИИ ----
+// ----------------- AUTH HELPERS -----------------
 function isValidAuthToken(b64token) {
   if (!b64token) return false;
   try {
@@ -128,7 +130,6 @@ function isValidAuthToken(b64token) {
     return false;
   }
 }
-
 function checkAuthFromRequest(req) {
   const header = req.headers.authorization;
   if (header && header.startsWith("Basic ")) {
@@ -140,13 +141,12 @@ function checkAuthFromRequest(req) {
   }
   return false;
 }
-
 function requireAuth(req, res, next) {
   if (checkAuthFromRequest(req)) return next();
   res.status(401).json({ error: "Unauthorized" });
 }
 
-// ---- EVENTS API ----
+// ----------------- EVENTS endpoints -----------------
 app.get("/api/events", (req, res) => {
   try {
     const events = fs.readJsonSync(EVENTS_FILE);
@@ -160,10 +160,7 @@ app.get("/api/events", (req, res) => {
 app.post("/api/events", requireAuth, (req, res) => {
   try {
     const incoming = req.body;
-    if (!Array.isArray(incoming)) {
-      return res.status(400).json({ error: "Invalid payload: expected array of events" });
-    }
-    // validate minimal shape (optional)
+    if (!Array.isArray(incoming)) return res.status(400).json({ error: "Invalid payload" });
     const safe = incoming.map(ev => {
       return {
         key: ev.key || ("evt-" + Date.now()),
@@ -181,9 +178,8 @@ app.post("/api/events", requireAuth, (req, res) => {
     res.status(500).json({ error: "Failed to save events" });
   }
 });
-// server.js — ЧАСТЬ 3
-// Endpoints для настроек, загрузки фонов и статуса фонов
 
+// ----------------- SETTINGS and backgrounds -----------------
 app.get("/api/settings", (req, res) => {
   try {
     const settings = fs.readJsonSync(SETTINGS_FILE);
@@ -199,12 +195,8 @@ app.post("/api/settings", requireAuth, (req, res) => {
     const incoming = req.body || {};
     const settings = fs.readJsonSync(SETTINGS_FILE);
     const merged = Object.assign({}, settings, incoming);
-    if (incoming.backgrounds) {
-      merged.backgrounds = Object.assign({}, settings.backgrounds, incoming.backgrounds);
-    }
-    if (incoming.legal) {
-      merged.legal = Object.assign({}, settings.legal, incoming.legal);
-    }
+    if (incoming.backgrounds) merged.backgrounds = Object.assign({}, settings.backgrounds, incoming.backgrounds);
+    if (incoming.legal) merged.legal = Object.assign({}, settings.legal, incoming.legal);
     fs.writeJsonSync(SETTINGS_FILE, merged, { spaces: 2 });
     res.json({ ok: true });
   } catch (e) {
@@ -213,14 +205,12 @@ app.post("/api/settings", requireAuth, (req, res) => {
   }
 });
 
-// Загрузка фона (admin)
 app.post("/api/upload-background", requireAuth, upload.single("background"), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
     const docType = req.body.docType;
     const valid = ["all", "diploma_1", "diploma_2", "diploma_3", "certificate", "thanks"];
     if (!valid.includes(docType)) return res.status(400).json({ error: "Invalid docType" });
-
     const dataUrl = req.file.mimetype + ";base64," + req.file.buffer.toString("base64");
     const settings = fs.readJsonSync(SETTINGS_FILE);
     settings.backgrounds = settings.backgrounds || {};
@@ -252,20 +242,14 @@ app.get("/api/backgrounds-status", (req, res) => {
     res.status(500).json({ error: "Failed to read backgrounds" });
   }
 });
-// server.js — ЧАСТЬ 4
-// Участники: сохранение и экспорт
 
-// Сохранение участника (альтернативный endpoint, если нужно)
+// ----------------- Participants save/export -----------------
 app.post("/api/save-participant", (req, res) => {
   try {
     const payload = req.body || {};
     if (!payload.fio) return res.status(400).json({ error: "Missing fio" });
-
     const db = fs.readJsonSync(PARTICIPANTS_FILE);
-    const record = Object.assign({
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString()
-    }, payload);
+    const record = Object.assign({ id: Date.now().toString(), timestamp: new Date().toISOString() }, payload);
     db.push(record);
     fs.writeJsonSync(PARTICIPANTS_FILE, db, { spaces: 2 });
     res.json({ ok: true, id: record.id });
@@ -275,7 +259,6 @@ app.post("/api/save-participant", (req, res) => {
   }
 });
 
-// Экспорт участников в Excel (admin)
 app.get("/api/export-participants", (req, res) => {
   if (!checkAuthFromRequest(req)) return res.status(401).send("Unauthorized");
   try {
@@ -292,11 +275,8 @@ app.get("/api/export-participants", (req, res) => {
     res.status(500).send("Export failed");
   }
 });
-// server.js — ЧАСТЬ 5
-// Генерация PDF через Playwright, помощники и запуск сервера
 
-// Генерация PDF: POST /api/generate-pdf
-// Ожидается body: { template: 'certificate'|'diploma_1'|'diploma_2'|'diploma_3'|'thanks'|'auto', data: { fio, email, school, region, city, supervisor, title, score, eventKey, date, number } }
+// ----------------- Generate PDF (Playwright) -----------------
 app.post("/api/generate-pdf", async (req, res) => {
   const body = req.body || {};
   const data = body.data || {};
@@ -316,8 +296,6 @@ app.post("/api/generate-pdf", async (req, res) => {
     const background = (settings.backgrounds && (settings.backgrounds[template] || settings.backgrounds.all)) || null;
     const today = data.date || new Date().toLocaleDateString("ru-RU");
     const number = data.number || ("2025-" + String(Math.floor(Math.random() * 100000)).padStart(5, "0"));
-
-    // Подготовка контента (без обратных кавычек)
     const schoolWithBreak = (data.school || "").replace(/(универси)(тет)/gi, "$1-<br>$2");
 
     let titleBlock = "";
@@ -330,44 +308,20 @@ app.post("/api/generate-pdf", async (req, res) => {
     let contentInner = "";
     if (template === "thanks") {
       contentInner = ""
-        + "<div style=\"text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;\">"
-        + escapeHtml(data.title || "")
-        + "</div>"
-        + "<div style=\"font-size:20px; font-weight:bold; text-align:center; margin:20px 0;\">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ</div>"
-        + "<div style=\"font-size:20px; font-weight:bold; text-align:center; margin:10px 0;\">"
-        + escapeHtml(data.supervisor || "")
-        + "</div>"
-        + "<div style=\"text-align:center; margin:20px 0; line-height:1.5;\">Центр науки и инноваций выражает признательность за подготовку участника ("
-        + escapeHtml(data.fio || "")
-        + ").</div>"
-        + "<div style=\"margin-top:40px; text-align:center; font-size:14px;\">Дата: "
-        + escapeHtml(today)
-        + "<br>№ документа "
-        + escapeHtml(number)
-        + "</div>";
+        + '<div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">' + escapeHtml(data.title || "") + "</div>"
+        + '<div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ</div>'
+        + '<div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">' + escapeHtml(data.supervisor || "") + "</div>"
+        + '<div style="text-align:center; margin:20px 0; line-height:1.5;">Центр науки и инноваций выражает признательность за подготовку участника (' + escapeHtml(data.fio || "") + ').</div>'
+        + '<div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ' + escapeHtml(today) + '<br>№ документа ' + escapeHtml(number) + "</div>";
     } else {
       contentInner = ""
-        + "<div style=\"text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;\">"
-        + escapeHtml(data.title || "")
-        + "</div>"
+        + '<div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">' + escapeHtml(data.title || "") + "</div>"
         + titleBlock
-        + (template.indexOf("diploma") === 0 ? "<div style=\"text-align:center; margin:10px 0;\">награждён(а):</div>" : "")
-        + "<div style=\"font-size:20px; font-weight:bold; text-align:center; margin:10px 0;\">"
-        + escapeHtml(data.fio || "")
-        + "</div>"
-        + "<div style=\"text-align:center;\">"
-        + (schoolWithBreak ? schoolWithBreak : "")
-        + (schoolWithBreak ? ", " : "")
-        + escapeHtml(data.region || "")
-        + ", "
-        + escapeHtml(data.city || "")
-        + "</div>"
-        + (data.supervisor ? ("<div style=\"margin-top:20px; text-align:center;\">Научный руководитель(преподаватель):<br>" + escapeHtml(data.supervisor) + "</div>") : "")
-        + "<div style=\"margin-top:40px; text-align:center; font-size:14px;\">Дата: "
-        + escapeHtml(today)
-        + "<br>№ документа "
-        + escapeHtml(number)
-        + "</div>";
+        + (template.indexOf("diploma") === 0 ? '<div style="text-align:center; margin:10px 0;">награждён(а):</div>' : "")
+        + '<div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">' + escapeHtml(data.fio || "") + "</div>"
+        + '<div style="text-align:center;">' + (schoolWithBreak ? schoolWithBreak : "") + (schoolWithBreak ? ", " : "") + escapeHtml(data.region || "") + ", " + escapeHtml(data.city || "") + "</div>"
+        + (data.supervisor ? ('<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>' + escapeHtml(data.supervisor) + "</div>") : "")
+        + '<div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ' + escapeHtml(today) + '<br>№ документа ' + escapeHtml(number) + "</div>";
     }
 
     const fullHtml = ""
@@ -376,21 +330,15 @@ app.post("/api/generate-pdf", async (req, res) => {
       + "</head><body>"
       + "<div class=\"page\">"
       + (background ? ("<img src=\"" + background + "\" class=\"bg\" alt=\"bg\" />") : "")
-      + "<div class=\"content\">"
-      + contentInner
-      + "</div></div></body></html>";
+      + "<div class=\"content\">" + contentInner + "</div></div></body></html>";
 
-    // Запуск Playwright
-    const browser = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
-    });
+    const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
     const pagePlay = await browser.newPage();
     await pagePlay.setContent(fullHtml, { waitUntil: "networkidle" });
     const pdfBuffer = await pagePlay.pdf({ format: "A4", printBackground: true, landscape: true });
     await browser.close();
 
-    // Сохранить запись участника
+    // save participant
     try {
       const db = fs.readJsonSync(PARTICIPANTS_FILE);
       const record = {
@@ -415,7 +363,6 @@ app.post("/api/generate-pdf", async (req, res) => {
       console.warn("Could not save participant record:", e);
     }
 
-    // Отдать PDF
     const filename = template + "-" + number + ".pdf";
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", 'attachment; filename="' + filename + '"');
@@ -427,24 +374,18 @@ app.post("/api/generate-pdf", async (req, res) => {
   }
 });
 
-// Помощник: экранирование HTML
+// ----------------- helpers, static, start -----------------
 function escapeHtml(str) {
   if (str === undefined || str === null) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// Статика и маршруты
 app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
 app.get("/docs", (req, res) => res.sendFile(path.join(__dirname, "public", "docs.html")));
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
-// Запуск сервера
 app.listen(PORT, () => {
   console.log("Server started on port " + PORT);
   console.log("Data directory: " + DATA_DIR);
 });
+```
