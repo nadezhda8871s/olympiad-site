@@ -377,7 +377,12 @@ res.status(500).json({ error: "PDF generation failed", message: String(e && e.me
 // helpers
 function escapeHtml(str) {
 if (str === undefined || str === null) return "";
-return String(str).replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """).replace(/'/g, "'");
+return String(str)
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;")
+  .replace(/'/g, "&#39;");
 }
 
 // static routes
