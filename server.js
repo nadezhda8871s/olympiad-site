@@ -423,13 +423,15 @@ app.post('/api/generate-pdf', async (req, res) => {
         });
         await browser.close();
 
-        // Сохраняем участника в "базу данных"
-        const participantRecord = {
-            id: Date.now().toString(),
-            timestamp: new Date().toISOString(),
-            template: template,
-                 Object.assign({}, data) // Копируем данные
-        };
+                // Сохраняем участника в "базу данных"
+        const participantRecord = Object.assign(
+            {
+                id: Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                template: template
+            },
+            data // ✅ Правильно: копируем все поля из data
+        );
         const db = fs.readJsonSync(DB_FILE);
         db.push(participantRecord);
         fs.writeJsonSync(DB_FILE, db);
