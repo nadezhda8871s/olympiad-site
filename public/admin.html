@@ -1,504 +1,64 @@
-<!DOCTYPE html>
+<!doctype html>
 
-<html>
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Админка</title>
-  <style>
-    :root{--primary:#1b365d;--accent:#2ecc71;--bg:#f5f7fb;--text:#2b2b2b;--muted:#6b7280;--card:#ffffff;--shadow:0 6px 18px rgba(0,0,0,.08);--shadow-hover:0 10px 24px rgba(0,0,0,.12);--radius:14px}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
-    header{background:var(--primary);color:#fff;padding:28px 16px;text-align:center}
-    nav{background:#fff;padding:12px 0;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
-    nav a{margin:0 12px;text-decoration:none;color:var(--primary);font-weight:600}
-    nav a:hover{text-decoration:underline}
-    .container{max-width:1200px;margin:0 auto;padding:20px}
-    .panel{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:20px;margin:22px 0}
-    .btn{border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600}
-    .btn-primary{background:var(--primary);color:#fff}
-    .btn-add{background:var(--accent);color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;margin:6px 0}
-    .btn-remove{background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer}
-    .upload-section{background:#f0f7ff;padding:16px;border-radius:8px;margin:10px 0}
-    .event-editor{background:#f9fafb;padding:12px;border-radius:8px;margin:8px 0}
-    .event-editor input,.event-editor textarea{width:100%;padding:8px;margin:6px 0;border:1px solid #ccc;border-radius:6px}
-    .top-actions{display:flex;gap:10px;justify-content:flex-end;margin-bottom:10px}
-    .admin-login{max-width:480px;margin:28px auto;padding:20px;background:white;border-radius:10px;box-shadow:var(--shadow)}
-    .admin-login h2{text-align:center;margin-bottom:12px}
-    .admin-login input{width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:6px}
-    .admin-login button{width:100%;padding:12px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer}
-    .admin-login .error{color:red;margin-top:10px;text-align:center}
-  </style>
+  <meta charset="utf-8" />
+  <title>Админка — Олимпиады</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/css/admin.css" />
 </head>
 <body>
-
-<div class="admin-login" id="loginForm">
-  <h2>Вход в админку</h2>
-  <input id="login" placeholder="Логин" value="nadezhda8871s">
-  <input id="password" type="password" placeholder="Пароль" value="1988NAna">
-  <button onclick="login()">Войти</button>
-  <div class="error" id="loginError"></div>
-</div>
-<div class="container" id="adminPanel" style="display:none;">
   <header>
     <h1>Админка</h1>
   </header>
 
-  <nav>
-    <a href="#" onclick="showTab('settings')">Настройки</a>
-    <a href="#" onclick="showTab('events')">Мероприятия</a>
-    <a href="#" onclick="showTab('backgrounds')">Фоны</a>
-    <a href="#" onclick="showTab('export')">Экспорт</a>
-    <a href="/" target="_blank">← На сайт</a>
-  </nav>
-
-  <!-- Настройки -->
-
-  <div id="settingsTab" class="panel" style="display:block;">
-    <h3>Редактирование текста «Документы и оплата»</h3>
-    <textarea id="paymentText" rows="8" style="width:100%; padding:8px; border-radius:6px;"></textarea>
-    <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
-      <button class="btn btn-primary" onclick="saveSettings()">Сохранить</button>
-      <button class="btn" onclick="logout()">Выйти</button>
-    </div>
-  </div>
-
-  <!-- Мероприятия -->
-
-  <div id="eventsTab" class="panel">
-    <div class="top-actions">
-      <button class="btn btn-add" onclick="addEvent()">Добавить мероприятие</button>
-      <button class="btn btn-primary" onclick="saveEvents()">Сохранить мероприятия</button>
-    </div>
-    <h3>Управление мероприятиями</h3>
-    <div id="eventsManager" class="events-manager"></div>
-  </div>
-
-  <!-- Фоны -->
-
-  <div id="backgroundsTab" class="panel">
-    <h3>Загрузка фонов</h3>
-    <div class="upload-section">
-      <h4>Общий фон (PNG)</h4>
-      <input type="file" id="bgAll" accept=".png">
-      <button class="btn btn-primary" onclick="uploadBackground('all')">Загрузить</button>
-    </div>
-    <div class="upload-section">
-      <h4>Фон для дипломов (PNG)</h4>
-      <input type="file" id="bgDiploma" accept=".png">
-      <button class="btn btn-primary" onclick="uploadBackground('diploma')">Загрузить</button>
-    </div>
-    <div class="upload-section">
-      <h4>Фон для сертификатов (PNG)</h4>
-      <input type="file" id="bgCertificate" accept=".png">
-      <button class="btn btn-primary" onclick="uploadBackground('certificate')">Загрузить</button>
-    </div>
-    <div class="upload-section">
-      <h4>Фон для благодарностей (PNG)</h4>
-      <input type="file" id="bgThanks" accept=".png">
-      <button class="btn btn-primary" onclick="uploadBackground('thanks')">Загрузить</button>
-    </div>
-  </div>
-
-  <!-- Экспорт -->
-
-  <div id="exportTab" class="panel">
-    <h3>Экспорт данных участников</h3>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button class="btn btn-primary" onclick="exportParticipants()">Скачать данные (XLSX)</button>
-      <span class="muted">Экспорт защищён — используется текущая сессия администратора.</span>
-    </div>
-  </div>
-</div>
-<script>
-let authToken = null; // base64-строка без 'Basic '
-let eventsData = [];
-
-// Вход
-async function login() {
-  const login = document.getElementById('login').value.trim();
-  const password = document.getElementById('password').value.trim();
-  const credentials = btoa(`${login}:${password}`);
-
-  try {
-    const res = await fetch('/api/settings', {
-      headers: { 'Authorization': `Basic ${credentials}` }
-    });
-    if (res.ok) {
-      authToken = credentials;
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('adminPanel').style.display = 'block';
-      await loadSettings();
-      await loadEvents();
-    } else {
-      document.getElementById('loginError').textContent = 'Неверный логин или пароль';
-    }
-  } catch {
-    document.getElementById('loginError').textContent = 'Ошибка соединения с сервером';
-  }
-}
-
-function logout() {
-  authToken = null;
-  document.getElementById('adminPanel').style.display = 'none';
-  document.getElementById('loginForm').style.display = 'block';
-}
-
-// Переключение вкладок
-function showTab(tabId) {
-  document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-  document.getElementById(tabId + 'Tab').style.display = 'block';
-}
-
-// Настройки
-async function loadSettings() {
-  const res = await fetch('/api/settings');
-  const settings = await res.json();
-  document.getElementById('paymentText').value = settings.paymentText || '';
-}
-
-async function saveSettings() {
-  const paymentText = document.getElementById('paymentText').value;
-  await fetch('/api/settings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Basic ${authToken}`
-    },
-    body: JSON.stringify({ paymentText })
-  });
-  alert('Настройки сохранены');
-}
-
-// Мероприятия
-async function loadEvents() {
-  const res = await fetch('/api/events');
-  eventsData = await res.json();
-  renderEventsManager();
-}
-
-function renderEventsManager() {
-  const container = document.getElementById('eventsManager');
-  container.innerHTML = '';
-  eventsData.forEach((event, index) => {
-    const div = document.createElement('div');
-    div.className = 'event-editor';
-    div.innerHTML = `
-      <h4>Мероприятие ${index + 1}</h4>
-      <input placeholder="Ключ (key)" value="${event.key}">
-      <input placeholder="Название (title)" value="${event.title}">
-      <input placeholder="Краткое описание (short)" value="${event.short}">
-      <input placeholder="Аудитория (audience)" value="${event.audience}">
-      <textarea placeholder="Полный текст (info)" rows="4">${event.info}</textarea>
+  <main class="container">
+    <section class="card">
+      <h3>Вход (используются переменные окружения ADMIN_USER/ADMIN_PASS)</h3>
+      <p>Для API-запросов используйте Basic Auth (логин/пароль).</p>
+    </section>
 
 ```
-  <h5>Вопросы</h5>
-  <div class="questions-list">
-    ${(event.questions || []).map((q, qi) => `
-      <div class="question-editor">
-        <input placeholder="Вопрос" value="${q.q}">
-        <textarea placeholder="Варианты (по одному на строке)" rows="3">${q.options.join('\\n')}</textarea>
-        <input placeholder="Номер правильного ответа (0-3)" type="number" min="0" max="3" value="${q.correct}">
-        <button class="btn-remove" onclick="removeQuestion(${index}, ${qi})">Удалить вопрос</button>
-      </div>
-    `).join('')}
-  </div>
-  <button class="btn-add" onclick="addQuestion(${index})">Добавить вопрос</button>
-  <button class="btn-remove" onclick="removeEvent(${index})">Удалить мероприятие</button>
-`;
-container.appendChild(div);
+<section class="card">
+  <h3>Мероприятия</h3>
+  <button id="reloadEvents">Загрузить</button>
+  <div id="eventsList"></div>
+  <button id="addEvent">Добавить мероприятие</button>
+</section>
+
+<section class="card">
+  <h3>Фоны для PDF</h3>
+  <select id="docType">
+    <option value="all">all</option>
+    <option value="diploma_1">diploma_1</option>
+    <option value="diploma_2">diploma_2</option>
+    <option value="diploma_3">diploma_3</option>
+    <option value="certificate">certificate</option>
+    <option value="thanks">thanks</option>
+  </select>
+  <input id="bgFile" type="file" accept="image/*" />
+  <button id="uploadBg">Загрузить фон</button>
+  <div id="bgStatus"></div>
+</section>
+
+<section class="card">
+  <h3>Юридические тексты</h3>
+  <input id="termsTitle" />
+  <textarea id="termsText"></textarea>
+  <input id="privacyTitle" />
+  <textarea id="privacyText"></textarea>
+  <button id="saveLegal">Сохранить</button>
+</section>
+
+<section class="card">
+  <h3>Экспорт участников</h3>
+  <button id="exportExcel">Скачать Excel</button>
+</section>
 ```
 
-});
-}
+  </main>
 
-function addEvent() {
-eventsData.push({
-key: 'event-' + Date.now(),
-title: 'Новое мероприятие',
-short: 'Краткое описание',
-audience: 'students',
-info: 'Полный текст мероприятия...',
-questions: []
-});
-renderEventsManager();
-}
-
-function removeEvent(index) {
-if (confirm('Удалить мероприятие?')) {
-eventsData.splice(index, 1);
-renderEventsManager();
-}
-}
-
-function addQuestion(eventIndex) {
-if (!eventsData[eventIndex].questions) eventsData[eventIndex].questions = [];
-eventsData[eventIndex].questions.push({
-q: 'Новый вопрос',
-options: ['Вариант 1', 'Вариант 2', 'Вариант 3', 'Вариант 4'],
-correct: 0
-});
-renderEventsManager();
-}
-
-function removeQuestion(eventIndex, qIndex) {
-eventsData[eventIndex].questions.splice(qIndex, 1);
-renderEventsManager();
-}
-
-async function saveEvents() {
-const editors = document.querySelectorAll('.event-editor');
-const updated = [];
-editors.forEach(ed => {
-const inputs = ed.querySelectorAll('input');
-const textareas = ed.querySelectorAll('textarea');
-const key = inputs[0].value.trim();
-const title = inputs[1].value.trim();
-const short = inputs[2].value.trim();
-const audience = inputs[3].value.trim();
-const info = textareas[0].value.trim();
-const questions = [];
-const qEditors = ed.querySelectorAll('.question-editor');
-qEditors.forEach(qe => {
-const qInputs = qe.querySelectorAll('input');
-const qTextareas = qe.querySelectorAll('textarea');
-const q = qInputs[0].value.trim();
-const options = qTextareas[0].value.split('\n').map(o => o.trim()).filter(Boolean);
-const correct = parseInt(qInputs[1].value) || 0;
-questions.push({ q, options, correct });
-});
-updated.push({ key, title, short, audience, info, questions });
-});
-
-await fetch('/api/events', {
-method: 'POST',
-headers: {
-'Content-Type': 'application/json',
-'Authorization': `Basic ${authToken}`
-},
-body: JSON.stringify(updated)
-});
-alert('Мероприятия сохранены');
-}
-
-// Загрузка фонов
-async function uploadBackground(docType) {
-const fileInput = document.getElementById(
-docType === 'all' ? 'bgAll' :
-docType === 'diploma' ? 'bgDiploma' :
-docType === 'certificate' ? 'bgCertificate' : 'bgThanks'
-);
-if (!fileInput.files.length) return alert('Выберите файл PNG');
-const formData = new FormData();
-formData.append('background', fileInput.files[0]);
-formData.append('docType', docType);
-
-const res = await fetch('/api/upload-background', {
-method: 'POST',
-headers: { 'Authorization': `Basic ${authToken}` },
-body: formData
-});
-const data = await res.json();
-alert(data.message || 'Фон загружен');
-}
-
-// Экспорт
-function exportParticipants() {
-if (!authToken) return alert('Сначала войдите');
-window.location.href = `/api/export-participants?auth=${authToken}`;
-} </script>
-<script>
-let authToken = null; // base64-строка без 'Basic '
-let eventsData = [];
-
-// --- Авторизация ---
-async function login() {
-  const login = document.getElementById('login').value.trim();
-  const password = document.getElementById('password').value.trim();
-  const credentials = btoa(`${login}:${password}`);
-  try {
-    const res = await fetch('/api/settings', {
-      headers: { 'Authorization': `Basic ${credentials}` }
-    });
-    if (res.ok) {
-      authToken = credentials;
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('adminPanel').style.display = 'block';
-      await loadSettings();
-      await loadEvents();
-    } else {
-      document.getElementById('loginError').textContent = 'Неверный логин или пароль';
-    }
-  } catch {
-    document.getElementById('loginError').textContent = 'Ошибка соединения с сервером';
-  }
-}
-
-function logout() {
-  authToken = null;
-  document.getElementById('adminPanel').style.display = 'none';
-  document.getElementById('loginForm').style.display = 'block';
-}
-
-// --- Вкладки ---
-function showTab(tabId) {
-  document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-  document.getElementById(tabId + 'Tab').style.display = 'block';
-}
-
-// --- Настройки ---
-async function loadSettings() {
-  const res = await fetch('/api/settings');
-  const settings = await res.json();
-  document.getElementById('paymentText').value = settings.paymentText || '';
-}
-
-async function saveSettings() {
-  const paymentText = document.getElementById('paymentText').value;
-  await fetch('/api/settings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Basic ${authToken}`
-    },
-    body: JSON.stringify({ paymentText })
-  });
-  alert('Настройки сохранены');
-}
-
-// --- Мероприятия ---
-async function loadEvents() {
-  const res = await fetch('/api/events');
-  eventsData = await res.json();
-  renderEventsManager();
-}
-
-function renderEventsManager() {
-  const container = document.getElementById('eventsManager');
-  container.innerHTML = '';
-  eventsData.forEach((event, index) => {
-    const div = document.createElement('div');
-    div.className = 'event-editor';
-    div.innerHTML = `
-      <h4>Мероприятие ${index + 1}</h4>
-      <input placeholder="Ключ (key)" value="${event.key}">
-      <input placeholder="Название (title)" value="${event.title}">
-      <input placeholder="Краткое описание (short)" value="${event.short}">
-      <input placeholder="Аудитория (audience)" value="${event.audience}">
-      <textarea placeholder="Полный текст (info)" rows="4">${event.info}</textarea>
-      <h5>Вопросы</h5>
-      <div class="questions-list">
-        ${(event.questions || []).map((q, qi) => `
-          <div class="question-editor">
-            <input placeholder="Вопрос" value="${q.q}">
-            <textarea placeholder="Варианты (по одному на строке)" rows="3">${q.options.join('\\n')}</textarea>
-            <input placeholder="Номер правильного ответа (0-3)" type="number" min="0" max="3" value="${q.correct}">
-            <button class="btn-remove" onclick="removeQuestion(${index}, ${qi})">Удалить вопрос</button>
-          </div>
-        `).join('')}
-      </div>
-      <button class="btn-add" onclick="addQuestion(${index})">Добавить вопрос</button>
-      <button class="btn-remove" onclick="removeEvent(${index})">Удалить мероприятие</button>
-    `;
-    container.appendChild(div);
-  });
-}
-
-function addEvent() {
-  eventsData.push({
-    key: 'event-' + Date.now(),
-    title: 'Новое мероприятие',
-    short: 'Краткое описание',
-    audience: 'students',
-    info: 'Полный текст мероприятия...',
-    questions: []
-  });
-  renderEventsManager();
-}
-
-function removeEvent(index) {
-  if (confirm('Удалить мероприятие?')) {
-    eventsData.splice(index, 1);
-    renderEventsManager();
-  }
-}
-
-function addQuestion(eventIndex) {
-  if (!eventsData[eventIndex].questions) eventsData[eventIndex].questions = [];
-  eventsData[eventIndex].questions.push({
-    q: 'Новый вопрос',
-    options: ['Вариант 1', 'Вариант 2', 'Вариант 3', 'Вариант 4'],
-    correct: 0
-  });
-  renderEventsManager();
-}
-
-function removeQuestion(eventIndex, qIndex) {
-  eventsData[eventIndex].questions.splice(qIndex, 1);
-  renderEventsManager();
-}
-
-async function saveEvents() {
-  const editors = document.querySelectorAll('.event-editor');
-  const updated = [];
-  editors.forEach(ed => {
-    const inputs = ed.querySelectorAll('input');
-    const textareas = ed.querySelectorAll('textarea');
-    const key = inputs[0].value.trim();
-    const title = inputs[1].value.trim();
-    const short = inputs[2].value.trim();
-    const audience = inputs[3].value.trim();
-    const info = textareas[0].value.trim();
-    const questions = [];
-    const qEditors = ed.querySelectorAll('.question-editor');
-    qEditors.forEach(qe => {
-      const qInputs = qe.querySelectorAll('input');
-      const qTextareas = qe.querySelectorAll('textarea');
-      const q = qInputs[0].value.trim();
-      const options = qTextareas[0].value.split('\\n').map(o => o.trim()).filter(Boolean);
-      const correct = parseInt(qInputs[1].value) || 0;
-      questions.push({ q, options, correct });
-    });
-    updated.push({ key, title, short, audience, info, questions });
-  });
-
-  await fetch('/api/events', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Basic ${authToken}`
-    },
-    body: JSON.stringify(updated)
-  });
-  alert('Мероприятия сохранены');
-}
-
-// --- Загрузка фонов ---
-async function uploadBackground(docType) {
-  const fileInput = document.getElementById(
-    docType === 'all' ? 'bgAll' :
-    docType === 'diploma' ? 'bgDiploma' :
-    docType === 'certificate' ? 'bgCertificate' : 'bgThanks'
-  );
-  if (!fileInput.files.length) return alert('Выберите файл PNG');
-  const formData = new FormData();
-  formData.append('background', fileInput.files[0]);
-  formData.append('docType', docType);
-
-  const res = await fetch('/api/upload-background', {
-    method: 'POST',
-    headers: { 'Authorization': `Basic ${authToken}` },
-    body: formData
-  });
-  const data = await res.json();
-  alert(data.message || 'Фон загружен');
-}
-
-// --- Экспорт участников ---
-function exportParticipants() {
-  if (!authToken) return alert('Сначала войдите');
-  window.location.href = `/api/export-participants?auth=${authToken}`;
-}
-</script>
+  <script src="/js/admin.js"></script>
 
 </body>
 </html>
