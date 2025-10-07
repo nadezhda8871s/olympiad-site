@@ -1,10 +1,10 @@
+// server.js
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const { chromium } = require('playwright');
-const handlebars = require('handlebars');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -190,6 +190,47 @@ app.post('/api/upload-background', upload.single('background'), (req, res) => {
   res.json({ success: true, message: `Фон для ${docType} успешно загружен.` });
 });
 
+// Получить список участников (для экспорта)
+app.get('/api/participants', (req, res) => {
+  const participants = fs.readJsonSync(DB_FILE);
+  res.json(participants);
+});
+
+// Экспорт участников в Excel
+app.get('/api/export-participants', (req, res) => {
+  const participants = fs.readJsonSync(DB_FILE);
+
+  if (participants.length === 0) {
+    return res.status(400).json({ error: 'Нет данных для экспорта.' });
+  }
+
+  // Подготавливаем данные для Excel
+  const worksheetData = participants.map(p => ({
+    "ID": p.id,
+    "Время": p.timestamp,
+    "ФИО": p.data.fio,
+    "Учебное заведение": p.data.school,
+    "Регион": p.data.region,
+    "Город": p.data.city,
+    "Научный руководитель": p.data.supervisor || '',
+    "Тип документа": p.template,
+    "Номер документа": p.data.number,
+    "Дата": p.data.date
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Участники");
+
+  // Записываем в буфер
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+  // Отправляем файл
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="participants.xlsx"');
+  res.send(buffer);
+});
+
 // Генерация PDF
 app.post('/api/generate-pdf', async (req, res) => {
   const { template, data } = req.body;
@@ -210,29 +251,29 @@ app.post('/api/generate-pdf', async (req, res) => {
     // Перенос "универси-тет"
     const schoolWithBreak = data.school.replace(/(универси)(тет)/gi, '$1-<br>$2');
 
-    // Подготавливаем данные для шаблона
-    const templateData = {
-      title: data.title || '',
-      fio: data.fio || '',
-      school: data.school || '',
-      schoolWithBreak: schoolWithBreak,
-      region: data.region || '',
-      city: data.city || '',
-      supervisor: data.supervisor || '',
-      date: data.date || new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
-      number: data.number || '2025-' + String(Math.floor(Math.random() * 100000)).padStart(5, '0'),
-      backgroundImage: backgroundImageDataUrl
-    };
-
-    // Загружаем шаблон
-    const templatePath = path.join(TEMPLATES_DIR, `${template}.html`);
-    if (!fs.existsSync(templatePath)) {
-      return res.status(404).json({ error: 'Шаблон не найден' });
+    let contentHtml = '';
+    if (template === 'thanks') {
+      contentHtml = `
+        <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${data.title}</div>
+        <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ<br>(ПРЕПОДАВАТЕЛЮ)</div>
+        <div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">${data.supervisor}</div>
+        <div style="text-align:center; margin:20px 0; line-height:1.5;">
+          Центр науки и инноваций выражает Вам огромную признательность и благодарность за профессиональную подготовку участника Олимпиады<br>
+          <b>(${data.fio})</b>.
+        </div>
+        <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
+      `;
+    } else {
+      contentHtml = `
+        <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${data.title}</div>
+        <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">${template === 'diploma' ? 'ДИПЛОМ I СТЕПЕНИ' : 'СЕРТИФИКАТ УЧАСТНИКА'}</div>
+        ${template === 'diploma' ? '<div style="text-align:center; margin:10px 0;">награждён(а):</div>' : ''}
+        <div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">${data.fio}</div>
+        <div style="text-align:center;">${schoolWithBreak}, ${data.region}, ${data.city}</div>
+        ${data.supervisor ? `<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>${data.supervisor}</div>` : ''}
+        <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${data.date}<br>№ документа ${data.number}</div>
+      `;
     }
-
-    const templateContent = fs.readFileSync(templatePath, 'utf8');
-    const compiledTemplate = handlebars.compile(templateContent);
-    const htmlContent = compiledTemplate(templateData);
 
     // HTML для PDF
     const fullHtml = `
@@ -251,7 +292,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     <body>
       <div class="container">
         ${backgroundImageDataUrl ? `<img src="${backgroundImageDataUrl}" class="background" alt="Фон">` : ''}
-        <div class="content">${htmlContent}</div>
+        <div class="content">${contentHtml}</div>
       </div>
     </body>
     </html>
@@ -272,13 +313,18 @@ app.post('/api/generate-pdf', async (req, res) => {
     const pdf = await page.pdf({ format: 'A4', printBackground: true, landscape: true });
     await browser.close();
 
+    // === ИСПРАВЛЕНИЕ ОШИБКИ ===
+    // Создаем объект participantRecord правильно, используя Object.assign
+    const participantRecord = Object.assign(
+      {
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        template: template
+      },
+      {  data } // Оборачиваем data в объект, чтобы избежать конфликта ключей
+    );
+    
     // Сохраняем участника в "базу данных"
-    const participantRecord = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      template: template,
-       { ...data } // Копируем данные
-    };
     const db = fs.readJsonSync(DB_FILE);
     db.push(participantRecord);
     fs.writeJsonSync(DB_FILE, db);
@@ -289,7 +335,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     res.send(pdf);
 
   } catch (e) {
-    console.error('PDF Error:', e);
+    console.error('Ошибка генерации PDF:', e);
     res.status(500).json({ error: 'Ошибка генерации PDF', message: e.message });
   }
 });
