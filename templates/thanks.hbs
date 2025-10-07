@@ -4,71 +4,10 @@
   <meta charset="UTF-8">
   <style>
     @page { size: A4 landscape; margin: 0; }
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: "Times New Roman", serif;
-      background-color: white;
-      position: relative;
-      width: 297mm;
-      height: 210mm;
-    }
-    .container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
-    .background {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      opacity: 0.1;
-      object-fit: cover;
-    }
-    .content {
-      position: relative;
-      z-index: 1;
-      padding: 40px 60px;
-      color: black;
-      line-height: 1.4;
-      font-size: 16px;
-      height: 100%;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      text-align: center;
-    }
-    .title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 20px;
-    }
-    .doc-type {
-      font-size: 24px;
-      font-weight: bold;
-      margin: 20px 0;
-    }
-    .supervisor {
-      font-size: 20px;
-      font-weight: bold;
-      margin: 20px 0;
-    }
-    .text {
-      margin: 20px 0;
-      line-height: 1.5;
-      white-space: pre-line;
-    }
-    .participant {
-      font-weight: bold;
-    }
-    .footer {
-      margin-top: 40px;
-      font-size: 14px;
-    }
+    body { margin: 0; padding: 0; font-family: "Times New Roman", serif; background: white; }
+    .container { position: relative; width: 297mm; height: 210mm; }
+    .background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.1; object-fit: cover; }
+    .content { position: relative; z-index: 1; padding: 40px 60px; color: black; line-height: 1.4; font-size: 16px; height: 100%; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -77,14 +16,14 @@
       <img src="{{backgroundImage}}" class="background" alt="Фон">
     {{/if}}
     <div class="content">
-      <div class="title">{{title}}</div>
-      <div class="doc-type">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ<br>(ПРЕПОДАВАТЕЛЮ)</div>
-      <div class="supervisor">{{supervisor}}</div>
-      <div class="text">
+      <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">{{title}}</div>
+      <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ<br>(ПРЕПОДАВАТЕЛЮ)</div>
+      <div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">{{supervisor}}</div>
+      <div style="text-align:center; margin:20px 0; line-height:1.5;">
         Центр науки и инноваций выражает Вам огромную признательность и благодарность за профессиональную подготовку участника Олимпиады<br>
-        <span class="participant">({{fio}})</span>.
+        <b>({{fio}})</b>.
       </div>
-      <div class="footer">Дата: {{date}}<br>№ документа {{number}}</div>
+      <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: {{date}}<br>№ документа {{number}}</div>
     </div>
   </div>
 </body>
