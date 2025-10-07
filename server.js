@@ -1,8 +1,3 @@
-// server.js — полный автономный сервер (копировать как есть)
-// Node.js + Express + Playwright (Chromium) + fs-extra + XLSX
-// Хранит данные в ./data (папка создаётся автоматически).
-// На Render: добавь Environment variables ADMIN_USER и ADMIN_PASS.
-
 const express = require("express");
 const path = require("path");
 const fs = require("fs-extra");
