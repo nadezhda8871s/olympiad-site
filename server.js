@@ -17,6 +17,7 @@ app.use(express.static('public'));
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// === Настройка путей для данных ===
 const DATA_DIR = process.env.RENDER ? '/tmp/data' : path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'participants.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
@@ -25,7 +26,7 @@ const TEMPLATES_DIR = path.join(__dirname, 'templates');
 // Убедимся, что директория существует
 fs.ensureDirSync(DATA_DIR);
 
-// Инициализация файлов данных, если их нет
+// === Инициализация данных ===
 if (!fs.existsSync(DB_FILE)) {
   fs.writeJsonSync(DB_FILE, []);
 }
@@ -46,35 +47,9 @@ if (!fs.existsSync(SETTINGS_FILE)) {
 
 // === API маршруты ===
 
-// Получить список мероприятий (только краткая информация)
+// Получить список мероприятий
 app.get('/api/events', (req, res) => {
   res.json([
-    {
-      "key": "stat",
-      "title": "Международная Олимпиада по статистике и прикладной математике",
-      "short": "Современные подходы к анализу данных и статистическим методам.",
-      "audience": "students"
-    },
-    {
-      "key": "fin",
-      "title": "Международная Олимпиада по финансовым вычислениям в банковском секторе",
-      "short": "Финансовое мастерство и точность расчётов для будущих профессионалов.",
-      "audience": "students"
-    },
-    {
-      "key": "prob",
-      "title": "Международная Олимпиада «Применение Теории вероятностей в экономике»",
-      "short": "Стохастика, риски и принятие решений в экономике.",
-      "audience": "students"
-    }
-  ]);
-});
-
-// Получить полную информацию об одном мероприятии по ключу
-app.get('/api/event/:key', (req, res) => {
-  const key = req.params.key;
-  // Полные данные мероприятий
-  const allEvents = [
     {
       "key": "stat",
       "title": "Международная Олимпиада по статистике и прикладной математике",
@@ -148,14 +123,7 @@ app.get('/api/event/:key', (req, res) => {
         {"q": "Коэффициент корреляции r = 0 означает…", "options": ["Нет линейной связи","Полная линейная зависимость","Один индикатор независим","Все индикаторы положительны"], "correct": 0}
       ]
     }
-  ];
-
-  const event = allEvents.find(e => e.key === key);
-  if (event) {
-    res.json(event);
-  } else {
-    res.status(404).json({ error: 'Мероприятие не найдено' });
-  }
+  ]);
 });
 
 // Получить настройки
@@ -170,7 +138,7 @@ app.post('/api/settings', (req, res) => {
 // Загрузить фоновое изображение
 app.post('/api/upload-background', upload.single('background'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Файл не загружен.' });
-  const docType = req.body.docType;
+  const docType = req.body.docType; // 'all', 'diploma', 'certificate', 'thanks'
   const validTypes = ['all', 'diploma', 'certificate', 'thanks'];
   if (!validTypes.includes(docType)) return res.status(400).json({ error: 'Неверный тип документа.' });
 
@@ -190,7 +158,7 @@ app.post('/api/upload-background', upload.single('background'), (req, res) => {
   res.json({ success: true, message: `Фон для ${docType} успешно загружен.` });
 });
 
-// Генерация PDF
+// Генерация PDF через Playwright
 app.post('/api/generate-pdf', async (req, res) => {
   const { template, data } = req.body;
 
@@ -257,19 +225,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     </html>
     `;
 
-    // === ИСПРАВЛЕНИЕ ОШИБКИ ===
-    // Заменяем { ...data } на Object.assign({}, data)
-    const participantRecord = Object.assign(
-      {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        template: template
-      },
-      {  data } // Оборачиваем data в объект, чтобы избежать конфликта ключей
-    );
-    // === КОНЕЦ ИСПРАВЛЕНИЯ ===
-
-    // Запуск Playwright
+    // === Playwright ===
     const browser = await chromium.launch({
       args: [
         '--no-sandbox',
@@ -285,6 +241,12 @@ app.post('/api/generate-pdf', async (req, res) => {
     await browser.close();
 
     // Сохраняем участника в "базу данных"
+    const participantRecord = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      template: template,
+       { ...data } // Копируем данные
+    };
     const db = fs.readJsonSync(DB_FILE);
     db.push(participantRecord);
     fs.writeJsonSync(DB_FILE, db);
