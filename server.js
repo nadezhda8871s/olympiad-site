@@ -23,7 +23,7 @@ const ADMIN_PASS = process.env.ADMIN_PASS || "adminpass";
 
 // DATA_DIR: prefer env var; on Render you can set DATA_DIR to a persistent volume mount point.
 // Fallback: if running locally, uses ./data
-const DATA_DIR = process.env.DATA_DIR || (process.env.RENDER ? "/tmp/data" : path.join(__dirname, "data"));
+const DATA_DIR = path.join(__dirname, "data");
 const EVENTS_FILE = path.join(DATA_DIR, "events.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const PARTICIPANTS_FILE = path.join(DATA_DIR, "participants.json");
