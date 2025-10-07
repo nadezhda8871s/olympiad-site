@@ -1,0 +1,7 @@
+/* Admin styles */
+body{font-family:Inter, Arial, sans-serif;margin:0;background:#eef2ff;color:#0f172a}
+header{background:#0b3b66;color:#fff;padding:14px;text-align:center}
+.container{max-width:1000px;margin:20px auto;padding:10px}
+.card{background:#fff;padding:14px;border-radius:8px;margin-bottom:12px}
+input,textarea,select{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #cbd5e1}
+button{background:#0b3b66;color:#fff;padding:8px 10px;border-radius:6px;border:none}
