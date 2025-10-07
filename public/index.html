@@ -2,209 +2,614 @@
 
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Международные олимпиады — Центр науки и инноваций</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Международные Олимпиады и Конкурсы</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    :root {
-      --primary:#1b365d;
-      --accent:#2ecc71;
-      --bg:#f5f7fb;
-      --text:#2b2b2b;
-      --muted:#6b7280;
-      --card:#ffffff;
-      --shadow:0 6px 18px rgba(0,0,0,.08);
-      --radius:14px;
-    }
+    :root{--primary:#1b365d;--accent:#2ecc71;--bg:#f5f7fb;--text:#2b2b2b;--muted:#6b7280;--card:#ffffff;--shadow:0 6px 18px rgba(0,0,0,.08);--shadow-hover:0 10px 24px rgba(0,0,0,.12);--radius:14px}
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
-    header{background:var(--primary);color:#fff;padding:30px 16px;text-align:center}
-    header h1{font-size:26px;margin-bottom:8px}
-    header p{font-size:16px;color:#e2e8f0}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+    header{background:var(--primary);color:#fff;padding:28px 16px;text-align:center}
+    header h1{margin:0;font-size:28px;letter-spacing:.2px}
     nav{background:#fff;padding:12px 0;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
     nav a{margin:0 12px;text-decoration:none;color:var(--primary);font-weight:600}
     nav a:hover{text-decoration:underline}
     .container{max-width:1200px;margin:0 auto;padding:20px}
-    .intro{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-top:-24px;text-align:center}
-    .intro p{margin-top:8px;color:var(--muted)}
-    .events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;margin-top:20px}
-    .event-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;transition:.2s ease}
-    .event-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.12)}
-    .event-title{color:var(--primary);font-size:18px;margin-bottom:6px}
-    .event-desc{font-size:14px;color:var(--muted)}
-    .btn{display:inline-block;padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600;margin-top:10px}
+    .intro{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-top:-24px}
+    .badge{display:inline-block;background:#eef2ff;color:#3442b5;border:1px solid #dbe2ff;border-radius:999px;padding:6px 12px;font-size:13px;margin-right:8px}
+    .filters{display:flex;justify-content:center;gap:10px;margin:16px 0;flex-wrap:wrap}
+    .filter-btn{padding:8px 16px;border:1px solid var(--primary);background:#fff;color:var(--primary);border-radius:8px;cursor:pointer;font-size:14px}
+    .filter-btn.active{background:var(--primary);color:#fff}
+    .search-wrap{display:flex;gap:10px;justify-content:center;margin:16px 0}
+    .search-wrap input{width:100%;max-width:420px;padding:12px 14px;border:1px solid #d9dbe3;border-radius:10px;background:#fff}
+    .events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+    .event-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:.2s ease;overflow:hidden}
+    .event-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+    .event-header{padding:18px 18px 10px}
+    .event-title{margin:0;color:var(--primary);font-size:18px;line-height:1.3}
+    .event-desc{color:var(--muted);font-size:14px;padding:0 18px 10px}
+    .card-actions{display:flex;gap:10px;padding:14px 18px 18px;margin-top:auto}
+    .btn{border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600}
+    .btn-info{background:var(--primary);color:#fff}
+    .btn-info:hover{opacity:.92}
+    .btn-reg{background:var(--accent);color:#fff}
+    .btn-reg:hover{filter:brightness(1.05)}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px}
+    .modal.open{display:flex}
+    .modal-card{background:#fff;border-radius:16px;max-width:820px;width:100%;max-height:85vh;overflow:auto;box-shadow:var(--shadow-hover);position:relative;padding:20px}
+    .modal-close{position:absolute;top:10px;right:12px;background:transparent;border:none;font-size:24px;cursor:pointer}
+    .preline{white-space:pre-line}
+    .panel{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:20px;margin:22px 0;display:none}
+    .panel h3{margin:6px 0 14px}
+    .panel input{width:100%;padding:12px;border:1px solid #d9dbe3;border-radius:10px;margin:6px 0 10px}
+    .panel .muted{color:var(--muted);font-size:13px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .btn-primary{background:var(--primary);color:#fff}
-    .btn-accent{background:var(--accent);color:#fff}
+    .btn-disabled{background:#cbd5e1;color:#6b7280;cursor:not-allowed}
+    .question{padding:12px;border:1px solid #e5e7eb;border-radius:10px;margin:10px 0;text-align:left}
+    .radio{display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:start;margin:4px 0;text-align:left}
+    .radio input{margin-top:2px}
+    .radio span{display:block;line-height:1.35;margin:0}
+    .result-line{font-size:16px;margin:8px 0 4px;text-align:left}
+    .note{font-size:13px;color:var(--muted);text-align:left}
+    .divider{height:1px;background:#e5e7eb;margin:16px 0}
     footer{background:var(--primary);color:#fff;padding:16px;text-align:center;font-size:14px;margin-top:40px}
     footer a{color:#fff;text-decoration:underline}
   </style>
 </head>
 <body>
-
 <header>
-  <h1>Центр науки и инноваций</h1>
-  <p>Международные олимпиады для учащихся и студентов</p>
+  <h1>Международные и Всероссийские Олимпиады, Конкурсы и Проекты</h1>
 </header>
 
 <nav>
-  <a href="#olympiads">Олимпиады</a>
-  <a href="/docs" target="_blank">Документы и оплата</a>
-  <a href="/admin" target="_blank">Админка</a>
+  <a href="/">Главная</a>
+  <a href="/docs">Документы и оплата</a>
+  <a href="/admin">Админка</a>
 </nav>
 
 <div class="container">
-  <section class="intro">
-    <h2>Добро пожаловать!</h2>
-    <p>Выберите олимпиаду, пройдите тест и получите именной диплом или сертификат участника.</p>
-  </section>
+  <div class="intro">
+    <div class="row">
+      <span class="badge">Стоимость участия — бесплатное</span>
+      <span class="badge">Наградные документы — 100 ₽</span>
+    </div>
+    <p>Для учащихся и молодых исследователей, обладающих значительным научным и интеллектуальным потенциалом, наши мероприятия представляют уникальную возможность реализации собственных способностей на самом высоком уровне.</p>
+    <p><b>Почему стоит участвовать?</b></p>
+    <ul>
+      <li>✅ Подтверждение статуса высококвалифицированного специалиста международными сертификатами</li>
+      <li>✅ Объективное сравнение своих знаний с лучшими представителями научного сообщества</li>
+      <li>✅ Расширение возможностей карьерного роста и профессионального признания</li>
+      <li>✅ Доступ к ведущим научным центрам и образовательным учреждениям</li>
+    </ul>
+  </div>
 
-  <section id="olympiads">
-    <h2 style="margin:20px 0 10px;">Список доступных олимпиад</h2>
-    <div id="events" class="events-grid"></div>
-  </section>
-<section id="olympiads">
-  <h2 style="margin:20px 0 10px;">Список доступных олимпиад</h2>
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">Все</button>
+    <button class="filter-btn" data-filter="students">Студентам и аспирантам</button>
+    <button class="filter-btn" data-filter="school">Школьникам и СПО</button>
+    <button class="filter-btn" data-filter="teachers">Преподавателям и учителям</button>
+  </div>
+
+  <div class="search-wrap">
+    <input id="search" type="text" placeholder="Поиск мероприятий по названию и описанию..." />
+  </div>
+
   <div id="events" class="events-grid"></div>
-</section>
+
+  <!-- Регистрация -->
+
+  <div id="regPanel" class="panel">
+    <h3 id="regTitle">Регистрация на мероприятие</h3>
+    <input id="fio" placeholder="Фамилия Имя Отчество" />
+    <input id="region" placeholder="Регион" />
+    <input id="city" placeholder="Город" />
+    <input id="school" placeholder="Учебное заведение" />
+    <div class="doc-banner">
+      Перед продолжением необходимо ознакомиться с документами:
+      <div class="row">
+        <button class="btn btn-primary" onclick="openDoc('terms')">Пользовательское соглашение и Правила</button>
+        <button class="btn btn-primary" onclick="openDoc('privacy')">Политика конфиденциальности</button>
+      </div>
+    </div>
+    <label class="checkbox"><input id="agreeTerms" type="checkbox" disabled /> Подтверждаю, что ознакомился(лась) с Пользовательским соглашением и Правилами</label>
+    <label class="checkbox"><input id="agreePrivacy" type="checkbox" disabled /> Даю согласие на обработку персональных данных</label>
+    <div class="row">
+      <button id="payBtn" class="btn btn-primary btn-disabled" disabled onclick="startPayment()">Перейти к оплате</button>
+      <span class="muted">Оплата Robokassa — заглушка</span>
+    </div>
+  </div>
+
+  <!-- Тест -->
+
+  <div id="testPanel" class="panel">
+    <h3 id="testTitle">Тест</h3>
+    <div id="qBox" class="question"></div>
+    <div class="row">
+      <button class="btn btn-primary" onclick="prevQ()">Назад</button>
+      <button class="btn btn-primary" onclick="nextQ()">Далее</button>
+      <button id="finishBtn" class="btn btn-primary" style="display:none" onclick="finishTest()">Завершить</button>
+    </div>
+  </div>
+
+  <!-- Результаты -->
+
+  <div id="resultPanel" class="panel">
+    <h3>Результаты</h3>
+    <p class="result-line">Ваш результат: <b><span id="scoreText">0%</span></b></p>
+    <div class="divider"></div>
+    <div class="row">
+      <button id="downloadMain" class="btn btn-primary">Скачать документ</button>
+      <span class="note">Диплом — при результате ≥ 51 %, сертификат — при результате 0–50 %.</span>
+    </div>
+    <div class="divider"></div>
+    <label for="supervisor">Научный руководитель (необязательно):</label>
+    <input id="supervisor" placeholder="ФИО научного руководителя" />
+    <div class="row">
+      <button id="downloadWithSup" class="btn btn-primary">Скачать документ с научным руководителем</button>
+    </div>
+    <p class="note">Печать организации добавляется автоматически после загрузки файла печати.</p>
+  </div>
+</div>
+
+<!-- Модалка: Подробнее -->
+
+<div id="infoModal" class="modal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeInfo()">×</button>
+    <h3 id="infoTitle"></h3>
+    <div id="infoText" class="preline"></div>
+  </div>
+</div>
+
+<!-- Модалка: Документы -->
+
+<div id="docModal" class="modal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeDoc()">×</button>
+    <h3 id="docTitle"></h3>
+    <div id="docBody" class="preline" style="max-height:60vh;overflow:auto;border:1px solid #eef2ff;padding:12px;border-radius:10px;"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-primary" id="docAcceptBtn" disabled onclick="acceptDoc()">Прочитал(а), согласен(на)</button>
+    </div>
+  </div>
 </div>
 
 <footer>
-  <p>© 2025 Центр науки и инноваций. Все права защищены.</p>
+  Почта для связи: <a href="mailto:naych_kooper@mail.ru">naych_kooper@mail.ru</a><br>
+  © 2025 Все права защищены. Копирование контента без разрешения автора строго ЗАПРЕЩЕНО!
 </footer>
-
 <script>
-let events = [];
+/* ====== ДАННЫЕ О МЕРОПРИЯТИЯХ (стоят в файле как константа) ======
+   Если в будущем хочешь брать мероприятия с сервера — просто заменить
+   EVENTS на загрузку через fetch('/api/events') */
+const EVENTS = window.EVENTS || (window.eventsData || []); // если EVENTS уже определён — используем его
+
+/* ====== ПОЛЬЗОВАТЕЛЬСКИЕ ДОКУМЕНТЫ (термы и политика) ====== */
+const LEGAL = {
+  termsTitle: 'Пользовательское соглашение (публичная оферта) и Правила проведения олимпиады',
+  termsText: `1. Пользовательское соглашение (публичная оферта)
+
+1. Общие положения
+1.1. Настоящее Пользовательское соглашение (далее – «Соглашение») регулирует отношения между Организатором онлайн-олимпиад и конкурсов (далее – «Организатор») и физическим лицом (далее – «Участник»), оставляющим свои данные через форму на сайте.
+1.2. Отправка данных через форму означает согласие Участника с условиями Соглашения.
+
+2. Предмет соглашения
+2.1. Организатор предоставляет Участнику возможность участия в онлайн-олимпиадах и конкурсах бесплатно.
+2.2. Организатор предоставляет электронный диплом или сертификат за плату — 100 рублей за документ.
+
+3. Права и обязанности сторон
+Организатор обязуется: проводить олимпиаду; обработать результаты; предоставить диплом или сертификат после оплаты.
+Участник обязуется: предоставлять достоверные данные при подаче заявки; оплачивать диплом или сертификат при его заказе.
+
+4. Ответственность сторон
+Организатор не несёт ответственности за ошибки в документах, возникшие по причине неверно указанных данных или отсутствия оплаты.
+
+5. Заключительные положения
+5.1. Соглашение является публичной офертой.
+5.2. Организатор имеет право вносить изменения, публикуя их на сайте.
+
+Правила проведения олимпиады
+1. Участие
+Для участия необходимо заполнить форму на сайте, указав ФИО, e-mail, учебное заведение и другие необходимые данные.
+
+2. Порядок проведения
+Олимпиада проводится онлайн в сроки, указанные на сайте.
+
+3. Итоги
+Организатор обеспечивает возможность получить в электронном виде документ о результате олимпиады (диплом или сертификат после оплаты).
+`,
+
+  privacyTitle: 'Политика конфиденциальности и Согласие на обработку персональных данных',
+  privacyText: (fio) => `3. Политика конфиденциальности
+
+1. Какие данные мы собираем
+ФИО, электронную почту, учебное заведение, класс/возраст и иные сведения, указанные в форме заявки.
+
+2. Цели обработки
+— оформление участия в олимпиаде;
+— направление заданий и результатов;
+— формирование и отправка дипломов/сертификатов после оплаты;
+— информирование о новых мероприятиях.
+
+3. Защита данных
+Данные хранятся в защищённой базе; не передаются третьим лицам, кроме случаев доставки документов или по требованию закона.
+
+4. Согласие на обработку персональных данных
+«Я, ${fio || '______________________'}, заполняя форму участия на сайте, выражаю согласие на обработку моих персональных данных (ФИО, e-mail, учебное заведение и другие сведения).
+Согласие действует до его письменного отзыва.»`
+};
+
+/* ====== ЭЛЕМЕНТЫ И СТАТЫ ====== */
+const elEvents = document.getElementById('events');
+const elSearch = document.getElementById('search');
+const filterBtns = document.querySelectorAll('.filter-btn');
+
 let currentEvent = null;
-let currentQuestions = [];
+let currentFilter = 'all';
+let qIndex = 0;
 let answers = [];
 
-async function loadEvents() {
-  const res = await fetch('/api/events');
-  events = await res.json();
-  renderEvents();
-}
-
-function renderEvents() {
-  const container = document.getElementById('events');
-  container.innerHTML = '';
-  events.forEach((ev, i) => {
+/* ====== РЕНДЕР КАРТОЧЕК ====== */
+function renderEvents(list) {
+  elEvents.innerHTML = '';
+  (list || EVENTS).forEach((ev) => {
     const card = document.createElement('div');
     card.className = 'event-card';
     card.innerHTML = `
-      <h3 class="event-title">${ev.title}</h3>
-      <p class="event-desc">${ev.short}</p>
-      <button class="btn btn-primary" onclick="openTest(${i})">Пройти тест</button>
+      <div class="event-header">
+        <h3 class="event-title">${escapeHtml(ev.title)}</h3>
+      </div>
+      <p class="event-desc">${escapeHtml(ev.short)}</p>
+      <div class="card-actions">
+        <button class="btn btn-info" onclick="openInfo('${ev.key}')">Подробнее</button>
+        <button class="btn btn-reg" onclick="openReg('${ev.key}')">Регистрация</button>
+      </div>
     `;
-    container.appendChild(card);
+    elEvents.appendChild(card);
   });
 }
+renderEvents(EVENTS);
 
-function openTest(index) {
-  currentEvent = events[index];
-  currentQuestions = currentEvent.questions;
-  answers = new Array(currentQuestions.length).fill(null);
+/* ====== ПОИСК И ФИЛЬТРЫ ====== */
+elSearch.addEventListener('input', e=>{
+  const v = e.target.value.toLowerCase();
+  const filtered = EVENTS.filter(ev =>
+    (ev.title||'').toLowerCase().includes(v) ||
+    (ev.short||'').toLowerCase().includes(v) ||
+    (ev.info||'').toLowerCase().includes(v)
+  );
+  renderEvents(filtered);
+});
 
-  const container = document.querySelector('.container');
-  container.innerHTML = `
-    <section class="intro" style="text-align:left;">
-      <h2>${currentEvent.title}</h2>
-      <p style="white-space:pre-line;">${currentEvent.info}</p>
-      <hr style="margin:20px 0;">
-      <div id="testContainer"></div>
-    </section>
-  `;
-  renderTest();
-}
-
-function renderTest() {
-  const box = document.getElementById('testContainer');
-  box.innerHTML = '';
-  currentQuestions.forEach((q, i) => {
-    const qDiv = document.createElement('div');
-    qDiv.className = 'event-card';
-    qDiv.innerHTML = `
-      <p><b>${i + 1}. ${q.q}</b></p>
-      ${q.options.map((opt, j) => `
-        <label style="display:block;margin:6px 0;">
-          <input type="radio" name="q${i}" value="${j}" onchange="answers[${i}] = ${j}">
-          ${opt}
-        </label>
-      `).join('')}
-    `;
-    box.appendChild(qDiv);
+filterBtns.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    filterBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    const filtered = currentFilter === 'all' ? EVENTS : EVENTS.filter(e=>e.audience===currentFilter);
+    renderEvents(filtered);
   });
-  const btn = document.createElement('button');
-  btn.textContent = 'Завершить тест';
-  btn.className = 'btn btn-accent';
-  btn.onclick = finishTest;
-  box.appendChild(btn);
+});
+
+/* ====== МОДАЛКА «ПОДРОБНЕЕ» ====== */
+function openInfo(key){
+  currentEvent = EVENTS.find(e=>e.key===key);
+  if(!currentEvent) return;
+  document.getElementById('infoTitle').textContent = currentEvent.title;
+  document.getElementById('infoText').textContent = currentEvent.info;
+  document.getElementById('infoModal').classList.add('open');
+}
+function closeInfo(){ document.getElementById('infoModal').classList.remove('open'); }
+
+/* ====== РЕГИСТРАЦИЯ ====== */
+function openReg(key){
+  currentEvent = EVENTS.find(e=>e.key===key);
+  if(!currentEvent) return;
+  document.getElementById('regTitle').textContent = 'Регистрация: ' + currentEvent.title;
+  document.getElementById('regPanel').style.display = 'block';
+  document.getElementById('testPanel').style.display = 'none';
+  document.getElementById('resultPanel').style.display = 'none';
+  // reset doc flags
+  window.docStage = { terms: false, privacy: false };
+  document.getElementById('agreeTerms').checked = false; document.getElementById('agreeTerms').disabled = true;
+  document.getElementById('agreePrivacy').checked = false; document.getElementById('agreePrivacy').disabled = true;
+  document.getElementById('payBtn').disabled = true; document.getElementById('payBtn').classList.add('btn-disabled');
+  window.scrollTo({ top: document.getElementById('regPanel').offsetTop - 10, behavior: 'smooth' });
 }
 
-function finishTest() {
-  if (answers.includes(null)) return alert('Ответьте на все вопросы!');
-  let correct = 0;
-  for (let i = 0; i < currentQuestions.length; i++) {
-    if (answers[i] === currentQuestions[i].correct) correct++;
+/* ====== ДОКУМЕНТЫ (модалка, прокрутка, акцепт) ====== */
+let docTypeOpen = null;
+const docBody = document.getElementById('docBody');
+const docAcceptBtn = document.getElementById('docAcceptBtn');
+
+function openDoc(type){
+  docTypeOpen = type;
+  docAcceptBtn.disabled = true;
+  const fioVal = document.getElementById('fio').value.trim();
+  if(type === 'terms'){
+    document.getElementById('docTitle').textContent = LEGAL.termsTitle;
+    document.getElementById('docBody').textContent = LEGAL.termsText;
+  } else {
+    document.getElementById('docTitle').textContent = LEGAL.privacyTitle;
+    document.getElementById('docBody').textContent = LEGAL.privacyText(fioVal);
   }
-  const percent = Math.round((correct / currentQuestions.length) * 100);
-  showResult(percent);
+  document.getElementById('docModal').classList.add('open');
+  // scroll to top
+  document.getElementById('docBody').scrollTop = 0;
 }
 
-function showResult(percent) {
-  let template = 'certificate';
-  if (percent > 70) template = 'diploma';
-  else if (percent > 50) template = 'diploma';
-  else if (percent > 20) template = 'diploma';
-  else template = 'certificate';
+// close
+function closeDoc(){
+  document.getElementById('docModal').classList.remove('open');
+  // small delay clear
+  setTimeout(()=>{ docTypeOpen = null; }, 200);
+}
 
-  const container = document.querySelector('.container');
-  container.innerHTML = `
-    <section class="intro" style="text-align:left;">
-      <h2>Ваш результат: ${percent}%</h2>
-      <p>Введите данные для получения документа.</p>
-      <input id="fio" placeholder="ФИО участника" style="width:100%;padding:10px;margin:8px 0;">
-      <input id="school" placeholder="Учебное заведение" style="width:100%;padding:10px;margin:8px 0;">
-      <input id="region" placeholder="Регион" style="width:100%;padding:10px;margin:8px 0;">
-      <input id="city" placeholder="Город" style="width:100%;padding:10px;margin:8px 0;">
-      <input id="supervisor" placeholder="Научный руководитель (если есть)" style="width:100%;padding:10px;margin:8px 0;">
-      <button class="btn btn-primary" onclick="generateDoc('${template}', ${percent})">Скачать документ</button>
-    </section>
+// enable accept button when scrolled to bottom
+docBody.addEventListener('scroll', ()=>{
+  const el = docBody;
+  const atBottom = Math.ceil(el.scrollTop + el.clientHeight) >= el.scrollHeight;
+  docAcceptBtn.disabled = !atBottom;
+});
+
+function acceptDoc(){
+  if(!docTypeOpen) return;
+  if(docTypeOpen === 'terms'){
+    document.getElementById('agreeTerms').disabled = false;
+    document.getElementById('agreeTerms').checked = true;
+    window.docStage.terms = true;
+  } else {
+    document.getElementById('agreePrivacy').disabled = false;
+    document.getElementById('agreePrivacy').checked = true;
+    window.docStage.privacy = true;
+  }
+  closeDoc();
+  if(window.docStage.terms && window.docStage.privacy){
+    document.getElementById('payBtn').disabled = false;
+    document.getElementById('payBtn').classList.remove('btn-disabled');
+  }
+}
+
+/* ====== ОПЛАТА (заглушка) и запуск теста ====== */
+function startPayment(){
+  // Здесь можно в будущем интегрировать Robokassa
+  alert('Оплата — заглушка. После подтверждения начнётся тест.');
+  startTest();
+}
+
+/* ====== ТЕСТ (по одному вопросу) ====== */
+const testPanel = document.getElementById('testPanel');
+const testTitle = document.getElementById('testTitle');
+const qBox = document.getElementById('qBox');
+const finishBtn = document.getElementById('finishBtn');
+
+function startTest(){
+  if(!currentEvent) return alert('Сначала выберите мероприятие.');
+  testTitle.textContent = 'Тест: ' + currentEvent.title;
+  document.getElementById('regPanel').style.display = 'none';
+  testPanel.style.display = 'block';
+  answers = new Array(currentEvent.questions.length).fill(null);
+  qIndex = 0;
+  renderQuestion();
+  window.scrollTo({ top: testPanel.offsetTop - 10, behavior: 'smooth' });
+}
+
+function renderQuestion(){
+  const q = currentEvent.questions[qIndex];
+  qBox.innerHTML = `
+    <p><b>${qIndex+1} / ${currentEvent.questions.length}</b>. ${escapeHtml(q.q)}</p>
+    ${q.options.map((opt,i)=>`
+      <label class="radio">
+        <input type="radio" name="opt" value="${i}" ${answers[qIndex]===i ? 'checked' : ''}/>
+        <span>${escapeHtml(opt)}</span>
+      </label>
+    `).join('')}
   `;
+  finishBtn.style.display = (qIndex === currentEvent.questions.length - 1) ? 'inline-block' : 'none';
 }
 
-async function generateDoc(template, percent) {
-  const fio = document.getElementById('fio').value.trim();
-  const school = document.getElementById('school').value.trim();
-  const region = document.getElementById('region').value.trim();
-  const city = document.getElementById('city').value.trim();
-  const supervisor = document.getElementById('supervisor').value.trim();
-  if (!fio || !school || !region || !city) return alert('Заполните все поля');
+function nextQ(){
+  const sel = document.querySelector('input[name="opt"]:checked');
+  if(!sel){ alert('Пожалуйста, выберите вариант ответа.'); return; }
+  answers[qIndex] = parseInt(sel.value, 10);
+  if(qIndex < currentEvent.questions.length - 1){
+    qIndex++;
+    renderQuestion();
+  }
+}
+function prevQ(){
+  if(qIndex > 0){
+    qIndex--;
+    renderQuestion();
+  }
+}
 
-  const data = {
-    fio, school, region, city, supervisor,
-    title: currentEvent.title,
-    date: new Date().toLocaleDateString('ru-RU'),
-    number: Math.floor(Math.random()*1000000),
+function finishTest(){
+  const sel = document.querySelector('input[name="opt"]:checked');
+  if(sel) answers[qIndex] = parseInt(sel.value, 10);
+  let correct = 0;
+  currentEvent.questions.forEach((q,i)=>{ if(answers[i] === q.correct) correct++; });
+  const score = Math.round(correct / currentEvent.questions.length * 100);
+  showResult(score);
+}
+
+/* ====== РЕЗУЛЬТАТ И ГЕНЕРАЦИЯ PDF (html2pdf.js) ====== */
+const resultPanel = document.getElementById('resultPanel');
+const scoreText = document.getElementById('scoreText');
+
+function showResult(score){
+  testPanel.style.display = 'none';
+  resultPanel.style.display = 'block';
+  scoreText.textContent = score + '%';
+  window._resultScore = score;
+  const btnMain = document.getElementById('downloadMain');
+
+  // decide type and degree
+  let docLabel = 'СЕРТИФИКАТ УЧАСТНИКА';
+  let diplomaDegree = null; // null for certificate, 3/2/1 for diploma
+  if(score <= 20){
+    docLabel = 'СЕРТИФИКАТ УЧАСТНИКА';
+    diplomaDegree = null;
+    btnMain.textContent = 'Скачать сертификат участника';
+  } else if(score <= 50){
+    docLabel = 'ДИПЛОМ III СТЕПЕНИ';
+    diplomaDegree = 3;
+    btnMain.textContent = 'Скачать диплом III степени';
+  } else if(score <= 70){
+    docLabel = 'ДИПЛОМ II СТЕПЕНИ';
+    diplomaDegree = 2;
+    btnMain.textContent = 'Скачать диплом II степени';
+  } else {
+    docLabel = 'ДИПЛОМ I СТЕПЕНИ';
+    diplomaDegree = 1;
+    btnMain.textContent = 'Скачать диплом I степени';
+  }
+
+  // store for download function
+  window._docMeta = { docLabel, diplomaDegree, score };
+}
+
+// attach download handlers
+document.getElementById('downloadMain').addEventListener('click', ()=>downloadPDF(false));
+document.getElementById('downloadWithSup').addEventListener('click', ()=>downloadPDF(true));
+
+function downloadPDF(withSupervisor){
+  const fio = (document.getElementById('fio').value || '').trim() || 'Участник';
+  const region = (document.getElementById('region').value || '').trim();
+  const city = (document.getElementById('city').value || '').trim();
+  const school = (document.getElementById('school').value || '').trim();
+  const supervisor = withSupervisor ? (document.getElementById('supervisor').value || '').trim() : '';
+  const score = window._docMeta?.score ?? 0;
+  const docLabel = window._docMeta?.docLabel ?? (score>=51 ? 'ДИПЛОМ I СТЕПЕНИ' : 'СЕРТИФИКАТ УЧАСТНИКА');
+  const degree = window._docMeta?.diplomaDegree; // maybe null
+
+  const number = '2025-' + String(Math.floor(Math.random()*100000)).padStart(5,'0');
+  const today = new Date().toLocaleDateString('ru-RU');
+
+  // handle soft break in 'универси-тет'
+  const schoolWithBreak = escapeHtml(school).replace(/(универси)(тет)/gi, '$1-<br>$2');
+
+  // Build content HTML (which html2pdf will render)
+  let titleBlock = '';
+  if(degree === 1) titleBlock = `<div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">ДИПЛОМ I СТЕПЕНИ</div>`;
+  else if(degree === 2) titleBlock = `<div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">ДИПЛОМ II СТЕПЕНИ</div>`;
+  else if(degree === 3) titleBlock = `<div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">ДИПЛОМ III СТЕПЕНИ</div>`;
+  else titleBlock = `<div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">СЕРТИФИКАТ УЧАСТНИКА</div>`;
+
+  const contentHtml = `
+    <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${escapeHtml(currentEvent?.title || '')}</div>
+    ${titleBlock}
+    ${degree ? '<div style="text-align:center; margin:10px 0;">награждён(а):</div>' : ''}
+    <div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">${escapeHtml(fio)}</div>
+    <div style="text-align:center;">${schoolWithBreak ? schoolWithBreak : ''}${schoolWithBreak? ', ' : ''}${escapeHtml(region)}, ${escapeHtml(city)}</div>
+    ${supervisor ? `<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>${escapeHtml(supervisor)}</div>` : ''}
+    <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${today}<br>№ документа ${number}</div>
+  `;
+
+  const fullHtml = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          @page { size: A4 landscape; margin: 0; }
+          body { margin: 0; padding: 0; font-family: "Times New Roman", serif; background: white; }
+          .container { position: relative; width: 297mm; height: 210mm; }
+          .content { position: relative; z-index: 1; padding: 40px 60px; color: black; line-height: 1.4; font-size: 16px; height: 100%; box-sizing: border-box; }
+        </style>
+
+```
+  </head>
+  <body>
+    <div class="container"><div class="content">${contentHtml}</div></div>
+  </body>
+</html>
+```
+
+`;
+
+// html2pdf options (use high-quality settings)
+const opt = {
+margin:       0,
+filename:     `${degree ? 'diploma' : 'certificate'}-${number}.pdf`,
+image:        { type: 'jpeg', quality: 0.98 },
+html2canvas:  { scale: 2, useCORS: true, logging: false },
+jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+};
+
+// create a temporary container for html2pdf
+const tmp = document.createElement('div');
+tmp.style.position = 'fixed';
+tmp.style.left = '-2000px';
+tmp.style.top = '-2000px';
+tmp.innerHTML = fullHtml;
+document.body.appendChild(tmp);
+
+html2pdf().set(opt).from(tmp).save().then(()=>{
+// cleanup
+document.body.removeChild(tmp);
+
+```
+// Save participant record locally (localStorage) — avoids server dependency
+try {
+  const rec = {
+    id: Date.now().toString(),
+    timestamp: new Date().toISOString(),
+    template: degree ? `diploma_${degree}` : 'certificate',
+    fio, school, region, city, supervisor, date: today, number, score
   };
-
-  const res = await fetch('/api/generate-pdf', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ template, data })
-  });
-
-  if (!res.ok) return alert('Ошибка генерации PDF');
-  const blob = await res.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${template}.pdf`;
-  a.click();
-  window.URL.revokeObjectURL(url);
+  const saved = JSON.parse(localStorage.getItem('participants') || '[]');
+  saved.push(rec);
+  localStorage.setItem('participants', JSON.stringify(saved));
+  console.log('Participant saved locally:', rec);
+} catch(e){
+  console.warn('Could not save participant locally', e);
 }
 
-loadEvents();
-</script>
+// Optional: try to POST record to server endpoint if exists (non-blocking)
+try {
+  fetch('/api/save-participant', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fio, school, region, city, supervisor, date: today, number, score,
+      template: degree ? `diploma_${degree}` : 'certificate'
+    })
+  }).catch(()=>{/* ignore errors if endpoint missing */});
+} catch(e){/* ignore */ }
+```
+
+}).catch(err=>{
+document.body.removeChild(tmp);
+console.error('html2pdf error', err);
+alert('Ошибка формирования PDF: ' + (err && err.message ? err.message : err));
+});
+}
+
+/* ====== УТИЛИТЫ ====== */
+function escapeHtml(str){
+if(!str) return '';
+return String(str)
+.replace(/&/g, '&')
+.replace(/</g, '<')
+.replace(/>/g, '>')
+.replace(/"/g, '"')
+.replace(/'/g, ''');
+}
+
+/* ====== Обработчики модалок: закрытие по оверле и ESC ====== */
+document.querySelectorAll('.modal').forEach(mod=>{
+mod.addEventListener('click', (e)=>{
+if(e.target === mod) mod.classList.remove('open');
+});
+});
+window.addEventListener('keydown', (e)=>{
+if(e.key === 'Escape'){
+document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'));
+}
+}); </script>
 
 </body>
 </html>
