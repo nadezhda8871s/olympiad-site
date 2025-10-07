@@ -13,7 +13,7 @@
 // For Render:
 // - set ADMIN_USER and ADMIN_PASS env vars (recommended).
 // - set DATA_DIR env var or set RENDER=true (then DATA_DIR=/tmp/data).
-// - Ensure Playwright is installed: add "playwright" to dependencies and run "npx playwright install --with-deps" in build step.
+// - Ensure Playwright is installed and configured before starting the server.
 //
 // Usage notes:
 // - Client should POST JSON { template, data } to /api/generate-pdf
