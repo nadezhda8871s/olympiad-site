@@ -1,4 +1,3 @@
-```javascript
 // server.js — финальная версия (Single-file)
 // Express + Playwright PDF generation + events/settings/participants persistence
 // IMPORTANT:
