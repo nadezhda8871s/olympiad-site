@@ -87,7 +87,10 @@
       cursor: pointer;
       font-size: 14px;
     }
-    .filter-btn.active { background: var(--primary); color: white; }
+    .filter-btn.active {
+      background: var(--primary);
+      color: white;
+    }
     .search-wrap {
       display: flex;
       gap: 10px;
@@ -148,9 +151,15 @@
       cursor: pointer;
       font-weight: 600;
     }
-    .btn-info { background: var(--primary); color: white; }
+    .btn-info {
+      background: var(--primary);
+      color: white;
+    }
     .btn-info:hover { opacity: .92; }
-    .btn-reg { background: var(--accent); color: white; }
+    .btn-reg {
+      background: var(--accent);
+      color: white;
+    }
     .btn-reg:hover { filter: brightness(1.05); }
     /* Modals */
     .modal {
@@ -163,7 +172,9 @@
       justify-content: center;
       padding: 16px;
     }
-    .modal.open { display: flex; }
+    .modal.open {
+      display: flex;
+    }
     .modal-card {
       background: white;
       border-radius: 16px;
@@ -184,7 +195,9 @@
       font-size: 24px;
       cursor: pointer;
     }
-    .preline { white-space: pre-line; }
+    .preline {
+      white-space: pre-line;
+    }
     /* Registration / Test / Result */
     .panel {
       background: white;
@@ -194,7 +207,9 @@
       margin: 22px 0;
       display: none;
     }
-    .panel h3 { margin: 6px 0 14px; }
+    .panel h3 {
+      margin: 6px 0 14px;
+    }
     .panel input {
       width: 100%;
       padding: 12px 12px;
@@ -212,7 +227,9 @@
       align-items: center;
       flex-wrap: wrap;
     }
-    .panel .row .btn { margin-top: 6px; }
+    .panel .row .btn {
+      margin-top: 6px;
+    }
     .doc-banner {
       background: #f4f6ff;
       border: 1px solid #dbe2ff;
@@ -228,9 +245,18 @@
       margin: 8px 0;
       color: #111827;
     }
-    .checkbox input { width: auto; }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-disabled { background: #cbd5e1; color: #6b7280; cursor: not-allowed; }
+    .checkbox input {
+      width: auto;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-disabled {
+      background: #cbd5e1;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
     /* --- тест (выравнивание слева, компактные отступы) --- */
     .question {
       padding: 12px;
@@ -264,10 +290,24 @@
       margin: 0;
     }
     /* прочее в блоке результата тоже слева */
-    .result-line { font-size: 16px; margin: 8px 0 4px; text-align: left; }
-    .note { font-size: 13px; color: var(--muted); text-align: left; }
-    .divider { height: 1px; background: #e5e7eb; margin: 16px 0; }
-    .center { text-align: center; }
+    .result-line {
+      font-size: 16px;
+      margin: 8px 0 4px;
+      text-align: left;
+    }
+    .note {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: left;
+    }
+    .divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 16px 0;
+    }
+    .center {
+      text-align: center;
+    }
     footer {
       background: var(--primary);
       color: white;
@@ -276,7 +316,10 @@
       font-size: 14px;
       margin-top: 40px;
     }
-    footer a { color: white; text-decoration: underline; }
+    footer a {
+      color: white;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -517,7 +560,7 @@ const LEGAL = {
 Организатор обеспечивает возможность получить в электронном виде документ о результате олимпиады (диплом или сертификат после оплаты).
 
 4. Документы
-Электронный диплом или сертификат предоставляется только после оплаты — 200 рублей за документ.`,
+Электронный диплом или сертификат предоставляется только после оплаты — 100 рублей за документ.`,
 
   privacyTitle: 'Политика конфиденциальности и Согласие на обработку персональных данных',
   privacyText: (fio) => `3. Политика конфиденциальности
@@ -581,91 +624,75 @@ document.querySelectorAll('.filter-btn').forEach(btn=>{
     document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     currentFilter = btn.dataset.filter;
-    const filtered = currentFilter === 'all' 
-      ? EVENTS 
-      : EVENTS.filter(e => e.audience === currentFilter);
+    const filtered = currentFilter === 'all' ? EVENTS : EVENTS.filter(e=>e.audience===currentFilter);
     renderEvents(filtered);
   });
 });
 
 /* ====== Модалка «Подробнее» ====== */
-const infoModal = document.getElementById('infoModal');
-const infoTitle = document.getElementById('infoTitle');
-const infoText = document.getElementById('infoText');
-
 function openInfo(key){
   currentEvent = EVENTS.find(e=>e.key===key);
-  infoTitle.textContent = currentEvent.title;
-  infoText.textContent = currentEvent.info; // pre-line сохраняет разрывы строк
-  infoModal.classList.add('open');
+  document.getElementById('infoTitle').textContent = currentEvent.title;
+  document.getElementById('infoText').textContent = currentEvent.info;
+  document.getElementById('infoModal').classList.add('open');
 }
-function closeInfo(){ infoModal.classList.remove('open'); }
+function closeInfo(){ document.getElementById('infoModal').classList.remove('open'); }
 
 /* ====== Регистрация ====== */
-const regPanel = document.getElementById('regPanel');
-const regTitle = document.getElementById('regTitle');
-const agreeTerms = document.getElementById('agreeTerms');
-const agreePrivacy = document.getElementById('agreePrivacy');
-const payBtn = document.getElementById('payBtn');
-
 function openReg(key){
   currentEvent = EVENTS.find(e=>e.key===key);
-  regTitle.textContent = 'Регистрация: ' + currentEvent.title;
-  regPanel.style.display = 'block';
+  document.getElementById('regTitle').textContent = 'Регистрация: ' + currentEvent.title;
+  document.getElementById('regPanel').style.display = 'block';
   document.getElementById('testPanel').style.display='none';
   document.getElementById('resultPanel').style.display='none';
-  window.scrollTo({top: regPanel.offsetTop-6, behavior:'smooth'});
+  window.scrollTo({top: document.getElementById('regPanel').offsetTop-6, behavior:'smooth'});
   // сброс галочек
-  agreeTerms.checked = false; agreeTerms.disabled = true;
-  agreePrivacy.checked = false; agreePrivacy.disabled = true;
-  payBtn.disabled = true; payBtn.classList.add('btn-disabled');
+  document.getElementById('agreeTerms').checked = false;
+  document.getElementById('agreeTerms').disabled = true;
+  document.getElementById('agreePrivacy').checked = false;
+  document.getElementById('agreePrivacy').disabled = true;
+  document.getElementById('payBtn').disabled = true;
+  document.getElementById('payBtn').classList.add('btn-disabled');
   // обнулим маркер акцепта документов
-  docStage.terms = false; docStage.privacy = false;
+  window.docStage = {terms: false, privacy: false};
 }
 
 /* ====== Документы (обязательное открытие) ====== */
-const docModal = document.getElementById('docModal');
-const docTitle = document.getElementById('docTitle');
-const docBody = document.getElementById('docBody');
-const docAcceptBtn = document.getElementById('docAcceptBtn');
-const docStage = {terms:false, privacy:false};
-let docTypeOpen = null;
-
 function openDoc(type){
-  docTypeOpen = type;
-  docAcceptBtn.disabled = true; // будет активна после прокрутки в конец
+  window.docTypeOpen = type;
+  document.getElementById('docAcceptBtn').disabled = true;
   const fio = document.getElementById('fio').value.trim();
   if(type==='terms'){
-    docTitle.textContent = LEGAL.termsTitle;
-    docBody.textContent = LEGAL.termsText;
+    document.getElementById('docTitle').textContent = LEGAL.termsTitle;
+    document.getElementById('docBody').textContent = LEGAL.termsText;
   } else {
-    docTitle.textContent = LEGAL.privacyTitle;
-    docBody.textContent = LEGAL.privacyText(fio);
+    document.getElementById('docTitle').textContent = LEGAL.privacyTitle;
+    document.getElementById('docBody').textContent = LEGAL.privacyText(fio);
   }
-  docModal.classList.add('open');
-  docBody.scrollTop = 0;
+  document.getElementById('docModal').classList.add('open');
+  document.getElementById('docBody').scrollTop = 0;
 }
-function closeDoc(){ docModal.classList.remove('open'); }
-docBody.addEventListener('scroll', ()=> {
+function closeDoc(){ document.getElementById('docModal').classList.remove('open'); }
+document.getElementById('docBody').addEventListener('scroll', ()=> {
   // Разрешаем принять, когда пользователь долистал до низа
-  const atBottom = Math.ceil(docBody.scrollTop + docBody.clientHeight) >= docBody.scrollHeight;
-  docAcceptBtn.disabled = !atBottom;
+  const atBottom = Math.ceil(document.getElementById('docBody').scrollTop + document.getElementById('docBody').clientHeight) >= document.getElementById('docBody').scrollHeight;
+  document.getElementById('docAcceptBtn').disabled = !atBottom;
 });
 function acceptDoc(){
-  if(docTypeOpen==='terms'){
-    agreeTerms.disabled = false;
-    agreeTerms.checked = true;
-    docStage.terms = true;
+  if(window.docTypeOpen==='terms'){
+    document.getElementById('agreeTerms').disabled = false;
+    document.getElementById('agreeTerms').checked = true;
+    window.docStage.terms = true;
   } else {
-    agreePrivacy.disabled = false;
-    agreePrivacy.checked = true;
-    docStage.privacy = true;
+    document.getElementById('agreePrivacy').disabled = false;
+    document.getElementById('agreePrivacy').checked = true;
+    window.docStage.privacy = true;
   }
   closeDoc();
   // К оплате — только если оба документа приняты
-  if(docStage.terms && docStage.privacy){
-    payBtn.disabled = false;
-    payBtn.classList.remove('btn-disabled');
+  if(window.docStage.terms && window.docStage.privacy){
+    document.getElementById('payBtn').disabled = false;
+    document.getElementById('payBtn').classList.remove('btn-disabled');
   }
 }
 
@@ -676,27 +703,22 @@ function startPayment(){
 }
 
 /* ====== Тест: по одному вопросу ====== */
-const testPanel = document.getElementById('testPanel');
-const testTitle = document.getElementById('testTitle');
-const qBox = document.getElementById('qBox');
-const finishBtn = document.getElementById('finishBtn');
-
 let qIndex = 0;
 let answers = [];
 
 function startTest(){
-  testTitle.textContent = 'Тест: ' + currentEvent.title;
-  regPanel.style.display='none';
-  testPanel.style.display='block';
+  document.getElementById('regPanel').style.display='none';
+  document.getElementById('testPanel').style.display='block';
   answers = new Array(currentEvent.questions.length).fill(null);
   qIndex = 0;
   renderQuestion();
-  window.scrollTo({top:testPanel.offsetTop-6, behavior:'smooth'});
+  window.scrollTo({top:document.getElementById('testPanel').offsetTop-6, behavior:'smooth'});
 }
 
 function renderQuestion(){
   const q = currentEvent.questions[qIndex];
-  qBox.innerHTML = `
+  document.getElementById('testTitle').textContent = 'Тест: ' + currentEvent.title;
+  document.getElementById('qBox').innerHTML = `
     <p><b>${qIndex+1} / ${currentEvent.questions.length}</b>. ${q.q}</p>
     ${q.options.map((opt,i)=>`
       <label class="radio">
@@ -705,7 +727,7 @@ function renderQuestion(){
       </label>
     `).join('')}
   `;
-  finishBtn.style.display = (qIndex === currentEvent.questions.length-1) ? 'inline-block' : 'none';
+  document.getElementById('finishBtn').style.display = (qIndex === currentEvent.questions.length-1) ? 'inline-block' : 'none';
 }
 
 function nextQ(){
@@ -730,13 +752,10 @@ function finishTest(){
 }
 
 /* ====== Результаты и PDF ====== */
-const resultPanel = document.getElementById('resultPanel');
-const scoreText = document.getElementById('scoreText');
-
 function showResult(score){
-  testPanel.style.display='none';
-  resultPanel.style.display='block';
-  scoreText.textContent = score + '%';
+  document.getElementById('testPanel').style.display='none';
+  document.getElementById('resultPanel').style.display='block';
+  document.getElementById('scoreText').textContent = score + '%';
   window._resultScore = score;
 
   // подпись на первой кнопке в зависимости от результата
@@ -758,7 +777,7 @@ async function downloadPDF(withSupervisor){
   const school = document.getElementById('school').value.trim();
   const supervisor = withSupervisor ? (document.getElementById('supervisor').value.trim()) : '';
   const score = window._resultScore||0;
-  const docType = (score >= 51) ? 'ДИПЛОМ ПОБЕДИТЕЛЯ' : 'СЕРТИФИКАТ УЧАСТНИКА';
+  const docType = (score >= 51) ? 'diploma' : 'certificate';
   const number = '2025-' + String(Math.floor(Math.random()*100000)).padStart(5,'0');
   const today = new Date().toLocaleDateString('ru-RU');
 
@@ -766,21 +785,23 @@ async function downloadPDF(withSupervisor){
   const schoolWithBreak = school.replace(/(универси)(тет)/gi, '$1-<br>$2');
 
   let contentHtml = '';
-  if (docType === 'ДИПЛОМ ПОБЕДИТЕЛЯ') {
+  if (docType === 'thanks') {
     contentHtml = `
       <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${currentEvent.title}</div>
-      <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">ДИПЛОМ I СТЕПЕНИ</div>
-      <div style="text-align:center; margin:10px 0;">награждён(а):</div>
-      <div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">${fio}</div>
-      <div style="text-align:center;">${schoolWithBreak}, ${region}, ${city}</div>
-      ${supervisor ? `<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>${supervisor}</div>` : ''}
+      <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">БЛАГОДАРНОСТЬ НАУЧНОМУ РУКОВОДИТЕЛЮ<br>(ПРЕПОДАВАТЕЛЮ)</div>
+      <div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">${supervisor}</div>
+      <div style="text-align:center; margin:20px 0; line-height:1.5;">
+        Центр науки и инноваций выражает Вам огромную признательность и благодарность за профессиональную подготовку участника Олимпиады<br>
+        <b>(${fio})</b>.
+      </div>
       <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${today}<br>№ документа ${number}</div>
     `;
   } else {
     contentHtml = `
       <div style="text-align:center; margin-bottom:20px; font-size:18px; font-weight:bold;">${currentEvent.title}</div>
-      <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">СЕРТИФИКАТ УЧАСТНИКА</div>
-      <div style="font-size:20px; font-weight:bold; text-align:center; margin:20px 0;">${fio}</div>
+      <div style="font-size:24px; font-weight:bold; text-align:center; margin:20px 0;">${docType === 'diploma' ? 'ДИПЛОМ I СТЕПЕНИ' : 'СЕРТИФИКАТ УЧАСТНИКА'}</div>
+      ${docType === 'diploma' ? '<div style="text-align:center; margin:10px 0;">награждён(а):</div>' : ''}
+      <div style="font-size:20px; font-weight:bold; text-align:center; margin:10px 0;">${fio}</div>
       <div style="text-align:center;">${schoolWithBreak}, ${region}, ${city}</div>
       ${supervisor ? `<div style="margin-top:20px; text-align:center;">Научный руководитель(преподаватель):<br>${supervisor}</div>` : ''}
       <div style="margin-top:40px; text-align:center; font-size:14px;">Дата: ${today}<br>№ документа ${number}</div>
@@ -796,7 +817,7 @@ async function downloadPDF(withSupervisor){
         @page { size: A4 landscape; margin: 0; }
         body { margin: 0; padding: 0; font-family: "Times New Roman", serif; background: white; }
         .container { position: relative; width: 297mm; height: 210mm; }
-        .content { position: relative; z-index: 1; padding: 40px 60px; color: black; line-height: 1.4; font-size: 16px; }
+        .content { position: relative; z-index: 1; padding: 40px 60px; color: black; line-height: 1.4; font-size: 16px; height: 100%; box-sizing: border-box; }
       </style>
     </head>
     <body>
@@ -808,16 +829,33 @@ async function downloadPDF(withSupervisor){
   `;
 
   try {
-    // Используем html2pdf.js для генерации PDF в браузере
     const opt = {
       margin: 0,
-      filename: `${docType === 'ДИПЛОМ ПОБЕДИТЕЛЯ' ? 'diploma' : 'certificate'}.pdf`,
+      filename: `${docType}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    html2pdf().set(opt).from(fullHtml).save();
+    html2pdf().set(opt).from(fullHtml).save().finally(() => {
+      // Сохраняем участника в "базу данных"
+      const participantRecord = {
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        template: docType,
+         { 
+          fio: fio,
+          school: school,
+          region: region,
+          city: city,
+          supervisor: supervisor,
+          date: today,
+          number: number
+        }
+      };
+      // Здесь можно добавить сохранение в localStorage или отправку на сервер
+      console.log('Участник сохранён:', participantRecord);
+    });
 
   } catch (e) {
     console.error('PDF Error:', e);
