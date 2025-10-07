@@ -1,0 +1,11 @@
+/* Minimal styles for participants UI */
+body{font-family:Inter, system-ui, Arial, sans-serif;margin:0;background:#f4f6fb;color:#1b365d}
+header{background:#1b365d;color:#fff;padding:18px;text-align:center}
+.container{max-width:1000px;margin:20px auto;padding:10px}
+.card{background:#fff;padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.06);margin-bottom:12px}
+.events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.event-card{padding:12px;border-radius:8px;border:1px solid #e9eef8;background:#fff}
+.event-card h4{margin:0 0 8px 0}
+.row{display:flex;gap:8px;align-items:center}
+input,textarea{width:100%;padding:8px;margin:6px 0;border-radius:8px;border:1px solid #e6eef7}
+button{background:#1b365d;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
