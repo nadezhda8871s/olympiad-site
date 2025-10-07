@@ -245,7 +245,7 @@ app.post('/api/generate-pdf', async (req, res) => {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
       template: template,
-            Object.assign({}, data) // Копируем данные
+      JSON.parse(JSON.stringify(data)) // Копируем данные
     };
     const db = fs.readJsonSync(DB_FILE);
     db.push(participantRecord);
