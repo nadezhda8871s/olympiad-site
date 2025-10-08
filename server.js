@@ -22,7 +22,7 @@ app.use(express.static('public')); // Статические файлы (CSS, JS
 
 // Конфигурация сессий
 app.use(session({
-    secret: 'your_secret_key_here', // Замените на надежный секретный ключ!
+    secret: 'nadezhda8871s', // Замените на надежный секретный ключ!
     resave: false,
     saveUninitialized: false,
     cookie: { secure: false } // Установите true, если используете HTTPS
