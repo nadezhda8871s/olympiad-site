@@ -19,7 +19,7 @@
   ],
   "admin": {
     "login": "admin",
-    "password": "password" // ЗАМЕНИТЕ ЭТОТ ПАРОЛЬ НА НАСТОЯЩИЙ!
+    "password": "1988naNA." // ЗАМЕНИТЕ ЭТОТ ПАРОЛЬ НА НАСТОЯЩИЙ!
   },
   "registrations": [],
   "testResults": []
