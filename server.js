@@ -91,15 +91,16 @@ app.post('/api/docs', (req, res) => {
     res.json({ success: true });
 });
 
-// Статика
+// Обслуживание статики из папки frontend
 app.use(express.static(path.join(__dirname, 'frontend')));
 
-// Обработка 404 для SPA
+// Обработка SPA: все маршруты, кроме API, возвращают index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
-const port = process.env.PORT || 3000;
+// Использовать порт из переменной окружения или 10000
+const port = process.env.PORT || 10000;
 app.listen(port, () => {
     console.log(`Сервер запущен на порту ${port}`);
 });
