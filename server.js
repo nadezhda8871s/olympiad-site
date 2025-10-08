@@ -1,13 +1,13 @@
 // server.js
 const express = require('express');
-const multer = require('multer'); // Для загрузки файлов
+const multer = require('multer'); // Для загрузки файлов в админке и обработки форм
 const session = require('express-session'); // Для сессий администратора
 const path = require('path');
 const fs = require('fs').promises; // Для асинхронной работы с файлами
 const { v4: uuidv4 } = require('uuid'); // Для генерации уникальных ID
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // Используем переменную PORT от Render
 
 // --- Конфигурация ---
 // Путь к JSON файлу данных
@@ -16,30 +16,19 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 const UPLOAD_PATH = path.join(__dirname, 'public', 'uploads');
 
 // --- Промежуточное ПО ---
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 app.use(express.static('public')); // Статические файлы (CSS, JS, изображения, uploads)
 
 // Конфигурация сессий
 app.use(session({
-    secret: 'nadezhda8871s', // Замените на надежный секретный ключ!
+    secret: 'your_secret_key_here', // Замените на надежный секретный ключ!
     resave: false,
     saveUninitialized: false,
     cookie: { secure: false } // Установите true, если используете HTTPS
 }));
 
-// Конфигурация multer для загрузки файлов
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, UPLOAD_PATH); // Загружаем в public/uploads
-    },
-    filename: function (req, file, cb) {
-        // Генерируем уникальное имя файла
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
-const upload = multer({ storage: storage });
+// --- Middleware для обработки форм ---
+// Для формы регистрации (без файлов) используем multer().none()
+const urlEncodedParser = multer().none();
 
 // --- Вспомогательные функции для работы с JSON файлом ---
 async function readData() {
@@ -48,7 +37,7 @@ async function readData() {
         return JSON.parse(data);
     } catch (error) {
         if (error.code === 'ENOENT') {
-            // Если файл не существует, создаем пустой объект
+            // Если файл не существует, создаем пустый объект
             const initialData = {
                 events: [],
                 admin: { login: "admin", password: "password" } // Установите пароль!
@@ -81,13 +70,26 @@ function requireAdmin(req, res, next) {
     }
 }
 
+// --- Конфигурация multer для загрузки файлов в админке ---
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, UPLOAD_PATH); // Загружаем в public/uploads
+    },
+    filename: function (req, file, cb) {
+        // Генерируем уникальное имя файла
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
+
 // --- Маршруты ---
 
 // Главная страница
 app.get('/', async (req, res) => {
     try {
         const data = await readData();
-        // Отправляем HTML файл и передаем ему данные (можно через шаблонизатор, но для простоты отправим JSON для JS)
+        // Отправляем HTML файл
         res.sendFile(path.join(__dirname, 'views', 'index.html'));
     } catch (error) {
         console.error("Error serving index:", error);
@@ -210,6 +212,7 @@ app.post('/api/events', requireAdmin, upload.single('infoLetterFile'), async (re
             name: req.body.name,
             description: req.body.description,
             type: req.body.type, // olympiad, contest, conference
+            subtype: req.body.subtype || req.body.type, // subtype для фильтрации, если не передан, используем type
             infoLetterFileName: req.file ? req.file.filename : null // Имя файла, если загружен
         };
         data.events.push(newEvent);
@@ -267,7 +270,8 @@ app.post('/api/test-results', async (req, res) => {
 });
 
 // Отправить анкету (пока просто сохраняем в JSON)
-app.post('/api/registration', async (req, res) => {
+// ИСПРАВЛЕНО: используем urlEncodedParser перед маршрутом
+app.post('/api/registration', urlEncodedParser, async (req, res) => {
     try {
         const { eventId, surname, name, patronymic, institution, country, city, email, phone } = req.body;
         if (!eventId || !surname || !name || !email) {
@@ -299,7 +303,8 @@ app.post('/api/registration', async (req, res) => {
 });
 
 // --- Запуск сервера ---
-app.listen(PORT, () => {
+// Привязываем к 0.0.0.0 и используем переменную PORT
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Data file path: ${DATA_FILE}`);
     console.log(`Uploads path: ${UPLOAD_PATH}`);
