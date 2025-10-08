@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Олимпиады</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1 id="site-title">Олимпиады и Конкурсы</h1>
+        <p id="site-description">Уникальные мероприятия для студентов, школьников и преподавателей. Участвуйте, проходите тесты, получайте документы!</p>
+    </header>
+
+    <!-- Фильтры -->
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all">Все</button>
+        <button class="filter-btn" data-filter="student">Студентам и аспирантам</button>
+        <button class="filter-btn" data-filter="school">Школьникам и СПО</button>
+        <button class="filter-btn" data-filter="teacher">Преподавателям и учителям</button>
+    </div>
+
+    <!-- Поиск -->
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder="Поиск по мероприятиям...">
+    </div>
+
+    <!-- Карточки мероприятий -->
+    <div class="events-container" id="events-container">
+        <!-- Загрузка через JS -->
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
