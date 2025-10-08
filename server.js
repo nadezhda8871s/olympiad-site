@@ -16,6 +16,9 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 const UPLOAD_PATH = path.join(__dirname, 'public', 'uploads');
 
 // --- Промежуточное ПО ---
+// ИСПРАВЛЕНО: Добавлены глобальные middleware для парсинга urlencoded и json
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(express.static('public')); // Статические файлы (CSS, JS, изображения, uploads)
 
 // Конфигурация сессий
@@ -25,10 +28,6 @@ app.use(session({
     saveUninitialized: false,
     cookie: { secure: false } // Установите true, если используете HTTPS
 }));
-
-// --- Middleware для обработки форм ---
-// Для формы регистрации (без файлов) используем multer().none()
-const urlEncodedParser = multer().none();
 
 // --- Вспомогательные функции для работы с JSON файлом ---
 async function readData() {
@@ -188,7 +187,9 @@ app.get('/api/events/:id', async (req, res) => {
 });
 
 // Аутентификация администратора
+// ИСПРАВЛЕНО: Убран multer().none(), так как теперь глобальные middleware парсят urlencoded
 app.post('/api/admin/login', async (req, res) => {
+    // Теперь req.body должен быть доступен благодаря глобальным middleware
     const { login, password } = req.body;
     try {
         const data = await readData();
@@ -216,6 +217,7 @@ app.post('/api/admin/logout', (req, res) => {
 });
 
 // Добавить мероприятие (требует аутентификации)
+// multer используется для загрузки файла
 app.post('/api/events', requireAdmin, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
@@ -282,9 +284,11 @@ app.post('/api/test-results', async (req, res) => {
 });
 
 // Отправить анкету (пока просто сохраняем в JSON)
-// ИСПРАВЛЕНО: используем urlEncodedParser перед маршрутом
+// ИСПРАВЛЕНО: используем multer().none() локально для этого маршрута, чтобы парсить FormData без файлов
+const urlEncodedParser = multer().none();
 app.post('/api/registration', urlEncodedParser, async (req, res) => {
     try {
+        // req.body доступен благодаря urlEncodedParser
         const { eventId, surname, name, patronymic, institution, country, city, email, phone } = req.body;
         if (!eventId || !surname || !name || !email) {
              return res.status(400).json({ error: 'Event ID, Surname, Name, and Email are required' });
