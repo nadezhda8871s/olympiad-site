@@ -1,106 +1,306 @@
+// server.js
 const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
-const xlsx = require('xlsx');
-const nodemailer = require('nodemailer');
-const fs = require('fs');
+const multer = require('multer'); // Для загрузки файлов
+const session = require('express-session'); // Для сессий администратора
 const path = require('path');
+const fs = require('fs').promises; // Для асинхронной работы с файлами
+const { v4: uuidv4 } = require('uuid'); // Для генерации уникальных ID
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 3000;
+
+// --- Конфигурация ---
+// Путь к JSON файлу данных
+const DATA_FILE = path.join(__dirname, 'data.json');
+// Путь к папке загрузок
+const UPLOAD_PATH = path.join(__dirname, 'public', 'uploads');
+
+// --- Промежуточное ПО ---
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(multer().none());
+app.use(express.static('public')); // Статические файлы (CSS, JS, изображения, uploads)
 
-// Папки
-const uploadsDir = path.join(__dirname, 'uploads');
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+// Конфигурация сессий
+app.use(session({
+    secret: 'your_secret_key_here', // Замените на надежный секретный ключ!
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // Установите true, если используете HTTPS
+}));
 
-// Путь к Excel файлу
-const excelPath = path.join(dataDir, 'users.xlsx');
+// Конфигурация multer для загрузки файлов
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, UPLOAD_PATH); // Загружаем в public/uploads
+    },
+    filename: function (req, file, cb) {
+        // Генерируем уникальное имя файла
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
-// Начальные мероприятия
-let events = [
-    { id: 1, title: "Олимпиада по математике", desc: "Тест по алгебре и геометрии", category: "student" },
-    { id: 2, title: "Конкурс по русскому языку", desc: "Орфография и пунктуация", category: "school" },
-    { id: 3, title: "Методический семинар", desc: "Для преподавателей", category: "teacher" }
-];
+// --- Вспомогательные функции для работы с JSON файлом ---
+async function readData() {
+    try {
+        const data = await fs.readFile(DATA_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            // Если файл не существует, создаем пустой объект
+            const initialData = {
+                events: [],
+                admin: { login: "admin", password: "password" } // Установите пароль!
+            };
+            await writeData(initialData);
+            console.log("Created initial data.json file.");
+            return initialData;
+        } else {
+            console.error("Error reading data file:", error);
+            throw error;
+        }
+    }
+}
 
-// Начальные пользователи
-let users = [];
+async function writeData(data) {
+    try {
+        await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (error) {
+        console.error("Error writing data file:", error);
+        throw error;
+    }
+}
 
-// Email настройки
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'your-email@gmail.com',
-        pass: 'your-app-password' // используйте App Password
+// --- Middleware для проверки администратора ---
+function requireAdmin(req, res, next) {
+    if (req.session && req.session.adminLoggedIn) {
+        next();
+    } else {
+        res.status(401).send('Unauthorized');
+    }
+}
+
+// --- Маршруты ---
+
+// Главная страница
+app.get('/', async (req, res) => {
+    try {
+        const data = await readData();
+        // Отправляем HTML файл и передаем ему данные (можно через шаблонизатор, но для простоты отправим JSON для JS)
+        res.sendFile(path.join(__dirname, 'views', 'index.html'));
+    } catch (error) {
+        console.error("Error serving index:", error);
+        res.status(500).send("Server Error");
     }
 });
 
-// API: Получить мероприятия
-app.get('/api/events', (req, res) => {
-    res.json(events);
+// Страница олимпиад
+app.get('/olympiads', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'olympiads.html'));
 });
 
-// API: Добавить мероприятие (админ)
-app.post('/api/events', (req, res) => {
-    const { title, desc, category } = req.body;
-    const newEvent = {
-        id: events.length + 1,
-        title,
-        desc,
-        category
-    };
-    events.push(newEvent);
-    res.json({ success: true });
+// Страница конкурсов
+app.get('/contests', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'contests.html'));
 });
 
-// API: Регистрация
-app.post('/api/register', async (req, res) => {
-    const data = req.body;
-    data.id = users.length + 1;
-    users.push(data);
+// Страница конференций
+app.get('/conferences', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'conferences.html'));
+});
 
-    // Отправка на почту
-    await transporter.sendMail({
-        to: 'info@example.com',
-        subject: 'Новая регистрация',
-        text: `ФИО: ${data.fio}, Email: ${data.email}, Учебное заведение: ${data.school}`
+// Страница регистрации
+app.get('/registration/:eventId', (req, res) => {
+    // Проверяем, что eventId есть, иначе редирект или ошибка
+    if (!req.params.eventId) {
+         res.status(400).send("Event ID is required");
+         return;
+    }
+    res.sendFile(path.join(__dirname, 'views', 'registration.html'));
+});
+
+// Страница теста
+app.get('/test/:eventId', (req, res) => {
+    if (!req.params.eventId) {
+         res.status(400).send("Event ID is required");
+         return;
+    }
+    res.sendFile(path.join(__dirname, 'views', 'test.html'));
+});
+
+// Страница "О нас"
+app.get('/about', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'about.html'));
+});
+
+// Страница администратора
+app.get('/admin', requireAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
+});
+
+// --- API маршруты ---
+
+// Получить все мероприятия (для главной страницы и фильтрации)
+app.get('/api/events', async (req, res) => {
+    try {
+        const data = await readData();
+        // Фильтрация по типу (например, ?type=olympiad)
+        const type = req.query.type;
+        let events = data.events;
+        if (type) {
+            events = events.filter(event => event.type === type);
+        }
+        res.json(events);
+    } catch (error) {
+        console.error("Error fetching events:", error);
+        res.status(500).json({ error: 'Failed to fetch events' });
+    }
+});
+
+// Получить конкретное мероприятие (для информационного письма/регистрации)
+app.get('/api/events/:id', async (req, res) => {
+    try {
+        const data = await readData();
+        const event = data.events.find(e => e.id === req.params.id);
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+        res.json(event);
+    } catch (error) {
+        console.error("Error fetching event:", error);
+        res.status(500).json({ error: 'Failed to fetch event' });
+    }
+});
+
+// Аутентификация администратора
+app.post('/api/admin/login', async (req, res) => {
+    const { login, password } = req.body;
+    try {
+        const data = await readData();
+        if (data.admin && data.admin.login === login && data.admin.password === password) {
+            req.session.adminLoggedIn = true;
+            res.json({ success: true });
+        } else {
+            res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+    } catch (error) {
+        console.error("Error during login:", error);
+        res.status(500).json({ success: false, message: 'Login failed' });
+    }
+});
+
+// Выход администратора
+app.post('/api/admin/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error("Error during logout:", err);
+            return res.status(500).json({ success: false, message: 'Logout failed' });
+        }
+        res.json({ success: true });
     });
-
-    // Сохранить в Excel
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(users);
-    xlsx.utils.book_append_sheet(wb, ws, "Users");
-    xlsx.writeFile(wb, excelPath);
-
-    res.json({ success: true });
 });
 
-// API: Получить пользователей
-app.get('/api/users', (req, res) => {
-    res.json(users);
+// Добавить мероприятие (требует аутентификации)
+app.post('/api/events', requireAdmin, upload.single('infoLetterFile'), async (req, res) => {
+    try {
+        const data = await readData();
+        const newEvent = {
+            id: uuidv4(), // Уникальный ID
+            name: req.body.name,
+            description: req.body.description,
+            type: req.body.type, // olympiad, contest, conference
+            infoLetterFileName: req.file ? req.file.filename : null // Имя файла, если загружен
+        };
+        data.events.push(newEvent);
+        await writeData(data);
+        res.json({ success: true, event: newEvent });
+    } catch (error) {
+        console.error("Error adding event:", error);
+        res.status(500).json({ error: 'Failed to add event' });
+    }
 });
 
-// API: Документы
-app.post('/api/docs', (req, res) => {
-    const { content } = req.body;
-    fs.writeFileSync(path.join(uploadsDir, 'docs.txt'), content);
-    res.json({ success: true });
+// Удалить мероприятие (требует аутентификации)
+app.delete('/api/events/:id', requireAdmin, async (req, res) => {
+    try {
+        const data = await readData();
+        const originalLength = data.events.length;
+        data.events = data.events.filter(event => event.id !== req.params.id);
+        if (data.events.length === originalLength) {
+            // Мероприятие не найдено
+            return res.status(404).json({ error: 'Event not found' });
+        }
+        await writeData(data);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error deleting event:", error);
+        res.status(500).json({ error: 'Failed to delete event' });
+    }
 });
 
-// Обслуживание статики из папки frontend
-app.use(express.static(path.join(__dirname, 'frontend')));
-
-// Обработка SPA: все маршруты, кроме API, возвращают index.html
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+// Сохранить результаты теста (пока просто в JSON, как отдельный массив)
+app.post('/api/test-results', async (req, res) => {
+    try {
+        const { eventId, userId, answers, score } = req.body; // userId можно генерировать или получать откуда-то
+        if (!eventId || !answers || score === undefined) {
+             return res.status(400).json({ error: 'Event ID, answers, and score are required' });
+        }
+        const data = await readData();
+        if (!data.testResults) {
+            data.testResults = [];
+        }
+        data.testResults.push({
+            id: uuidv4(),
+            eventId: eventId,
+            userId: userId || 'anonymous', // Можно улучшить генерацию ID пользователя
+            answers: answers,
+            score: score,
+            timestamp: new Date().toISOString()
+        });
+        await writeData(data);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error saving test results:", error);
+        res.status(500).json({ error: 'Failed to save test results' });
+    }
 });
 
-// Использовать порт из переменной окружения или 10000
-const port = process.env.PORT || 10000;
-app.listen(port, () => {
-    console.log(`Сервер запущен на порту ${port}`);
+// Отправить анкету (пока просто сохраняем в JSON)
+app.post('/api/registration', async (req, res) => {
+    try {
+        const { eventId, surname, name, patronymic, institution, country, city, email, phone } = req.body;
+        if (!eventId || !surname || !name || !email) {
+             return res.status(400).json({ error: 'Event ID, Surname, Name, and Email are required' });
+        }
+        const data = await readData();
+        if (!data.registrations) {
+            data.registrations = [];
+        }
+        data.registrations.push({
+            id: uuidv4(),
+            eventId: eventId,
+            surname: surname,
+            name: name,
+            patronymic: patronymic,
+            institution: institution,
+            country: country,
+            city: city,
+            email: email,
+            phone: phone,
+            timestamp: new Date().toISOString()
+        });
+        await writeData(data);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error saving registration:", error);
+        res.status(500).json({ error: 'Failed to save registration' });
+    }
+});
+
+// --- Запуск сервера ---
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Data file path: ${DATA_FILE}`);
+    console.log(`Uploads path: ${UPLOAD_PATH}`);
 });
