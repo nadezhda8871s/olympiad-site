@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конкурсы</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Главная</a></li>
+                <li><a href="/olympiads">Олимпиады</a></li>
+                <li><a href="/contests">Конкурсы</a></li>
+                <li><a href="/conferences">Конференции</a></li>
+                <li><a href="/about">О нас</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Конкурсы</h1>
+
+        <!-- Фильтры (пример, можно адаптировать под конкурсы) -->
+        <div class="filters">
+            <button class="filter-btn active" data-type="contest">Для всех</button>
+            <!-- Можно добавить другие фильтры, например, по типу работы: статьи, ВКР и т.д. -->
+        </div>
+
+        <input type="text" id="search-input" placeholder="Поиск по мероприятиям...">
+
+        <section class="events-section">
+            <div id="events-container">
+                <!-- Карточки мероприятий будут вставлены сюда с помощью JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024. Все права защищены.</p>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script>
+        // При загрузке страницы загружаем только конкурсы
+        document.addEventListener('DOMContentLoaded', () => {
+            loadEvents('contest'); // Загружаем мероприятия типа 'contest'
+        });
+    </script>
+</body>
+</html>
