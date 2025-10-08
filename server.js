@@ -40,7 +40,7 @@ async function readData() {
             // Если файл не существует, создаем пустый объект
             const initialData = {
                 events: [],
-                admin: { login: "nadezhda8871s", password: "1988naNA" } // Установите пароль!
+                admin: { login: "admin", password: "password" } // Установите пароль!
             };
             await writeData(initialData);
             console.log("Created initial data.json file.");
