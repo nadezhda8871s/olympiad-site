@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель управления</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <main>
+        <h1>Панель управления</h1>
+
+        <div id="login-section">
+            <h2>Вход администратора</h2>
+            <form id="admin-login-form">
+                <label for="admin-login">Логин:</label>
+                <input type="text" id="admin-login" name="login" required>
+                <label for="admin-password">Пароль:</label>
+                <input type="password" id="admin-password" name="password" required>
+                <button type="submit">Войти</button>
+            </form>
+        </div>
+
+        <div id="admin-panel" style="display: none;">
+            <h2>Добавить мероприятие</h2>
+            <form id="add-event-form" enctype="multipart/form-data">
+                <label for="event-name">Название:</label>
+                <input type="text" id="event-name" name="name" required>
+
+                <label for="event-description">Описание:</label>
+                <textarea id="event-description" name="description" required></textarea>
+
+                <label for="event-type">Тип:</label>
+                <select id="event-type" name="type" required>
+                    <option value="olympiad">Олимпиада</option>
+                    <option value="contest">Конкурс</option>
+                    <option value="conference">Конференция</option>
+                </select>
+
+                <label for="info-letter-file">Файл информационного письма:</label>
+                <input type="file" id="info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
+
+                <button type="submit">Добавить</button>
+            </form>
+
+            <h2>Список мероприятий</h2>
+            <div id="events-list">
+                <!-- Список мероприятий будет вставлен сюда -->
+            </div>
+
+            <button id="logout-btn">Выйти</button>
+        </div>
+
+        <div id="error-message" style="display: none; color: red;">
+            <!-- Сообщения об ошибках будут отображаться здесь -->
+        </div>
+    </main>
+
+    <script src="/js/admin.js"></script>
+</body>
+</html>
