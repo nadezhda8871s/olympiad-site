@@ -18,8 +18,8 @@
     }
   ],
   "admin": {
-    "login": "nadezhda8871s",
-    "password": "1988naNA"
+    "login": "admin",
+    "password": "password"
   },
   "registrations": [],
   "testResults": []
