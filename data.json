@@ -1,0 +1,26 @@
+{
+  "events": [
+    {
+      "id": "event1",
+      "name": "Пример олимпиады для школьников",
+      "description": "Это описание примерной олимпиады для школьников.",
+      "type": "olympiad",
+      "subtype": "olympiad-school", // Добавлено для фильтрации
+      "infoLetterFileName": "info_olympiad_school_example.pdf"
+    },
+    {
+      "id": "event2",
+      "name": "Пример конкурса научных статей",
+      "description": "Это описание примерного конкурса научных статей.",
+      "type": "contest",
+      "subtype": "contest-article",
+      "infoLetterFileName": "info_contest_article_example.docx"
+    }
+  ],
+  "admin": {
+    "login": "admin",
+    "password": "password" // ЗАМЕНИТЕ ЭТОТ ПАРОЛЬ НА НАСТОЯЩИЙ!
+  },
+  "registrations": [],
+  "testResults": []
+}
