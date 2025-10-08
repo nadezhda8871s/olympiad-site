@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Административная панель</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .login-form { text-align: center; margin-top: 100px; }
+        .admin-panel { display: none; }
+        .form-group { margin: 10px 0; }
+        textarea, input { width: 100%; padding: 8px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="login-form" id="login-form">
+        <h2>Вход в панель управления</h2>
+        <input type="text" id="username" placeholder="Логин"><br>
+        <input type="password" id="password" placeholder="Пароль"><br>
+        <button onclick="login()">Войти</button>
+    </div>
+
+    <div class="admin-panel" id="admin-panel">
+        <h2>Панель управления</h2>
+        <div>
+            <label>Название сайта:</label>
+            <input type="text" id="site-title"><br>
+            <label>Описание сайта:</label>
+            <textarea id="site-desc"></textarea><br>
+        </div>
+
+        <h3>Добавить мероприятие</h3>
+        <input type="text" id="event-title" placeholder="Название">
+        <textarea id="event-desc" placeholder="Описание"></textarea>
+        <select id="event-category">
+            <option value="student">Студентам</option>
+            <option value="school">Школьникам</option>
+            <option value="teacher">Преподавателям</option>
+        </select>
+        <button onclick="addEvent()">Добавить</button>
+
+        <h3>Загрузить документы</h3>
+        <input type="file" multiple><br><br>
+
+        <h3>Текст для документов</h3>
+        <textarea id="doc-content"></textarea>
+        <button onclick="saveDocContent()">Сохранить</button>
+
+        <h3>Пользователи</h3>
+        <div id="users-list">Загрузка...</div>
+    </div>
+
+    <script>
+        const loginData = { username: "nadezhda8871s", password: "1988naNA" };
+
+        function login() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+
+            if (user === loginData.username && pass === loginData.password) {
+                document.getElementById("login-form").style.display = "none";
+                document.getElementById("admin-panel").style.display = "block";
+                loadUsers();
+            } else {
+                alert("Неверный логин или пароль");
+            }
+        }
+
+        async function addEvent() {
+            const title = document.getElementById("event-title").value;
+            const desc = document.getElementById("event-desc").value;
+            const category = document.getElementById("event-category").value;
+
+            await fetch('/api/events', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, desc, category })
+            });
+
+            alert(`Мероприятие "${title}" добавлено в категорию ${category}`);
+        }
+
+        async function saveDocContent() {
+            const content = document.getElementById("doc-content").value;
+            await fetch('/api/docs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+            alert("Текст сохранён");
+        }
+
+        async function loadUsers() {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            let html = `<table border="1" width="100%"><tr><th>ФИО</th><th>Учебное заведение</th><th>Email</th><th>Результат</th><th>Оплата</th></tr>`;
+            users.forEach(u => {
+                html += `<tr><td>${u.fio}</td><td>${u.school}</td><td>${u.email}</td><td>${u.result || '---'}</td><td>${u.paid ? 'Да' : 'Нет'}</td></tr>`;
+            });
+            html += `</table>`;
+            document.getElementById("users-list").innerHTML = html;
+        }
+    </script>
+</body>
+</html>
