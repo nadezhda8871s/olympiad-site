@@ -5,7 +5,7 @@
       "name": "Пример олимпиады для школьников",
       "description": "Это описание примерной олимпиады для школьников.",
       "type": "olympiad",
-      "subtype": "olympiad-school", // Добавлено для фильтрации
+      "subtype": "olympiad-school", 
       "infoLetterFileName": "info_olympiad_school_example.pdf"
     },
     {
@@ -19,7 +19,7 @@
   ],
   "admin": {
     "login": "admin",
-    "password": "1988naNA." // ЗАМЕНИТЕ ЭТОТ ПАРОЛЬ НА НАСТОЯЩИЙ!
+    "password": "1988naNA."
   },
   "registrations": [],
   "testResults": []
