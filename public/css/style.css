@@ -1,0 +1,221 @@
+/* style.css */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+header {
+    background-color: #333;
+    color: white;
+    padding: 1em 0;
+}
+
+nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+nav ul li {
+    margin: 0 1em;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+}
+
+main {
+    padding: 2em;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.hero {
+    text-align: center;
+    margin-bottom: 2em;
+}
+
+.event-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1em;
+    margin-bottom: 2em;
+}
+
+.event-btn {
+    display: block;
+    padding: 1.5em;
+    text-align: center;
+    text-decoration: none;
+    color: white;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.event-btn:hover {
+    opacity: 0.8;
+}
+
+.btn-olympiads { background-color: #007bff; }
+.btn-contests { background-color: #28a745; }
+.btn-conferences { background-color: #ffc107; color: black; }
+.btn-monographs { background-color: #6f42c1; }
+.btn-journal { background-color: #dc3545; }
+
+.events-section h2 {
+    text-align: center;
+    margin-bottom: 1em;
+}
+
+#events-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1em;
+}
+
+.event-card {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 1em;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.event-card h3 {
+    margin-top: 0;
+}
+
+.event-card .event-description {
+    margin: 0.5em 0;
+}
+
+.event-card .event-actions {
+    display: flex;
+    gap: 0.5em;
+    justify-content: space-between;
+}
+
+.event-card .event-actions button,
+.event-card .event-actions a {
+    padding: 0.5em 1em;
+    text-decoration: none;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.btn-info { background-color: #17a2b8; color: white; }
+.btn-register { background-color: #28a745; color: white; }
+
+/* Фильтры и поиск */
+.filters {
+    display: flex;
+    gap: 1em;
+    justify-content: center;
+    margin-bottom: 1em;
+}
+
+.filter-btn {
+    padding: 0.5em 1em;
+    border: 1px solid #ccc;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.filter-btn.active {
+    background-color: #007bff;
+    color: white;
+}
+
+#search-input {
+    width: 100%;
+    padding: 0.5em;
+    margin-bottom: 1em;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+/* Формы */
+form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+form label {
+    display: block;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+}
+
+form input,
+form textarea,
+form select {
+    width: 100%;
+    padding: 0.5em;
+    margin-bottom: 1em;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    box-sizing: border-box;
+}
+
+form button {
+    background-color: #007bff;
+    color: white;
+    padding: 0.75em 1.5em;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    width: 100%;
+}
+
+form button:hover {
+    background-color: #0056b3;
+}
+
+footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 1em 0;
+    margin-top: auto;
+}
+
+/* Админка */
+#admin-panel {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#events-list {
+    margin-top: 1em;
+}
+
+.event-item {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 1em;
+    margin-bottom: 0.5em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.event-item button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.event-item button:hover {
+    background-color: #c82333;
+}
