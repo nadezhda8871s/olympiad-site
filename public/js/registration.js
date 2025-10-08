@@ -57,16 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Или просто даем пользователю инструкции на этой же странице.
         // Добавим инструкцию под кнопкой:
         const instructionHTML = `
-            <div class="payment-instructions">
-                <h3>Реквизиты для оплаты:</h3>
-                <p>ООО "РУБИКОН-ПРИНТ"</p>
-                <p>ИНН: 2311372333</p>
-                <p>Р/с: 40702810620000167717</p>
-                <p>Банк: ООО "Банк Точка"</p>
-                <p>БИК: 044525104</p>
-                <p>К/с: 30101810745374525104</p>
-                <p><strong>Сумма оргвзноса: указана в информационном письме мероприятия.</strong></p>
-                <p>После оплаты, пожалуйста, пришлите <strong>работу</strong> и <strong>копию квитанции</strong> на адрес: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a>.</p>
+    <div class="payment-instructions">
+        <p>После оплаты, пожалуйста, пришлите <strong>работу</strong> и <strong>копию квитанции</strong> на адрес: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a>.</p>
             </div>
         `;
         successDiv.insertAdjacentHTML('afterend', instructionHTML);
