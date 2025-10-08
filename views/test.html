@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Главная</a></li>
+                <li><a href="/olympiads">Олимпиады</a></li>
+                <li><a href="/contests">Конкурсы</a></li>
+                <li><a href="/conferences">Конференции</a></li>
+                <li><a href="/about">О нас</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Тест для мероприятия</h1>
+        <form id="test-form">
+            <!-- Пример вопроса. В реальности вопросы будут подгружаться или быть жестко заданы. -->
+            <div class="question">
+                <h3>Вопрос 1: Какой цвет неба в ясный день?</h3>
+                <label><input type="radio" name="q1" value="a"> Синий</label><br>
+                <label><input type="radio" name="q1" value="b"> Красный</label><br>
+                <label><input type="radio" name="q1" value="c"> Зеленый</label><br>
+            </div>
+            <!-- ... 14 других вопросов ... -->
+            <div class="question">
+                <h3>Вопрос 15: Какой последний день недели?</h3>
+                <label><input type="radio" name="q15" value="a"> Понедельник</label><br>
+                <label><input type="radio" name="q15" value="b"> Суббота</label><br>
+                <label><input type="radio" name="q15" value="c"> Воскресенье</label><br>
+            </div>
+
+            <input type="hidden" id="event-id" name="eventId"> <!-- ID мероприятия будет подставлено JS -->
+            <button type="submit">Отправить тест</button>
+        </form>
+
+        <div id="test-result" style="display: none;">
+            <h2>Результаты теста</h2>
+            <p id="result-text"></p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024. Все права защищены.</p>
+    </footer>
+
+    <script src="/js/test.js"></script>
+</body>
+</html>
