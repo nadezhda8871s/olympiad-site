@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация на мероприятие</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Главная</a></li>
+                <li><a href="/olympiads">Олимпиады</a></li>
+                <li><a href="/contests">Конкурсы</a></li>
+                <li><a href="/conferences">Конференции</a></li>
+                <li><a href="/about">О нас</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Регистрация на мероприятие</h1>
+        <form id="registration-form">
+            <label for="surname">Фамилия:</label>
+            <input type="text" id="surname" name="surname" required>
+
+            <label for="name">Имя:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="patronymic">Отчество:</label>
+            <input type="text" id="patronymic" name="patronymic">
+
+            <label for="institution">Наименование заведения (полное):</label>
+            <input type="text" id="institution" name="institution" required>
+
+            <label for="country">Страна:</label>
+            <input type="text" id="country" name="country" required>
+
+            <label for="city">Город:</label>
+            <input type="text" id="city" name="city" required>
+
+            <label for="email">E-mail:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="phone">Номер телефона:</label>
+            <input type="tel" id="phone" name="phone" required>
+
+            <input type="hidden" id="event-id" name="eventId"> <!-- ID мероприятия будет подставлено JS -->
+
+            <button type="submit">Отправить анкету</button>
+        </form>
+
+        <div id="success-message" style="display: none;">
+            <h2>Анкета отправлена!</h2>
+            <p>Теперь перейдите к оплате оргвзноса и отправке работы.</p>
+            <button id="pay-button">Оплатить оргвзнос</button>
+        </div>
+
+        <div id="error-message" style="display: none; color: red;">
+            <!-- Сообщения об ошибках будут отображаться здесь -->
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024. Все права защищены.</p>
+    </footer>
+
+    <script src="/js/registration.js"></script>
+</body>
+</html>
