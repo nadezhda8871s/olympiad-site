@@ -136,8 +136,9 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
-// Страница администратора
-app.get('/admin', requireAdmin, (req, res) => {
+// Страница администратора - теперь доступна всем, чтобы показать форму входа
+app.get('/admin', (req, res) => {
+    // Всегда отправляем HTML файл, где находится форма входа
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
 
@@ -157,6 +158,17 @@ app.get('/api/events', async (req, res) => {
     } catch (error) {
         console.error("Error fetching events:", error);
         res.status(500).json({ error: 'Failed to fetch events' });
+    }
+});
+
+// Получить все мероприятия (для админки - требует аутентификации)
+app.get('/api/admin/events', requireAdmin, async (req, res) => {
+    try {
+        const data = await readData();
+        res.json(data.events);
+    } catch (error) {
+        console.error("Error fetching events for admin:", error);
+        res.status(500).json({ error: 'Failed to fetch events for admin' });
     }
 });
 
