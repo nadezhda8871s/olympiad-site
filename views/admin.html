@@ -4,16 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Панель управления</title>
-    <!-- ИСПРАВЛЕНО: используем абсолютный путь к CSS -->
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <main>
         <h1>Панель управления</h1>
 
-        <!-- УДАЛЕНО: div id="login-section" -->
-
-        <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ВСЕГДА ВИДИМА -->
         <div id="admin-panel">
             <h2>Добавить мероприятие</h2>
             <form id="add-event-form" enctype="multipart/form-data">
@@ -30,6 +26,14 @@
                     <option value="conference">Конференция</option>
                 </select>
 
+                <label for="event-subtype">Подтип (для фильтрации олимпиад):</label>
+                <select id="event-subtype" name="subtype">
+                    <option value="">Не указан</option>
+                    <option value="olympiad-students">Студентам, аспирантам</option>
+                    <option value="olympiad-school">Школьникам и СПО</option>
+                    <option value="olympiad-teachers">Научным руководителям, учителям, преподавателям</option>
+                </select>
+
                 <label for="info-letter-file">Файл информационного письма:</label>
                 <input type="file" id="info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
 
@@ -41,13 +45,11 @@
                 <!-- Список мероприятий будет вставлен сюда -->
             </div>
 
-            <!-- ДОБАВЛЕНО: Список регистраций -->
             <h2>Список регистраций</h2>
+            <button id="download-registrations-btn">Скачать Excel (CSV)</button>
             <div id="registrations-list">
                 <!-- Список регистраций будет вставлен сюда -->
             </div>
-
-            <!-- УДАЛЕНО: кнопка "Выйти" -->
         </div>
 
         <div id="error-message" style="display: none; color: red;">
