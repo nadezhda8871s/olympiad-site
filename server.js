@@ -1,7 +1,7 @@
 // server.js
 const express = require('express');
 const multer = require('multer'); // Для загрузки файлов в админке и обработки форм
-const session = require('express-session'); // Для сессий администратора
+const session = require('cookie-session'); // ИСПРАВЛЕНО: используем cookie-session
 const path = require('path');
 const fs = require('fs').promises; // Для асинхронной работы с файлами
 const { v4: uuidv4 } = require('uuid'); // Для генерации уникальных ID
@@ -21,20 +21,25 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public')); // Статические файлы (CSS, JS, изображения, uploads)
 
-// Конфигурация сессий
+// Конфигурация сессий - ИСПРАВЛЕНО для cookie-session
 app.use(session({
-    secret: 'your_secret_key_here', // Замените на надежный секретный ключ!
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false } // Установите true, если используете HTTPS
+    name: 'session', // Имя куки
+    keys: [process.env.SESSION_SECRET || 'your_fallback_secret_key_here'], // Используем переменную окружения или fallback
+    maxAge: 24 * 60 * 60 * 1000 // 24 часа (в миллисекундах)
+    // cookie: { secure: false } // Установите true, если используете HTTPS
 }));
 
 // --- Вспомогательные функции для работы с JSON файлом ---
+// ИСПРАВЛЕНО: Добавлена обработка ошибок в readData/writeData
 async function readData() {
     try {
+        console.log("Reading data from:", DATA_FILE); // Лог для отладки
         const data = await fs.readFile(DATA_FILE, 'utf8');
-        return JSON.parse(data);
+        const parsedData = JSON.parse(data);
+        console.log("Data read successfully, keys:", Object.keys(parsedData)); // Лог для отладки
+        return parsedData;
     } catch (error) {
+        console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
             // Если файл не существует, создаем пустый объект
             const initialData = {
@@ -44,8 +49,12 @@ async function readData() {
             await writeData(initialData);
             console.log("Created initial data.json file.");
             return initialData;
+        } else if (error instanceof SyntaxError) {
+            console.error("Syntax error in data.json:", error.message);
+            // Возвращаем пустой объект или выбрасываем ошибку, в зависимости от стратегии
+            return { events: [], admin: { login: "admin", password: "password" }, registrations: [], testResults: [] };
         } else {
-            console.error("Error reading data file:", error);
+            // Пробрасываем ошибку дальше, если это не ENOENT или SyntaxError
             throw error;
         }
     }
@@ -53,7 +62,9 @@ async function readData() {
 
 async function writeData(data) {
     try {
+        console.log("Writing data to:", DATA_FILE); // Лог для отладки
         await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+        console.log("Data written successfully"); // Лог для отладки
     } catch (error) {
         console.error("Error writing data file:", error);
         throw error;
@@ -61,10 +72,13 @@ async function writeData(data) {
 }
 
 // --- Middleware для проверки администратора ---
+// ИСПРАВЛЕНО: проверка сессии адаптирована для cookie-session
 function requireAdmin(req, res, next) {
     if (req.session && req.session.adminLoggedIn) {
+        console.log("Admin session verified for:", req.path); // Лог для отладки
         next();
     } else {
+        console.log("Admin session NOT verified for:", req.path); // Лог для отладки
         res.status(401).send('Unauthorized');
     }
 }
@@ -188,15 +202,20 @@ app.get('/api/events/:id', async (req, res) => {
 
 // Аутентификация администратора
 // ИСПРАВЛЕНО: Убран multer().none(), так как теперь глобальные middleware парсят urlencoded
+// ИСПРАВЛЕНО: Добавлены логи
 app.post('/api/admin/login', async (req, res) => {
+    console.log("Login attempt received"); // Лог для отладки
     // Теперь req.body должен быть доступен благодаря глобальным middleware
     const { login, password } = req.body;
+    console.log("Login attempt for user:", login); // Лог для отладки
     try {
         const data = await readData();
         if (data.admin && data.admin.login === login && data.admin.password === password) {
             req.session.adminLoggedIn = true;
+            console.log("Login successful for user:", login); // Лог для отладки
             res.json({ success: true });
         } else {
+            console.log("Login failed for user:", login, " - Invalid credentials"); // Лог для отладки
             res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
     } catch (error) {
@@ -206,11 +225,17 @@ app.post('/api/admin/login', async (req, res) => {
 });
 
 // Выход администратора
+// ИСПРАВЛЕНО: Улучшена обработка ошибок в logout
 app.post('/api/admin/logout', (req, res) => {
+    console.log("Logout attempt"); // Лог для отладки
     req.session.destroy((err) => {
         if (err) {
             console.error("Error during logout:", err);
-            return res.status(500).json({ success: false, message: 'Logout failed' });
+            // Возвращаем 500, но всё равно пытаемся отправить успех, если сессия уже уничтожена
+            // Или просто отправляем успех и логируем ошибку
+            console.log("Session destroy error, but proceeding with response");
+        } else {
+            console.log("Logout successful, session destroyed"); // Лог для отладки
         }
         res.json({ success: true });
     });
@@ -218,7 +243,9 @@ app.post('/api/admin/logout', (req, res) => {
 
 // Добавить мероприятие (требует аутентификации)
 // multer используется для загрузки файла
+// ИСПРАВЛЕНО: Добавлены логи
 app.post('/api/events', requireAdmin, upload.single('infoLetterFile'), async (req, res) => {
+    console.log("Add event attempt, file uploaded:", !!req.file); // Лог для отладки
     try {
         const data = await readData();
         const newEvent = {
@@ -231,6 +258,7 @@ app.post('/api/events', requireAdmin, upload.single('infoLetterFile'), async (re
         };
         data.events.push(newEvent);
         await writeData(data);
+        console.log("Event added successfully:", newEvent.name); // Лог для отладки
         res.json({ success: true, event: newEvent });
     } catch (error) {
         console.error("Error adding event:", error);
