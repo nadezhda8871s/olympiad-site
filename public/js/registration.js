@@ -4,17 +4,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const eventIdInput = document.getElementById('event-id');
     const successDiv = document.getElementById('success-message');
     const errorDiv = document.getElementById('error-message');
-    const payButton = document.getElementById('pay-button');
+    const payButton = document.getElementById('pay-button'); // Кнопка "Оплатить" (временно, если не для олимпиад)
 
-    // Извлекаем ID мероприятия из URL
     const pathParts = window.location.pathname.split('/');
-    const eventId = pathParts[pathParts.length - 1]; // Последняя часть URL
+    const eventId = pathParts[pathParts.length - 1];
     if (!eventId) {
         errorDiv.textContent = 'Ошибка: ID мероприятия не найден в URL.';
         errorDiv.style.display = 'block';
         return;
     }
-    eventIdInput.value = eventId; // Устанавливаем значение скрытого поля
+    eventIdInput.value = eventId;
+
+    let eventType = null;
+    fetch(`/api/events/${eventId}`)
+        .then(response => response.json())
+        .then(event => {
+            eventType = event.type;
+        })
+        .catch(error => {
+            console.error("Error fetching event details for type check:", error);
+            eventType = 'default';
+        });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -28,40 +38,41 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                form.style.display = 'none'; // Скрываем форму
-                successDiv.style.display = 'block'; // Показываем сообщение об успехе
-                errorDiv.style.display = 'none'; // Скрываем ошибки
+                form.style.display = 'none';
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'block';
+
+                if (eventType === 'olympiad') {
+                    // Для олимпиад - показываем инструкцию и ссылку на тест
+                    const instructionHTML = `
+                        <div class="payment-instructions">
+                            <p>После оплаты оргвзноса, пожалуйста, пришлите <strong>копию квитанции</strong> на адрес: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a>.</p>
+                            <p>Также, после оплаты, вы можете <a href="/test/${eventId}">пройти тест</a> по ссылке.</p>
+                        </div>
+                    `;
+                    successDiv.innerHTML = instructionHTML;
+                } else {
+                    // Для других - показываем только инструкцию об оплате
+                    const instructionHTML = `
+                        <div class="payment-instructions">
+                            <p>После оплаты, пожалуйста, пришлите <strong>работу</strong> и <strong>копию квитанции</strong> на адрес: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a>.</p>
+                        </div>
+                    `;
+                    successDiv.innerHTML = instructionHTML;
+                }
             } else {
                 const errorData = await response.json();
                 errorDiv.textContent = errorData.error || 'Ошибка при отправке анкеты.';
                 errorDiv.style.display = 'block';
-                successDiv.style.display = 'none'; // Скрываем успех
+                successDiv.style.display = 'none';
             }
         } catch (error) {
             console.error("Registration error:", error);
             errorDiv.textContent = 'Произошла ошибка при отправке анкеты.';
             errorDiv.style.display = 'block';
-            successDiv.style.display = 'none'; // Скрываем успех
+            successDiv.style.display = 'none';
         }
     });
 
-    // Обработчик кнопки "Оплатить"
-    payButton.addEventListener('click', () => {
-        // Перенаправляем на страницу с реквизитами
-        // или открываем модальное окно с реквизитами
-        // или делаем POST запрос на сервер для генерации инвойса (если будет Robokassa)
-        // Пока что, просто покажем алерт с инструкцией.
-        alert('Пожалуйста, оплатите оргвзнос по реквизитам, указанным в информационном письме. После оплаты пришлите работу и копию квитанции на vsemnayka@gmail.com.');
-        // Или перенаправим на страницу с реквизитами
-        // window.location.href = '/payment-instructions'; // Эту страницу нужно создать
-        // Или просто даем пользователю инструкции на этой же странице.
-        // Добавим инструкцию под кнопкой:
-        const instructionHTML = `
-    <div class="payment-instructions">
-        <p>После оплаты, пожалуйста, пришлите <strong>работу</strong> и <strong>копию квитанции</strong> на адрес: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a>.</p>
-            </div>
-        `;
-        successDiv.insertAdjacentHTML('afterend', instructionHTML);
-        payButton.style.display = 'none'; // Скрываем кнопку, чтобы не нажимали снова
-    });
+    // Убрана логика кнопки "Оплатить" из registration.js, так как теперь инструкция вставляется в successDiv
 });
