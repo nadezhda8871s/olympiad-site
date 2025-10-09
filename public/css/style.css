@@ -1,47 +1,15 @@
 /* style.css */
-/* Используем CSS переменные для удобства */
-:root {
-    --primary-color: #007bff;
-    --primary-light: #00aaff;
-    --primary-dark: #0056b3;
-    --secondary-color: #6f42c1;
-    --secondary-light: #8a6cff;
-    --success-color: #28a745;
-    --warning-color: #ffc107;
-    --warning-dark: #e0a800;
-    --danger-color: #dc3545;
-    --light-bg: #f8f9fa;
-    --dark-bg: #343a40;
-    --text-light: #ffffff;
-    --text-dark: #212529;
-    --border-color: #dee2e6;
-    --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    --card-shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.15);
-    --transition: all 0.3s ease;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Более современный шрифт */
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%); /* Мягкий градиент фона */
-    color: var(--text-dark);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    background-color: #f4f4f4;
 }
 
 header {
-    background: linear-gradient(to right, var(--dark-bg), var(--primary-dark)); /* Градиентный фон шапки */
-    color: var(--text-light);
+    background-color: #333;
+    color: white;
     padding: 1em 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Лёгкая тень */
 }
 
 nav ul {
@@ -50,60 +18,32 @@ nav ul {
     padding: 0;
     display: flex;
     justify-content: center;
-    flex-wrap: wrap; /* Для адаптивности при узком экране */
 }
 
 nav ul li {
-    margin: 0 0.5em; /* Уменьшил отступы */
+    margin: 0 1em;
 }
 
 nav ul li a {
-    color: var(--text-light);
+    color: white;
     text-decoration: none;
-    padding: 0.5em 1em; /* Добавил внутренние отступы */
-    border-radius: 5px; /* Скругление */
-    transition: var(--transition); /* Плавный переход */
-}
-
-nav ul li a:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Лёгкий фон при наведении */
-    transform: translateY(-2px); /* Лёгкий подъём */
 }
 
 main {
     padding: 2em;
     max-width: 1200px;
     margin: 0 auto;
-    flex: 1; /* Для правильного расположения футера */
-    width: 100%; /* Убедимся, что main занимает всю ширину */
 }
 
-/* --- Hero Section --- */
 .hero {
     text-align: center;
     margin-bottom: 2em;
-    padding: 1.5em;
-    background: linear-gradient(120deg, var(--primary-color), var(--secondary-color)); /* Градиентный фон героя */
-    color: var(--text-light);
-    border-radius: 10px;
-    box-shadow: var(--card-shadow);
 }
 
-.hero h1 {
-    font-size: 2.5em; /* Увеличил размер заголовка */
-    margin-bottom: 0.5em;
-}
-
-.hero p {
-    font-size: 1.2em;
-    margin-bottom: 0.25em;
-}
-
-/* --- Event Buttons Grid --- */
 .event-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Адаптивная сетка */
-    gap: 1.5em; /* Увеличил отступы */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1em;
     margin-bottom: 2em;
 }
 
@@ -112,400 +52,204 @@ main {
     padding: 1.5em;
     text-align: center;
     text-decoration: none;
-    color: var(--text-light);
-    border-radius: 10px; /* Увеличил скругление */
-    transition: var(--transition);
-    box-shadow: var(--card-shadow); /* Тень */
-    font-weight: bold;
-    position: relative;
-    overflow: hidden; /* Для эффекта при наведении */
-    z-index: 1;
-}
-
-.event-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0)); /* Внутренний градиент */
-    z-index: -1;
-    transition: var(--transition);
+    color: white;
+    border-radius: 5px;
+    transition: background-color 0.3s;
 }
 
 .event-btn:hover {
-    transform: translateY(-5px); /* Поднимаем при наведении */
-    box-shadow: var(--card-shadow-hover); /* Более сильная тень при наведении */
-    /* Увеличиваем градиент при наведении */
-    background: linear-gradient(120deg, var(--primary-light), var(--secondary-light));
+    opacity: 0.8;
 }
 
-.event-btn:hover::before {
-    opacity: 0; /* Исчезает внутренний градиент */
-}
+.btn-olympiads { background-color: #007bff; }
+.btn-contests { background-color: #28a745; }
+.btn-conferences { background-color: #ffc107; color: black; }
+.btn-monographs { background-color: #6f42c1; }
+.btn-journal { background-color: #dc3545; }
 
-.btn-olympiads { background: linear-gradient(120deg, var(--primary-color), var(--primary-dark)); }
-.btn-contests { background: linear-gradient(120deg, var(--success-color), #1e7e34); }
-.btn-conferences { background: linear-gradient(120deg, var(--warning-color), var(--warning-dark)); color: var(--text-dark); }
-.btn-monographs { background: linear-gradient(120deg, var(--secondary-color), #5a32a3); }
-.btn-journal { background: linear-gradient(120deg, var(--danger-color), #c82333); }
-
-/* --- Events Section --- */
 .events-section h2 {
     text-align: center;
-    margin-bottom: 1.5em; /* Увеличил отступ */
-    font-size: 1.8em; /* Увеличил размер заголовка */
-    color: var(--primary-dark);
+    margin-bottom: 1em;
 }
 
 #events-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Адаптивная сетка карточек */
-    gap: 1.5em; /* Увеличил отступы */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1em;
 }
 
 .event-card {
-    background-color: var(--text-light); /* Белый фон карточки */
-    border: 1px solid var(--border-color);
-    border-radius: 10px; /* Увеличил скругление */
-    padding: 1.5em;
-    box-shadow: var(--card-shadow);
-    transition: var(--transition);
-    display: flex;
-    flex-direction: column;
-    height: 100%; /* Для выравнивания высоты карточек */
-}
-
-.event-card:hover {
-    transform: translateY(-3px); /* Лёгкий подъём при наведении */
-    box-shadow: var(--card-shadow-hover); /* Более сильная тень при наведении */
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 1em;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .event-card h3 {
     margin-top: 0;
-    margin-bottom: 0.75em; /* Увеличил отступ */
-    color: var(--primary-color);
-    font-size: 1.3em; /* Увеличил размер заголовка карточки */
 }
 
 .event-card .event-description {
     margin: 0.5em 0;
-    flex-grow: 1; /* Для выравнивания кнопок внизу */
 }
 
 .event-card .event-actions {
     display: flex;
-    gap: 0.75em; /* Увеличил отступ */
+    gap: 0.5em;
     justify-content: space-between;
-    margin-top: auto; /* Прижимает кнопки вниз */
 }
 
 .event-card .event-actions button,
 .event-card .event-actions a {
-    padding: 0.75em 1em; /* Увеличил внутренние отступы */
+    padding: 0.5em 1em;
     text-decoration: none;
     border: none;
-    border-radius: 5px;
+    border-radius: 3px;
     cursor: pointer;
-    transition: var(--transition);
-    font-weight: 500; /* Чуть жирнее шрифт */
-    flex: 1; /* Равномерное распределение ширины */
-    text-align: center;
 }
 
-.btn-info {
-    background: linear-gradient(120deg, #17a2b8, #138496);
-    color: var(--text-light);
-}
-.btn-info:hover { background: linear-gradient(120deg, #138496, #117a8b); }
+.btn-info { background-color: #17a2b8; color: white; }
+.btn-register { background-color: #28a745; color: white; }
 
-.btn-register {
-    background: linear-gradient(120deg, var(--success-color), #218838);
-    color: var(--text-light);
-}
-.btn-register:hover { background: linear-gradient(120deg, #218838, #1e7e34); }
-
-/* --- Фильтры и поиск --- */
+/* Фильтры и поиск */
 .filters {
     display: flex;
     gap: 1em;
     justify-content: center;
-    margin-bottom: 1.5em; /* Увеличил отступ */
-    flex-wrap: wrap; /* Для адаптивности */
+    margin-bottom: 1em;
 }
 
 .filter-btn {
-    padding: 0.75em 1.25em; /* Увеличил внутренние отступы */
-    border: 1px solid var(--primary-color);
-    background-color: var(--text-light);
-    color: var(--primary-color);
+    padding: 0.5em 1em;
+    border: 1px solid #ccc;
+    background-color: #f8f9fa;
     cursor: pointer;
-    border-radius: 20px; /* Скруглённые кнопки */
-    transition: var(--transition);
-    font-weight: 500;
-}
-
-.filter-btn:hover {
-    background-color: var(--primary-color);
-    color: var(--text-light);
+    border-radius: 3px;
 }
 
 .filter-btn.active {
-    background-color: var(--primary-color);
-    color: var(--text-light);
+    background-color: #007bff;
+    color: white;
 }
 
 #search-input {
     width: 100%;
-    padding: 0.75em 1em; /* Увеличил внутренние отступы */
-    margin-bottom: 1.5em; /* Увеличил отступ */
-    border: 2px solid var(--border-color);
-    border-radius: 8px; /* Скругление */
-    transition: border-color var(--transition);
-    font-size: 1em; /* Размер шрифта */
+    padding: 0.5em;
+    margin-bottom: 1em;
+    border: 1px solid #ccc;
+    border-radius: 3px;
 }
 
-#search-input:focus {
-    outline: none;
-    border-color: var(--primary-color); /* Цвет границы при фокусе */
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Тень при фокусе */
-}
-
-/* --- Формы --- */
+/* Формы */
 form {
     max-width: 600px;
     margin: 0 auto;
-    background-color: var(--text-light);
-    padding: 2em;
-    border-radius: 10px;
-    box-shadow: var(--card-shadow);
 }
 
 form label {
     display: block;
     margin-bottom: 0.5em;
     font-weight: bold;
-    color: var(--text-dark);
 }
 
 form input,
 form textarea,
 form select {
     width: 100%;
-    padding: 0.75em;
+    padding: 0.5em;
     margin-bottom: 1em;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
     box-sizing: border-box;
-    transition: border-color var(--transition);
-    font-family: inherit; /* Наследуем шрифт */
-    font-size: 1em;
-}
-
-form input:focus,
-form textarea:focus,
-form select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 form button {
-    background: linear-gradient(120deg, var(--primary-color), var(--primary-dark)); /* Градиентная кнопка */
-    color: var(--text-light);
-    padding: 0.85em 1.5em; /* Увеличил внутренние отступы */
+    background-color: #007bff;
+    color: white;
+    padding: 0.75em 1.5em;
     border: none;
-    border-radius: 5px;
+    border-radius: 3px;
     cursor: pointer;
-    transition: var(--transition);
     width: 100%;
-    font-size: 1.1em; /* Увеличил размер шрифта */
-    font-weight: bold;
 }
 
 form button:hover {
-    background: linear-gradient(120deg, var(--primary-light), var(--primary-color)); /* Изменение градиента при наведении */
-    transform: scale(1.02); /* Лёгкое увеличение */
+    background-color: #0056b3;
 }
 
-/* --- Футер --- */
 footer {
-    background: linear-gradient(to right, var(--dark-bg), var(--primary-dark)); /* Градиентный фон футера */
-    color: var(--text-light);
+    background-color: #333;
+    color: white;
     text-align: center;
-    padding: 1.5em 0; /* Увеличил отступ */
-    margin-top: auto; /* Прижимает вниз */
+    padding: 1em 0;
+    margin-top: auto;
 }
 
-/* --- Админка --- */
+/* Админка */
 #admin-panel {
     max-width: 800px;
     margin: 0 auto;
-    background-color: var(--text-light);
-    padding: 2em;
-    border-radius: 10px;
-    box-shadow: var(--card-shadow);
 }
 
-#events-list {
-    margin-top: 1.5em; /* Увеличил отступ */
+#events-list,
+#registrations-list { /* Стили для обоих списков */
+    margin-top: 1em;
 }
 
 .event-item {
-    background-color: var(--light-bg);
-    border: 1px solid var(--border-color);
+    background-color: white;
+    border: 1px solid #ddd;
     border-radius: 5px;
     padding: 1em;
-    margin-bottom: 0.75em; /* Увеличил отступ */
+    margin-bottom: 0.5em;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: var(--transition);
-}
-
-.event-item:hover {
-    background-color: #e9ecef; /* Лёгкий фон при наведении */
 }
 
 .event-item button {
-    background: linear-gradient(120deg, var(--danger-color), #bd2130);
-    color: var(--text-light);
+    background-color: #dc3545;
+    color: white;
     border: none;
     padding: 0.5em 1em;
     border-radius: 3px;
     cursor: pointer;
-    transition: var(--transition);
 }
 
 .event-item button:hover {
-    background: linear-gradient(120deg, #bd2130, #a71d2a);
-    transform: scale(1.05); /* Лёгкое увеличение */
+    background-color: #c82333;
 }
 
-/* --- Страница теста --- */
-#test-form {
-    background-color: var(--text-light);
-    padding: 2em;
-    border-radius: 10px;
-    box-shadow: var(--card-shadow);
-    max-width: 800px;
-    margin: 0 auto;
+/* --- НОВЫЕ стили для таблицы регистраций и кнопки --- */
+.registrations-table {
+     width: 100%;
+     border-collapse: collapse;
+     margin-top: 1em;
 }
 
-.question {
-    margin-bottom: 1.5em; /* Увеличил отступ между вопросами */
-    padding: 1em;
-    border-left: 4px solid var(--primary-color); /* Индикатор вопроса */
-    background-color: #f9f9f9; /* Лёгкий фон */
-    border-radius: 0 5px 5px 0; /* Скругление справа */
+.registrations-table th,
+.registrations-table td {
+     border: 1px solid #ddd;
+     padding: 0.5em;
+     text-align: left;
 }
 
-.question h3 {
-    margin-top: 0;
-    color: var(--primary-dark);
+.registrations-table th {
+     background-color: #f2f2f2;
 }
 
-.question label {
-    display: block;
-    margin-bottom: 0.5em;
-    margin-left: 1em; /* Отступ для радио-кнопок */
-}
-
-/* --- Страница регистрации --- */
-#success-message, #error-message {
-    max-width: 600px;
-    margin: 1.5em auto;
-    padding: 1.5em;
-    border-radius: 10px;
-    text-align: center;
-}
-
-#success-message {
-    background-color: #d4edda; /* Зелёный фон успеха */
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-#error-message {
-    background-color: #f8d7da; /* Красный фон ошибки */
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-#pay-button {
-    background: linear-gradient(120deg, var(--warning-color), var(--warning-dark));
-    color: var(--text-dark);
-    padding: 0.85em 1.5em;
+#download-registrations-btn {
+    margin-bottom: 1em;
+    padding: 0.5em 1em;
+    background-color: #28a745;
+    color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 3px;
     cursor: pointer;
-    transition: var(--transition);
-    font-size: 1.1em;
-    font-weight: bold;
-    display: block;
-    margin: 1em auto;
-    width: auto;
 }
 
-#pay-button:hover {
-    background: linear-gradient(120deg, var(--warning-dark), #e0a800);
-    transform: scale(1.02);
+#download-registrations-btn:hover {
+    background-color: #218838;
 }
-
-.payment-instructions {
-    max-width: 600px;
-    margin: 1.5em auto;
-    padding: 1.5em;
-    background-color: #fff3cd; /* Жёлтый фон инструкции */
-    border: 1px solid #ffeaa7;
-    border-radius: 10px;
-    text-align: center;
-}
-
-.payment-instructions h3 {
-    color: #856404;
-    margin-bottom: 0.5em;
-}
-
-.payment-instructions p {
-    margin-bottom: 0.5em;
-}
-
-/* --- Адаптивность --- */
-@media (max-width: 768px) {
-    .hero h1 {
-        font-size: 2em; /* Уменьшаем заголовок на мобильных */
-    }
-
-    nav ul {
-        flex-direction: column; /* Вертикальное меню на мобильных */
-        align-items: center;
-    }
-
-    nav ul li {
-        margin: 0.25em 0; /* Уменьшаем отступы в меню */
-    }
-
-    .event-buttons {
-        grid-template-columns: 1fr; /* Одна кнопка в строке на мобильных */
-    }
-
-    #events-container {
-        grid-template-columns: 1fr; /* Одна карточка в строке на мобильных */
-    }
-
-    .event-card .event-actions {
-        flex-direction: column; /* Кнопки друг под другом на мобильных */
-    }
-
-    .filters {
-        flex-direction: column; /* Фильтры друг под другом */
-        align-items: center;
-    }
-
-    .filter-btn {
-        width: 100%; /* Фильтры на всю ширину */
-        max-width: 300px;
-    }
-}
+/* --- */
