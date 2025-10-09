@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminPanel = document.getElementById('admin-panel');
     const addEventForm = document.getElementById('add-event-form');
     const eventsList = document.getElementById('events-list');
+    const registrationsListDiv = document.getElementById('registrations-list'); // Добавлено
     // const logoutBtn = document.getElementById('logout-btn'); // УДАЛЕНО
     const errorMessage = document.getElementById('error-message');
 
@@ -94,6 +95,89 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // loadRegistrationsList - добавлено для загрузки регистраций
+    async function loadRegistrationsList() {
+        console.log("Loading registrations list..."); // Лог для отладки
+        try {
+            // ИСПРАВЛЕНО: УБРАНО credentials: 'include', так как сессия не нужна
+            const response = await fetch('/api/admin/registrations'/*, {
+                credentials: 'include' // <-- УДАЛЕНО: не отправлять куки сессии
+            }*/);
+
+            console.log("Load registrations list response status:", response.status); // Лог для отладки
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const registrations = await response.json();
+            if (!registrationsListDiv) {
+                 console.error("Element with id 'registrations-list' not found in admin.html");
+                 return; // Если элемента нет, выходим
+            }
+            registrationsListDiv.innerHTML = ''; // Очищаем список
+
+            if (registrations.length === 0) {
+                 registrationsListDiv.innerHTML = '<p>Регистраций пока нет.</p>';
+                 return;
+            }
+
+            // Создаём простую таблицу для отображения регистраций
+            const table = document.createElement('table');
+            table.className = 'registrations-table'; // Добавим класс для стилей
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `
+                <th>ID</th>
+                <th>Фамилия</th>
+                <th>Имя</th>
+                <th>Отчество</th>
+                <th>Заведение</th>
+                <th>Страна</th>
+                <th>Город</th>
+                <th>E-mail</th>
+                <th>Телефон</th>
+                <th>Дата регистрации</th>
+            `;
+            table.appendChild(headerRow);
+
+            registrations.forEach(reg => {
+                 const row = document.createElement('tr');
+                 // Убираем теги <script> из данных (на всякий случай)
+                 const safeReg = {
+                     id: reg.id,
+                     surname: reg.surname.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
+                     name: reg.name.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
+                     patronymic: reg.patronymic?.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') || '',
+                     institution: reg.institution.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
+                     country: reg.country.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
+                     city: reg.city.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
+                     email: reg.email.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
+                     phone: reg.phone?.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') || '',
+                     timestamp: reg.timestamp
+                 };
+                 row.innerHTML = `
+                     <td>${safeReg.id}</td>
+                     <td>${safeReg.surname}</td>
+                     <td>${safeReg.name}</td>
+                     <td>${safeReg.patronymic}</td>
+                     <td>${safeReg.institution}</td>
+                     <td>${safeReg.country}</td>
+                     <td>${safeReg.city}</td>
+                     <td>${safeReg.email}</td>
+                     <td>${safeReg.phone}</td>
+                     <td>${new Date(safeReg.timestamp).toLocaleString()}</td>
+                 `;
+                 table.appendChild(row);
+            });
+            registrationsListDiv.appendChild(table);
+        } catch (error) {
+            console.error("Error loading registrations list:", error);
+            if (registrationsListDiv) {
+                 registrationsListDiv.innerHTML = '<p>Ошибка загрузки списка регистраций.</p>';
+            }
+        }
+    }
+
     // Глобальная функция для удаления (чтобы работал onclick в HTML)
     // ИСПРАВЛЕНО: УБРАНО credentials: 'include' и улучшена обработка ошибок
     window.deleteEvent = async function(eventId) {
@@ -133,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Загружаем список мероприятий при загрузке страницы
+    // Загружаем список мероприятий и регистраций при загрузке страницы
     loadEventsList();
+    loadRegistrationsList(); // Вызываем новую функцию
 });
