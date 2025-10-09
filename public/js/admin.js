@@ -8,11 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
     const errorMessage = document.getElementById('error-message');
 
+    console.log("Admin page loaded, checking session..."); // Лог для отладки
+
     // Проверка сессии при загрузке
     checkSession();
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        console.log("Login form submitted"); // Лог для отладки
         const formData = new FormData(loginForm);
         try {
             // ИСПРАВЛЕНО: добавлено credentials: 'include' для запроса входа
@@ -22,10 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 credentials: 'include' // <-- ВАЖНО: отправлять куки сессии
             });
 
+            console.log("Login response status:", response.status); // Лог для отладки
+
             // Попробуем обработать ответ как JSON
             let data;
             if (response.headers.get("Content-Type")?.includes("application/json")) {
                 data = await response.json();
+                console.log("Login response JSON:", data); // Лог для отладки
             } else {
                 // Если сервер вернул текст (например, "Unauthorized"), обработаем это
                 const responseText = await response.text();
@@ -38,10 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 adminPanel.style.display = 'block';
                 loadEventsList(); // Загружаем список мероприятий
                 errorMessage.style.display = 'none'; // Скрываем возможные предыдущие ошибки
+                console.log("Login successful, showing admin panel"); // Лог для отладки
             } else {
                 // Обработка ошибки, если сервер вернул JSON с success: false или другой статус
                 errorMessage.textContent = data.message || 'Неверный логин или пароль.';
                 errorMessage.style.display = 'block';
+                console.log("Login failed with message:", data.message); // Лог для отладки
             }
         } catch (error) {
             console.error("Login error:", error);
@@ -53,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addEventForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        console.log("Add event form submitted"); // Лог для отладки
         const formData = new FormData(addEventForm);
         try {
             // ИСПРАВЛЕНО: добавлено credentials: 'include' для запроса добавления
@@ -61,6 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData, // FormData автоматически устанавливает Content-Type multipart/form-data
                 credentials: 'include' // <-- ВАЖНО: отправлять куки сессии
             });
+
+            console.log("Add event response status:", response.status); // Лог для отладки
 
             if (response.ok) {
                 const result = await response.json(); // Ожидаем JSON при успехе
@@ -90,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     logoutBtn.addEventListener('click', async () => {
+        console.log("Logout button clicked"); // Лог для отладки
         try {
             // ИСПРАВЛЕНО: добавлено credentials: 'include' для запроса выхода
             const response = await fetch('/api/admin/logout', {
@@ -97,11 +109,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 credentials: 'include' // <-- ВАЖНО: отправлять куки сессии
             });
 
+            console.log("Logout response status:", response.status); // Лог для отладки
+
             if (response.ok) {
                 adminPanel.style.display = 'none';
                 loginSection.style.display = 'block';
                 eventsList.innerHTML = ''; // Очищаем список
                 errorMessage.style.display = 'none'; // Скрываем ошибки
+                console.log("Logout successful, showing login panel"); // Лог для отладки
             } else {
                 // Обработка ошибки logout
                 if (response.headers.get("Content-Type")?.includes("application/json")) {
@@ -120,11 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Проверка сессии теперь использует защищённый маршрут и credentials
     // ИСПРАВЛЕНО: используем защищённый маршрут и credentials: 'include'
     async function checkSession() {
+        console.log("Checking session..."); // Лог для отладки
         try {
             // ИСПРАВЛЕНО: используем защищённый маршрут и credentials: 'include'
             const response = await fetch('/api/admin/events', { // Используем защищённый маршрут
                 credentials: 'include' // <-- ВАЖНО: отправлять куки сессии
             });
+
+            console.log("Session check response status:", response.status); // Лог для отладки
 
             if (response.status === 200) {
                 // Авторизован
@@ -132,11 +150,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 loginSection.style.display = 'none';
                 loadEventsList(); // Загружаем список мероприятий
                 errorMessage.style.display = 'none'; // Скрываем возможные предыдущие ошибки
+                console.log("Session active, showing admin panel"); // Лог для отладки
             } else if (response.status === 401) {
                 // Не авторизован
                 adminPanel.style.display = 'none';
                 loginSection.style.display = 'block';
                 errorMessage.style.display = 'none'; // Скрываем возможные предыдущие ошибки
+                console.log("Session inactive, showing login panel"); // Лог для отладки
             } else {
                 // Другая ошибка сервера
                 console.error(`Session check failed with status: ${response.status}`);
@@ -155,11 +175,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Загрузка списка мероприятий в админке
     // ИСПРАВЛЕНО: используем защищённый маршрут и credentials: 'include'
     async function loadEventsList() {
+        console.log("Loading events list..."); // Лог для отладки
         try {
             // ИСПРАВЛЕНО: используем защищённый маршрут и credentials: 'include'
             const response = await fetch('/api/admin/events', {
                 credentials: 'include' // <-- ВАЖНО: отправлять куки сессии
             });
+
+            console.log("Load events list response status:", response.status); // Лог для отладки
 
             if (response.status === 401) {
                 // Сессия истекла
@@ -167,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 loginSection.style.display = 'block';
                 errorMessage.textContent = 'Сессия администратора истекла. Пожалуйста, войдите снова.';
                 errorMessage.style.display = 'block';
+                console.log("Session expired, redirecting to login"); // Лог для отладки
                 return;
             }
 
@@ -188,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 eventsList.appendChild(eventItem);
             });
+            console.log("Events list loaded successfully"); // Лог для отладки
         } catch (error) {
             console.error("Error loading events list:", error);
             errorMessage.textContent = 'Ошибка загрузки списка мероприятий.';
@@ -200,12 +225,16 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteEvent = async function(eventId) {
         if (!confirm('Вы уверены, что хотите удалить это мероприятие?')) return;
 
+        console.log("Delete event button clicked for ID:", eventId); // Лог для отладки
+
         try {
             // ИСПРАВЛЕНО: добавлено credentials: 'include' для запроса удаления
             const response = await fetch(`/api/events/${eventId}`, {
                 method: 'DELETE',
                 credentials: 'include' // <-- ВАЖНО: отправлять куки сессии
             });
+
+            console.log("Delete event response status:", response.status); // Лог для отладки
 
             if (response.ok) {
                 loadEventsList(); // Обновляем список
