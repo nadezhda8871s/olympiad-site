@@ -3,45 +3,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminPanel = document.getElementById('admin-panel');
     const addEventForm = document.getElementById('add-event-form');
     const eventsList = document.getElementById('events-list');
-    const registrationsListDiv = document.getElementById('registrations-list'); // Добавлено
-    // const logoutBtn = document.getElementById('logout-btn'); // УДАЛЕНО
+    const registrationsListDiv = document.getElementById('registrations-list');
+    const downloadBtn = document.getElementById('download-registrations-btn'); // Кнопка "Скачать"
     const errorMessage = document.getElementById('error-message');
 
-    console.log("Admin page loaded, showing panel directly..."); // Лог для отладки
+    console.log("Admin page loaded, showing panel directly...");
 
-    // Показываем панель управления сразу, так как аутентификация отсутствует
     adminPanel.style.display = 'block';
-    // loginSection.style.display = 'none'; // loginSection больше нет в admin.html
-
-    // loginForm больше нет, удаляем обработчик
 
     addEventForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        console.log("Add event form submitted"); // Лог для отладки
         const formData = new FormData(addEventForm);
         try {
-            // ИСПРАВЛЕНО: УБРАНО credentials: 'include', так как сессия не нужна
             const response = await fetch('/api/events', {
                 method: 'POST',
-                body: formData, // FormData автоматически устанавливает Content-Type multipart/form-data
-                // credentials: 'include' // <-- УДАЛЕНО: не отправлять куки сессии
+                body: formData
             });
 
-            console.log("Add event response status:", response.status); // Лог для отладки
-
             if (response.ok) {
-                const result = await response.json(); // Ожидаем JSON при успехе
-                addEventForm.reset(); // Очищаем форму
-                loadEventsList(); // Обновляем список
-                errorMessage.style.display = 'none'; // Скрываем ошибки
+                const result = await response.json();
+                addEventForm.reset();
+                loadEventsList();
+                errorMessage.style.display = 'none';
                 console.log("Event added successfully:", result);
             } else {
-                // Обработка ошибки, если сервер вернул JSON с ошибкой
                 if (response.headers.get("Content-Type")?.includes("application/json")) {
                     const errorData = await response.json();
                     errorMessage.textContent = errorData.error || 'Ошибка при добавлении мероприятия.';
                 } else {
-                    // Если сервер вернул текст (например, "Unauthorized")
                     const errorText = await response.text();
                     console.error("Add event response (non-JSON):", errorText);
                     errorMessage.textContent = `Ошибка при добавлении: ${errorText}`;
@@ -50,61 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error("Add event error:", error);
-            // Обработка ошибки сети или парсинга JSON
             errorMessage.textContent = 'Ошибка при добавлении мероприятия (проверьте консоль).';
             errorMessage.style.display = 'block';
         }
     });
 
-    // logoutBtn больше нет, удаляем обработчик
-
-    // loadEventsList теперь не требует проверки сессии
-    async function loadEventsList() {
-        console.log("Loading events list..."); // Лог для отладки
-        try {
-            // ИСПРАВЛЕНО: УБРАНО credentials: 'include', так как сессия не нужна
-            const response = await fetch('/api/admin/events'/*, {
-                credentials: 'include' // <-- УДАЛЕНО: не отправлять куки сессии
-            }*/);
-
-            console.log("Load events list response status:", response.status); // Лог для отладки
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const events = await response.json();
-            eventsList.innerHTML = ''; // Очищаем список
-            events.forEach(event => {
-                const eventItem = document.createElement('div');
-                eventItem.className = 'event-item';
-                eventItem.innerHTML = `
-                    <div>
-                        <strong>${event.name}</strong> (${event.type})
-                        ${event.infoLetterFileName ? `<br><small>Файл: ${event.infoLetterFileName}</small>` : '<br><small>Файл: нет</small>'}
-                    </div>
-                    <button onclick="deleteEvent('${event.id}')">Удалить</button>
-                `;
-                eventsList.appendChild(eventItem);
-            });
-            console.log("Events list loaded successfully"); // Лог для отладки
-        } catch (error) {
-            console.error("Error loading events list:", error);
-            errorMessage.textContent = 'Ошибка загрузки списка мероприятий.';
-            errorMessage.style.display = 'block';
-        }
-    }
-
-    // loadRegistrationsList - добавлено для загрузки регистраций
+    // --- НОВАЯ функция для загрузки регистраций ---
     async function loadRegistrationsList() {
-        console.log("Loading registrations list..."); // Лог для отладки
+        console.log("Loading registrations list...");
         try {
-            // ИСПРАВЛЕНО: УБРАНО credentials: 'include', так как сессия не нужна
-            const response = await fetch('/api/admin/registrations'/*, {
-                credentials: 'include' // <-- УДАЛЕНО: не отправлять куки сессии
-            }*/);
-
-            console.log("Load registrations list response status:", response.status); // Лог для отладки
+            const response = await fetch('/api/admin/registrations');
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -113,18 +57,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const registrations = await response.json();
             if (!registrationsListDiv) {
                  console.error("Element with id 'registrations-list' not found in admin.html");
-                 return; // Если элемента нет, выходим
+                 return;
             }
-            registrationsListDiv.innerHTML = ''; // Очищаем список
+            registrationsListDiv.innerHTML = '';
 
             if (registrations.length === 0) {
                  registrationsListDiv.innerHTML = '<p>Регистраций пока нет.</p>';
                  return;
             }
 
-            // Создаём простую таблицу для отображения регистраций
             const table = document.createElement('table');
-            table.className = 'registrations-table'; // Добавим класс для стилей
+            table.className = 'registrations-table';
             const headerRow = document.createElement('tr');
             headerRow.innerHTML = `
                 <th>ID</th>
@@ -142,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             registrations.forEach(reg => {
                  const row = document.createElement('tr');
-                 // Убираем теги <script> из данных (на всякий случай)
                  const safeReg = {
                      id: reg.id,
                      surname: reg.surname.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
@@ -177,33 +119,105 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+    // ---
 
-    // Глобальная функция для удаления (чтобы работал onclick в HTML)
-    // ИСПРАВЛЕНО: УБРАНО credentials: 'include' и улучшена обработка ошибок
+    async function loadEventsList() {
+        console.log("Loading events list...");
+        try {
+            const response = await fetch('/api/admin/events');
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const events = await response.json();
+            eventsList.innerHTML = '';
+            events.forEach(event => {
+                const eventItem = document.createElement('div');
+                eventItem.className = 'event-item';
+                eventItem.innerHTML = `
+                    <div>
+                        <strong>${event.name}</strong> (${event.type})
+                        ${event.infoLetterFileName ? `<br><small>Файл: ${event.infoLetterFileName}</small>` : '<br><small>Файл: нет</small>'}
+                    </div>
+                    <button onclick="deleteEvent('${event.id}')">Удалить</button>
+                `;
+                eventsList.appendChild(eventItem);
+            });
+        } catch (error) {
+            console.error("Error loading events list:", error);
+            errorMessage.textContent = 'Ошибка загрузки списка мероприятий.';
+            errorMessage.style.display = 'block';
+        }
+    }
+
+    // --- НОВАЯ функция для генерации и скачивания CSV ---
+    downloadBtn.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/api/admin/registrations');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const registrations = await response.json();
+
+            if (registrations.length === 0) {
+                alert("Нет данных для скачивания.");
+                return;
+            }
+
+            // Заголовки CSV
+            const headers = ["ID", "Фамилия", "Имя", "Отчество", "Заведение", "Страна", "Город", "E-mail", "Телефон", "Дата регистрации"];
+            // Данные
+            const csvContent = [
+                headers.join(","),
+                ...registrations.map(reg => [
+                    `"${reg.id}"`,
+                    `"${reg.surname.replace(/"/g, '""')}"`,
+                    `"${reg.name.replace(/"/g, '""')}"`,
+                    `"${reg.patronymic ? reg.patronymic.replace(/"/g, '""') : ''}"`,
+                    `"${reg.institution.replace(/"/g, '""')}"`,
+                    `"${reg.country.replace(/"/g, '""')}"`,
+                    `"${reg.city.replace(/"/g, '""')}"`,
+                    `"${reg.email.replace(/"/g, '""')}"`,
+                    `"${reg.phone ? reg.phone.replace(/"/g, '""') : ''}"`,
+                    `"${new Date(reg.timestamp).toLocaleString()}"` // Формат даты можно изменить
+                ].join(","))
+            ].join("\n");
+
+            // Создание Blob и ссылки для скачивания
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "registrations.csv"); // Имя файла
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error("Error downloading registrations:", error);
+            errorMessage.textContent = 'Ошибка при скачивании регистраций.';
+            errorMessage.style.display = 'block';
+        }
+    });
+    // ---
+
     window.deleteEvent = async function(eventId) {
         if (!confirm('Вы уверены, что хотите удалить это мероприятие?')) return;
 
-        console.log("Delete event button clicked for ID:", eventId); // Лог для отладки
-
         try {
-            // ИСПРАВЛЕНО: УБРАНО credentials: 'include', так как сессия не нужна
             const response = await fetch(`/api/events/${eventId}`, {
                 method: 'DELETE'
-                // credentials: 'include' // <-- УДАЛЕНО: не отправлять куки сессии
             });
 
-            console.log("Delete event response status:", response.status); // Лог для отладки
-
             if (response.ok) {
-                loadEventsList(); // Обновляем список
-                errorMessage.style.display = 'none'; // Скрываем ошибки
+                loadEventsList();
+                errorMessage.style.display = 'none';
             } else {
-                // Обработка ошибки удаления
                 if (response.headers.get("Content-Type")?.includes("application/json")) {
                     const errorData = await response.json();
                     errorMessage.textContent = errorData.error || 'Ошибка при удалении мероприятия.';
                 } else {
-                    // Если сервер вернул текст (например, "Unauthorized")
                     const errorText = await response.text();
                     console.error("Delete event response (non-JSON):", errorText);
                     errorMessage.textContent = `Ошибка при удалении: ${errorText}`;
@@ -217,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Загружаем список мероприятий и регистраций при загрузке страницы
+    // Загружаем списки при загрузке админки
     loadEventsList();
     loadRegistrationsList(); // Вызываем новую функцию
 });
