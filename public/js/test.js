@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultDiv = document.getElementById('test-result');
     const resultText = document.getElementById('result-text');
 
-    // Извлекаем ID мероприятия из URL
     const pathParts = window.location.pathname.split('/');
     const eventId = pathParts[pathParts.length - 1];
     if (!eventId) {
@@ -19,10 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         // Простая проверка (замените на реальную логику проверки)
-        // Предположим, правильные ответы хранятся где-то (например, в JS или на сервере)
-        // Для простоты, пусть правильные ответы будут в массиве
-        // q1: a, q2: c, ... q15: c
-        const correctAnswers = ['a', 'c', 'b', 'a', 'c', 'b', 'a', 'c', 'b', 'a', 'c', 'b', 'a', 'c', 'c']; // Пример
+        const correctAnswers = ['a', 'c', 'b', 'a', 'c', 'b', 'a', 'c', 'b', 'a', 'c', 'b', 'a', 'c', 'c'];
         let score = 0;
         const totalQuestions = 15;
 
@@ -33,18 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Отправляем результаты на сервер
-        sendTestResults(eventId, score);
+        sendTestResults(eventId, score, getAnswers());
 
-        // Показываем результат
-        resultText.textContent = `Вы ответили правильно на ${score} из ${totalQuestions} вопросов.`;
+        resultText.innerHTML = `Вы ответили правильно на ${score} из ${totalQuestions} вопросов.<br><br>
+                                <strong>После оплаты, пожалуйста, пришлите копию квитанции на адрес: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a>.</strong>`;
         resultDiv.style.display = 'block';
-        form.style.display = 'none'; // Скрываем форму
+        form.style.display = 'none';
     });
 
-    async function sendTestResults(eventId, score) {
+    async function sendTestResults(eventId, score, answers) {
         try {
-            // Пока что, userId будет 'anonymous'
             const response = await fetch('/api/test-results', {
                 method: 'POST',
                 headers: {
@@ -53,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     eventId: eventId,
                     userId: 'anonymous',
-                    answers: getAnswers(), // Функция для получения всех ответов
+                    answers: answers,
                     score: score
                 })
             });
