@@ -1,7 +1,7 @@
 // server.js
 const express = require('express');
 const multer = require('multer'); // Для загрузки файлов в админке и обработки форм
-const session = require('cookie-session'); // ИСПРАВЛЕНО: используем cookie-session
+const session = require('cookie-session'); // Для сессий (теперь только для других целей, не админка)
 const path = require('path');
 const fs = require('fs').promises; // Для асинхронной работы с файлами
 const { v4: uuidv4 } = require('uuid'); // Для генерации уникальных ID
@@ -22,6 +22,7 @@ app.use(express.json());
 app.use(express.static('public')); // Статические файлы (CSS, JS, изображения, uploads)
 
 // Конфигурация сессий - ИСПРАВЛЕНО для cookie-session
+// (Теперь используется, например, для хранения информации о пользователе регистрации, если понадобится)
 app.use(session({
     name: 'session', // Имя куки
     keys: [process.env.SESSION_SECRET || 'your_fallback_secret_key_here'], // Используем переменную окружения или fallback
@@ -72,15 +73,10 @@ async function writeData(data) {
 }
 
 // --- Middleware для проверки администратора ---
-// ИСПРАВЛЕНО: проверка сессии адаптирована для cookie-session
+// ИСПРАВЛЕНО: проверка сессии адаптирована для cookie-session - ТЕПЕРЬ ВСЕГДА next()
 function requireAdmin(req, res, next) {
-    if (req.session && req.session.adminLoggedIn) {
-        console.log("Admin session verified for:", req.path); // Лог для отладки
-        next();
-    } else {
-        console.log("Admin session NOT verified for:", req.path); // Лог для отладки
-        res.status(401).send('Unauthorized');
-    }
+    // console.log("Admin session check bypassed for all users"); // Лог для отладки (опционально)
+    next(); // Разрешаем доступ всем
 }
 
 // --- Конфигурация multer для загрузки файлов в админке ---
@@ -149,9 +145,9 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
-// Страница администратора - теперь доступна всем, чтобы показать форму входа
+// Страница администратора - теперь доступна всем, без проверки сессии
 app.get('/admin', (req, res) => {
-    // Всегда отправляем HTML файл, где находится форма входа
+    // Всегда отправляем HTML файл, где находится панель управления
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
 
@@ -174,7 +170,7 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
-// Получить все мероприятия (для админки - требует аутентификации)
+// Получить все мероприятия (для админки - теперь доступно без аутентификации)
 app.get('/api/admin/events', requireAdmin, async (req, res) => {
     try {
         const data = await readData();
@@ -200,48 +196,13 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
-// Аутентификация администратора
-// ИСПРАВЛЕНО: Убран multer().none(), так как теперь глобальные middleware парсят urlencoded
-// ИСПРАВЛЕНО: Добавлены логи
-app.post('/api/admin/login', async (req, res) => {
-    console.log("Login attempt received"); // Лог для отладки
-    // Теперь req.body должен быть доступен благодаря глобальным middleware
-    const { login, password } = req.body;
-    console.log("Login attempt for user:", login); // Лог для отладки
-    try {
-        const data = await readData();
-        if (data.admin && data.admin.login === login && data.admin.password === password) {
-            req.session.adminLoggedIn = true;
-            console.log("Login successful for user:", login); // Лог для отладки
-            res.json({ success: true });
-        } else {
-            console.log("Login failed for user:", login, " - Invalid credentials"); // Лог для отладки
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-    } catch (error) {
-        console.error("Error during login:", error);
-        res.status(500).json({ success: false, message: 'Login failed' });
-    }
-});
+// Аутентификация администратора - УДАЛЕНО
+// app.post('/api/admin/login', async (req, res) => { ... }
 
-// Выход администратора
-// ИСПРАВЛЕНО: Улучшена обработка ошибок в logout
-app.post('/api/admin/logout', (req, res) => {
-    console.log("Logout attempt"); // Лог для отладки
-    req.session.destroy((err) => {
-        if (err) {
-            console.error("Error during logout:", err);
-            // Возвращаем 500, но всё равно пытаемся отправить успех, если сессия уже уничтожена
-            // Или просто отправляем успех и логируем ошибку
-            console.log("Session destroy error, but proceeding with response");
-        } else {
-            console.log("Logout successful, session destroyed"); // Лог для отладки
-        }
-        res.json({ success: true });
-    });
-});
+// Выход администратора - УДАЛЕНО
+// app.post('/api/admin/logout', (req, res) => { ... });
 
-// Добавить мероприятие (требует аутентификации)
+// Добавить мероприятие (требует аутентификации - ТЕПЕРЬ НЕ ТРЕБУЕТСЯ)
 // multer используется для загрузки файла
 // ИСПРАВЛЕНО: Добавлены логи
 app.post('/api/events', requireAdmin, upload.single('infoLetterFile'), async (req, res) => {
@@ -266,7 +227,7 @@ app.post('/api/events', requireAdmin, upload.single('infoLetterFile'), async (re
     }
 });
 
-// Удалить мероприятие (требует аутентификации)
+// Удалить мероприятие (требует аутентификации - ТЕПЕРЬ НЕ ТРЕБУЕТСЯ)
 app.delete('/api/events/:id', requireAdmin, async (req, res) => {
     try {
         const data = await readData();
