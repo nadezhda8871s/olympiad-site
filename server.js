@@ -79,7 +79,32 @@ function requireAdmin(req, res, next) {
     next(); // Разрешаем доступ всем
 }
 
+// --- Проверка и создание папки uploads при запуске ---
+async function ensureUploadsDir() {
+    try {
+        await fs.access(UPLOAD_PATH);
+        console.log("Uploads directory exists:", UPLOAD_PATH);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            console.log("Uploads directory does not exist, creating:", UPLOAD_PATH);
+            await fs.mkdir(UPLOAD_PATH, { recursive: true }); // Создаём рекурсивно, если нужно
+            console.log("Uploads directory created:", UPLOAD_PATH);
+        } else {
+            console.error("Error checking uploads directory:", error);
+            throw error; // Пробрасываем ошибку, если это не ENOENT
+        }
+    }
+}
+
 // --- Конфигурация multer для загрузки файлов в админке ---
+// Проверяем папку uploads при запуске
+ensureUploadsDir().catch(err => {
+    console.error("Failed to ensure uploads directory exists:", err);
+    // Важно: если папка не создастся, загрузка файлов не будет работать.
+    // В реальном приложении это может быть критичной ошибкой.
+    // Здесь мы просто логируем.
+});
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, UPLOAD_PATH); // Загружаем в public/uploads
