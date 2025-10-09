@@ -5,7 +5,7 @@
       "name": "Пример олимпиады для школьников",
       "description": "Это описание примерной олимпиады для школьников.",
       "type": "olympiad",
-      "subtype": "olympiad-school", 
+      "subtype": "olympiad-school",
       "infoLetterFileName": "info_olympiad_school_example.pdf"
     },
     {
