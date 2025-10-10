@@ -10,11 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- НОВОЕ: Элементы для формы "О нас" ---
     const editAboutForm = document.getElementById('edit-about-form');
     const aboutCustomText = document.getElementById('about-custom-text');
-    const aboutInn = document.getElementById('about-inn');
-    const aboutPhone = document.getElementById('about-phone');
-    const aboutAddress = document.getElementById('about-address');
-    const aboutEmail = document.getElementById('about-email');
-    const aboutRequisites = document.getElementById('about-requisites');
     // --- КОНЕЦ НОВОГО ---
 
     // --- НОВОЕ: Элементы для редактирования мероприятия ---
@@ -42,11 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Заполняем форму данными
             aboutCustomText.value = aboutData.customText || '';
-            aboutInn.value = aboutData.inn || '';
-            aboutPhone.value = aboutData.phone || '';
-            aboutAddress.value = aboutData.address || '';
-            aboutEmail.value = aboutData.email || '';
-            aboutRequisites.value = aboutData.requisites || '';
 
         } catch (error) {
             console.error("Error loading 'about' ", error);
@@ -61,12 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const formData = new FormData(editAboutForm);
         const aboutData = {
-            customText: formData.get('customText'),
-            inn: formData.get('inn'),
-            phone: formData.get('phone'),
-            address: formData.get('address'),
-            email: formData.get('email'),
-            requisites: formData.get('requisites')
+            customText: formData.get('customText')
         };
 
         try {
@@ -251,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return questions;
     }
-    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИЯ: Сбор данных формы теста ---
 
     document.getElementById('add-question-btn').addEventListener('click', addQuestionField);
     // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
@@ -265,15 +250,17 @@ document.addEventListener('DOMContentLoaded', () => {
             events.forEach(event => {
                 const eventItem = document.createElement('div');
                 eventItem.className = 'event-item';
+                // --- ИСПРАВЛЕНИЕ: Убрано отображение subtype ---
                 eventItem.innerHTML = `
                     <div>
                         <strong>${event.name}</strong> (${event.type})
-                        ${event.subtype ? `<br><small>Подтип: ${event.subtype}</small>` : '<br><small>Подтип: не указан</small>'}
+                        <!-- ${event.subtype ? `<br><small>Подтип: ${event.subtype}</small>` : '<br><small>Подтип: не указан</small>'} -->
                         ${event.infoLetterFileName ? `<br><small>Файл: ${event.infoLetterFileName}</small>` : '<br><small>Файл: нет</small>'}
                     </div>
                     <button onclick="editEvent('${event.id}')">Редактировать</button>
                     <button onclick="deleteEvent('${event.id}')">Удалить</button>
                 `;
+                // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
                 eventsList.appendChild(eventItem);
             });
         } catch (error) {
@@ -297,7 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('edit-event-name').value = event.name;
             document.getElementById('edit-event-description').value = event.description;
             document.getElementById('edit-event-type').value = event.type;
-            document.getElementById('edit-event-subtype').value = event.subtype || '';
+            // --- ИСПРАВЛЕНИЕ: Убрано заполнение subtype ---
+            // document.getElementById('edit-event-subtype').value = event.subtype || '';
+            // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
             // Отображаем текущий файл
             currentFileNameSpan.textContent = event.infoLetterFileName || 'нет';
@@ -486,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return questions;
     }
-    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИЯ: Сбор данных формы редактирования теста ---
 
     // --- НОВАЯ ФУНКЦИЯ: Отправка формы редактирования мероприятия ---
     editEventForm.addEventListener('submit', async (e) => {
@@ -552,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMessage.style.display = 'block';
         }
     });
-    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИЯ: Отправка формы редактирования мероприятия ---
 
     // --- НОВАЯ ФУНКЦИЯ: Отмена редактирования ---
     cancelEditBtn.addEventListener('click', () => {
@@ -561,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editingEventId = null;
         editingEvent = null;
     });
-    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИЯ: Отмена редактирования ---
 
     window.deleteEvent = async function(eventId) {
         if (!confirm('Вы уверены, что хотите удалить это мероприятие?')) return;
