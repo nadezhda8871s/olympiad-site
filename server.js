@@ -373,7 +373,7 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
                         // Добавляем новый тест
                         data.tests.push(testData);
                     }
-                } else {
+                 else {
                     // Если вопросы пустые, удаляем тест
                     if (data.tests) {
                         data.tests = data.tests.filter(t => t.eventId !== eventId);
