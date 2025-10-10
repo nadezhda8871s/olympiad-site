@@ -11,6 +11,29 @@
         <h1>Панель управления</h1>
 
         <div id="admin-panel">
+            
+            <!-- --- НОВЫЙ РАЗДЕЛ: Редактирование "О нас" --->
+            <h2>Редактировать "О нас"</h2>
+            <form id="edit-about-form">
+                <label for="about-inn">ИНН:</label>
+                <input type="text" id="about-inn" name="inn" required>
+
+                <label for="about-phone">Номер телефона:</label>
+                <input type="text" id="about-phone" name="phone" required>
+
+                <label for="about-address">Адрес:</label>
+                <input type="text" id="about-address" name="address" required>
+
+                <label for="about-email">Email:</label>
+                <input type="email" id="about-email" name="email" required>
+
+                <label for="about-requisites">Реквизиты (полный текст):</label>
+                <textarea id="about-requisites" name="requisites" rows="10" required></textarea>
+
+                <button type="submit">Сохранить изменения</button>
+            </form>
+            <!-- --- КОНЕЦ НОВОГО РАЗДЕЛА --- -->
+
             <h2>Добавить мероприятие</h2>
             <form id="add-event-form" enctype="multipart/form-data">
                 <label for="event-name">Название:</label>
