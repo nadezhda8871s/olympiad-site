@@ -31,24 +31,13 @@ app.use(session({
 // --- Проверка и создание папки uploads при запуске ---
 async function ensureUploadsDir() {
     try {
-        await fs.access(UPLOAD_PATH, fs.constants.F_OK | fs.constants.W_OK); // Проверяем существование и права на запись
-        console.log("Uploads directory exists and is writable:", UPLOAD_PATH);
+        await fs.access(UPLOAD_PATH);
+        console.log("Uploads directory exists:", UPLOAD_PATH);
     } catch (error) {
         if (error.code === 'ENOENT') {
             console.log("Uploads directory does not exist, creating:", UPLOAD_PATH);
             await fs.mkdir(UPLOAD_PATH, { recursive: true });
             console.log("Uploads directory created:", UPLOAD_PATH);
-            // Проверяем, можно ли в неё писать после создания
-            try {
-                await fs.access(UPLOAD_PATH, fs.constants.W_OK);
-                console.log("Uploads directory is now writable:", UPLOAD_PATH);
-            } catch (writeError) {
-                console.error("Uploads directory is not writable after creation:", writeError);
-                throw new Error(`Uploads directory is not writable: ${UPLOAD_PATH}`);
-            }
-        } else if (error.code === 'EACCES') {
-            console.error("Uploads directory exists but is not writable:", UPLOAD_PATH);
-            throw new Error(`Uploads directory is not writable: ${UPLOAD_PATH}`);
         } else {
             console.error("Error checking/uploads directory:", error);
             throw error;
@@ -292,14 +281,14 @@ app.get('/api/tests/:eventId', async (req, res) => {
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
-        const { name, description, type, testQuestions } = req.body; // Удалён subtype
+        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
 
         const newEvent = {
             id: uuidv4(),
             name: name,
             description: description,
             type: type,
-            // subtype: subtype || type, // Удалён subtype
+            subtype: subtype || type, // subtype для фильтрации, если не передан, используем type
             infoLetterFileName: req.file ? req.file.filename : null
         };
 
@@ -340,7 +329,7 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
     try {
         const data = await readData();
         const eventId = req.params.id;
-        const { name, description, type, testQuestions } = req.body; // Удалён subtype
+        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
 
         const eventIndex = data.events.findIndex(e => e.id === eventId);
         if (eventIndex === -1) {
@@ -352,7 +341,7 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
             name: name,
             description: description,
             type: type,
-            // subtype: subtype || type, // Удалён subtype
+            subtype: subtype || type, // subtype для фильтрации, если не передан, используем type
             infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
         };
 
@@ -367,12 +356,12 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
                     // Проверяем, существует ли уже тест для этого мероприятия
                     const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
                     const testData = {
-                        id: uuidv4(),
+                        id: uuidv4(), // Новый ID для теста
                         eventId: eventId,
                         testName: `${name} - Тест (Обновлён)`,
                         questions: questions, // Массив объектов вопросов
                         createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
+                        updatedAt: new Date().toISOString() // Добавлено поле обновления
                     };
 
                     if (existingIndex >= 0) {
@@ -384,7 +373,7 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
                         // Добавляем новый тест
                         data.tests.push(testData);
                     }
-                 else {
+                } else {
                     // Если вопросы пустые, удаляем тест
                     if (data.tests) {
                         data.tests = data.tests.filter(t => t.eventId !== eventId);
