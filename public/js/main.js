@@ -1,43 +1,40 @@
-// main.js
-
-// --- Убедимся, что goToRegistration доступна глобально ---
-// Это нужно, потому что она вызывается из onclick в HTML-карточках
-window.goToRegistration = function(eventId) {
-    window.location.href = `/registration/${eventId}`;
-}
-// --- Конец goToRegistration ---
-
+// public/js/main.js
 document.addEventListener('DOMContentLoaded', () => {
-    // Загружаем мероприятия для главной страницы
-    if (window.location.pathname === '/') {
-        loadEvents();
+    const eventsContainer = document.getElementById('events-container');
+    const filtersContainer = document.querySelector('.filters');
+    const searchInput = document.getElementById('search-input');
+    const errorMessage = document.getElementById('error-message'); // Предполагается, что есть элемент для ошибок
+
+    // Загружаем мероприятия при загрузке страницы
+    loadEvents();
+
+    // Обработчики для фильтров (если они есть на странице)
+    if (filtersContainer) {
+        const filterButtons = filtersContainer.querySelectorAll('.filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                const type = button.getAttribute('data-type');
+                filterEvents(type);
+            });
+        });
     }
 
-    // Обработчики для фильтров на страницах олимпиад, конкурсов, конференций
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            const type = button.getAttribute('data-type');
-            filterEvents(type);
-        });
-    });
-
-    // Обработчик для поиска
-    const searchInput = document.getElementById('search-input');
+    // Обработчик для поиска (если он есть на странице)
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             filterEventsBySearch(e.target.value);
         });
     }
+
+    // --- Убедимся, что goToRegistration доступна глобально ---
+    window.goToRegistration = function(eventId) {
+        window.location.href = `/registration/${eventId}`;
+    }
+    // --- Конец goToRegistration ---
 });
 
-// --- Объявляем переменную для хранения всех мероприятий ---
-let allEventsCache = []; // Будет хранить последние загруженные мероприятия
-// --- Конец объявления переменной ---
-
-// Загрузка мероприятий с сервера
 async function loadEvents(type = null) {
     try {
         let url = '/api/events';
@@ -49,19 +46,18 @@ async function loadEvents(type = null) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const events = await response.json();
-        // Сохраняем список в кэше для фильтрации
-        allEventsCache = events;
+        // Сохраняем оригинальный список для фильтрации
+        window.originalEvents = events;
         displayEvents(events);
     } catch (error) {
         console.error("Error loading events:", error);
-        const container = document.getElementById('events-container');
-        if (container) {
-            container.innerHTML = '<p>Ошибка загрузки мероприятий.</p>';
+        const eventsContainer = document.getElementById('events-container');
+        if (eventsContainer) {
+            eventsContainer.innerHTML = '<p>Ошибка загрузки мероприятий.</p>';
         }
     }
 }
 
-// Отображение мероприятий в контейнере
 function displayEvents(events) {
     const container = document.getElementById('events-container');
     if (!container) return;
@@ -76,13 +72,11 @@ function displayEvents(events) {
     events.forEach(event => {
         const eventCard = document.createElement('div');
         eventCard.className = 'event-card';
-        // Используем безопасное извлечение имени файла информационного письма
-        const fileName = event.infoLetterFileName;
         eventCard.innerHTML = `
             <h3>${event.name}</h3>
             <p class="event-description">${event.description}</p>
             <div class="event-actions">
-                ${fileName ? `<a href="/uploads/${fileName}" class="btn-info" target="_blank">Информационное письмо</a>` : '<span>Письмо скоро</span>'}
+                ${event.infoLetterFileName ? `<a href="/uploads/${event.infoLetterFileName}" class="btn-info" target="_blank">Информационное письмо</a>` : '<span>Письмо скоро</span>'}
                 <button class="btn-register" onclick="goToRegistration('${event.id}')">Регистрация</button>
             </div>
         `;
@@ -90,30 +84,28 @@ function displayEvents(events) {
     });
 }
 
-// Фильтрация мероприятий (на клиенте)
 function filterEvents(filterType) {
-    if (!allEventsCache || allEventsCache.length === 0) {
-        console.warn("Events cache is empty or not loaded yet");
+    if (!window.originalEvents) {
+        console.error("Original events list not available");
         return;
     }
     // Предполагаем, что subtype совпадает с filterType
     // Для "все" показываем все мероприятия
-    const filtered = filterType === 'all' ? allEventsCache : allEventsCache.filter(e => e.subtype === filterType);
+    const filtered = filterType === 'all' ? window.originalEvents : window.originalEvents.filter(e => e.subtype === filterType);
     displayEvents(filtered);
 }
 
-// Фильтрация по поиску (на клиенте)
 function filterEventsBySearch(query) {
-    if (!allEventsCache || allEventsCache.length === 0) {
-        console.warn("Events cache is empty or not loaded yet");
+    if (!window.originalEvents) {
+        console.error("Original events list not available");
         return;
     }
     if (!query) {
         // Если запрос пустой, показываем все мероприятия
-        displayEvents(allEventsCache);
+        displayEvents(window.originalEvents);
         return;
     }
-    const filtered = allEventsCache.filter(e =>
+    const filtered = window.originalEvents.filter(e =>
         e.name.toLowerCase().includes(query.toLowerCase()) ||
         e.description.toLowerCase().includes(query.toLowerCase())
     );
