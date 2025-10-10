@@ -1,78 +1,57 @@
-// registration.js
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('registration-form');
-    const eventIdInput = document.getElementById('event-id');
-    const successDiv = document.getElementById('success-message');
-    const errorDiv = document.getElementById('error-message');
-    const payButton = document.getElementById('pay-button'); // Кнопка "Оплатить" (временно, если не для олимпиад)
+/* js/registration.js */
+(function () {
+  const form = document.getElementById('registration-form');
+  if (!form) return;
 
-    const pathParts = window.location.pathname.split('/');
-    const eventId = pathParts[pathParts.length - 1];
-    if (!eventId) {
-        errorDiv.textContent = 'Ошибка: ID мероприятия не найден в URL.';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    eventIdInput.value = eventId;
+  // Add supervisor field if missing
+  if (!form.querySelector('#supervisor')) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `
+      <label for="supervisor">ФИО Научного руководителя (преподавателя):</label>
+      <input type="text" id="supervisor" name="supervisor" required>
+    `;
+    form.insertBefore(wrap, form.querySelector('button[type="submit"]'));
+  }
 
-    let eventType = null;
-    fetch(`/api/events/${eventId}`)
-        .then(response => response.json())
-        .then(event => {
-            eventType = event.type;
-        })
-        .catch(error => {
-            console.error("Error fetching event details for type check:", error);
-            eventType = 'default';
-        });
+  const success = document.getElementById('success-message');
+  const errorBox = document.getElementById('error-message');
+  const payBtn = document.getElementById('pay-button');
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorBox.style.display = 'none';
+    const eventId = document.getElementById('event-id').value.trim();
+    const surname = document.getElementById('surname').value.trim();
+    const name = document.getElementById('name').value.trim();
+    const patronymic = (document.getElementById('patronymic')?.value || '').trim();
+    const institution = document.getElementById('institution').value.trim();
+    const country = document.getElementById('country').value.trim();
+    const city = document.getElementById('city').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const supervisor = document.getElementById('supervisor').value.trim();
 
-        const formData = new FormData(form);
+    const fullName = [surname, name, patronymic].filter(Boolean).join(' ');
 
-        try {
-            const response = await fetch('/api/registration', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                form.style.display = 'none';
-                errorDiv.style.display = 'none';
-                successDiv.style.display = 'block';
-
-                if (eventType === 'olympiad') {
-                    // Для олимпиад - показываем инструкцию и ссылку на тест
-                    const instructionHTML = `
-                        <div class="payment-instructions">
-                            <p>После оплаты оргвзноса, пожалуйста, пришлите <strong>копию квитанции</strong> на адрес: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a>.</p>
-                            <p>Также, после оплаты, вы можете <a href="/test/${eventId}">пройти тест</a> по ссылке.</p>
-                        </div>
-                    `;
-                    successDiv.innerHTML = instructionHTML;
-                } else {
-                    // Для других - показываем только инструкцию об оплате
-                    const instructionHTML = `
-                        <div class="payment-instructions">
-                            <p>После оплаты, пожалуйста, пришлите <strong>работу</strong> и <strong>копию квитанции</strong> на адрес: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a>.</p>
-                        </div>
-                    `;
-                    successDiv.innerHTML = instructionHTML;
-                }
-            } else {
-                const errorData = await response.json();
-                errorDiv.textContent = errorData.error || 'Ошибка при отправке анкеты.';
-                errorDiv.style.display = 'block';
-                successDiv.style.display = 'none';
-            }
-        } catch (error) {
-            console.error("Registration error:", error);
-            errorDiv.textContent = 'Произошла ошибка при отправке анкеты.';
-            errorDiv.style.display = 'block';
-            successDiv.style.display = 'none';
-        }
+    const r = await fetch('/api/events/' + encodeURIComponent(eventId) + '/register', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        fullName, email, city, country, phone,
+        organization: institution, supervisor
+      })
     });
-
-    // Убрана логика кнопки "Оплатить" из registration.js, так как теперь инструкция вставляется в successDiv
-});
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) {
+      errorBox.textContent = d.error || 'Ошибка при отправке формы';
+      errorBox.style.display = 'block';
+      return;
+    }
+    // Show next step
+    form.style.display = 'none';
+    success.style.display = 'block';
+    if (payBtn && d.paymentUrl) {
+      payBtn.addEventListener('click', () => { window.location.href = d.paymentUrl; }, { once:true });
+    }
+  });
+})();
