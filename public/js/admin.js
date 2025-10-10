@@ -23,11 +23,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const result = await response.json();
+                const eventId = result.event.id; // Получаем ID созданного мероприятия
+                
+                // --- ИСПРАВЛЕНИЕ: Отправляем тест отдельно ---
+                const eventType = formData.get('type');
+                if (eventType === 'olympiad') {
+                    const testName = formData.get('name') + ' - Тест';
+                    const questions = collectTestQuestions();
+                    
+                    if (questions.length > 0) {
+                        const testResponse = await fetch(`/api/events/${eventId}/test`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                testName: testName,
+                                questions: questions
+                            })
+                        });
+                        
+                        if (!testResponse.ok) {
+                            const testErrorData = await testResponse.json();
+                            console.error("Error saving test:", testErrorData.error);
+                            errorMessage.textContent = testErrorData.error || 'Ошибка при сохранении теста.';
+                            errorMessage.style.display = 'block';
+                            return; // Прерываем, если ошибка сохранения теста
+                        }
+                    }
+                }
+                // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
+                
                 addEventForm.reset();
                 document.getElementById('questions-container').innerHTML = ''; // Очищаем вопросы
                 questionCounter = 0; // Сбрасываем счетчик
-                loadEventsList();
-                errorMessage.style.display = 'none';
+                loadEventsList(); // Обновляем список
+                errorMessage.style.display = 'none'; // Скрываем ошибки
                 console.log("Event added successfully:", result);
             } else {
                 const errorData = await response.json();
@@ -41,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Логика для тестов ---
+    // --- ИСПРАВЛЕНИЕ: Логика для работы с тестами ---
     let questionCounter = 0;
 
     function addQuestionField() {
@@ -79,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         document.getElementById('questions-container').appendChild(questionDiv);
 
+        // Добавляем обработчик для кнопки удаления этого вопроса
         questionDiv.querySelector('.remove-question-btn').addEventListener('click', function() {
             removeQuestionField(this.dataset.questionNumber);
         });
@@ -90,9 +122,51 @@ document.addEventListener('DOMContentLoaded', () => {
             questionBlock.remove();
         }
     }
+    
+    // --- НОВАЯ ФУНКЦИЯ: Сбор данных формы теста ---
+    function collectTestQuestions() {
+        const questions = [];
+        const questionBlocks = document.querySelectorAll('.question-block');
+        
+        questionBlocks.forEach(block => {
+            const questionNumber = block.dataset.questionNumber;
+            const questionText = document.querySelector(`textarea[name="question-${questionNumber}-text"]`)?.value.trim();
+            
+            if (!questionText) return; // Пропустить пустые вопросы
+
+            const options = {};
+            const optionLetters = ['a', 'b', 'c', 'd'];
+            for (let letter of optionLetters) {
+                const optionInput = document.querySelector(`input[name="option-${questionNumber}-${letter}"]`);
+                const optionValue = optionInput ? optionInput.value.trim() : '';
+                if (optionValue) { // Сохраняем только непустые варианты
+                    options[letter] = optionValue;
+                }
+            }
+
+            const correctAnswerRadio = document.querySelector(`input[name="correct-answer-${questionNumber}"]:checked`);
+            const correctAnswer = correctAnswerRadio ? correctAnswerRadio.value : null;
+
+            // Убедимся, что правильный ответ существует среди вариантов
+            if (correctAnswer && options.hasOwnProperty(correctAnswer)) {
+                questions.push({
+                    id: uuidv4(),
+                    text: questionText,
+                    options: options,
+                    correctAnswer: correctAnswer
+                });
+            } else {
+                console.warn(`Пропущен вопрос ${questionNumber}: отсутствует правильный ответ или он не соответствует вариантам.`);
+                // Можно показать предупреждение пользователю
+            }
+        });
+
+        return questions;
+    }
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
 
     document.getElementById('add-question-btn').addEventListener('click', addQuestionField);
-    // --- Конец логики для тестов ---
+    // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
     async function loadEventsList() {
         try {
@@ -254,7 +328,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Инициализация ---
+    // --- ИНИЦИАЛИЗАЦИЯ ---
     loadEventsList();
     loadRegistrationsList();
+    
+    // Показываем/скрываем секцию теста при изменении типа мероприятия
+    document.getElementById('event-type').addEventListener('change', function() {
+        const testSection = document.getElementById('olympiad-test-section');
+        if (this.value === 'olympiad') {
+            testSection.style.display = 'block';
+        } else {
+            testSection.style.display = 'none';
+        }
+    });
 });
+
+// Вспомогательная функция для генерации UUID (если не определена глобально)
+function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
