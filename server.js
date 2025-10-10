@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
 
-// Конфигурация сессий
+// Конфигурация сессий (может остаться для других целей, если понадобится)
 app.use(session({
     name: 'session',
     keys: [process.env.SESSION_SECRET || 'your_strong_fallback_secret_key_here_change_it'],
@@ -49,20 +49,17 @@ async function ensureUploadsDir() {
 async function readData() {
     try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
-        const parsedData = JSON.parse(data);
-        console.log("Data read successfully from:", DATA_FILE);
-        return parsedData;
+        return JSON.parse(data);
     } catch (error) {
         console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
-            // Если файл не существует, создаем пустой объект
             const initialData = {
                 events: [],
-                admin: { login: "admin", password: "password" },
+                // admin: { login: "admin", password: "password" }, // Удалено
                 registrations: [],
                 testResults: [],
-                tests: [], // Инициализируем массив для тестов
-                about: {
+                tests: [], // Для хранения тестов
+                about: { // Инициализация данных "О нас"
                     inn: "231120569701",
                     phone: "89184455287",
                     address: "г. Краснодар, ул. Виноградная, 58",
@@ -75,7 +72,7 @@ async function readData() {
             return initialData;
         } else if (error instanceof SyntaxError) {
             console.error("Syntax error in data.json:", error.message);
-            return { events: [], admin: { login: "admin", password: "password" }, registrations: [], testResults: [], tests: [], about: {} };
+            return { events: [], registrations: [], testResults: [], tests: [], about: {} }; // Упрощено
         } else {
             throw error;
         }
@@ -84,24 +81,23 @@ async function readData() {
 
 async function writeData(data) {
     try {
-        console.log("Writing data to:", DATA_FILE);
         await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data written successfully to:", DATA_FILE);
+        console.log("Data written successfully");
     } catch (error) {
         console.error("Error writing data file:", error);
         throw error;
     }
 }
 
-// --- Middleware для проверки администратора (открыто для всех) ---
+// --- Middleware для проверки администратора (убрана проверка) ---
 function allowAll(req, res, next) {
-    next();
+    next(); // Разрешаем доступ всем
 }
 
 // --- Конфигурация multer для загрузки файлов в админке ---
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, UPLOAD_PATH);
+        cb(null, UPLOAD_PATH); // Загружаем в public/uploads
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -153,6 +149,7 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
+// --- Админка теперь доступна всем ---
 app.get('/admin', allowAll, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
@@ -174,6 +171,7 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
+// --- API маршруты админки теперь доступны всем ---
 app.get('/api/admin/events', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -222,6 +220,10 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
+// --- НОВЫЕ API маршруты для работы с "О нас" ---
+// --- Теперь доступны всем ---
+
+// Получить данные "О нас"
 app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -239,6 +241,7 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
     }
 });
 
+// Обновить данные "О нас"
 app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
         const { inn, phone, address, email, requisites } = req.body;
@@ -261,8 +264,9 @@ app.post('/api/admin/about', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to update about data' });
     }
 });
+// --- КОНЕЦ НОВЫХ API маршрутов для "О нас" ---
 
-// --- ИСПРАВЛЕННЫЕ МАРШРУТЫ ДЛЯ РАБОТЫ С ТЕСТАМИ ---
+// --- НОВЫЕ API маршруты для работы с тестами ---
 
 // Получить тест по ID мероприятия
 app.get('/api/tests/:eventId', async (req, res) => {
@@ -325,9 +329,9 @@ app.put('/api/events/:eventId/test', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to save/update test' });
     }
 });
+// --- КОНЕЦ НОВЫХ API маршрутов для тестов ---
 
-// --- КОНЕЦ ИСПРАВЛЕННЫХ МАРШРУТОВ ДЛЯ ТЕСТОВ ---
-
+// Добавить мероприятие (теперь доступно всем)
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
@@ -351,12 +355,14 @@ app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, r
     }
 });
 
+// Удалить мероприятие (теперь доступно всем)
 app.delete('/api/events/:id', allowAll, async (req, res) => {
     try {
         const data = await readData();
         const originalLength = data.events.length;
         data.events = data.events.filter(event => event.id !== req.params.id);
         if (data.events.length === originalLength) {
+            // Мероприятие не найдено
             return res.status(404).json({ error: 'Event not found' });
         }
         // Также удаляем связанный тест, если он есть
@@ -432,7 +438,7 @@ app.post('/api/registration', urlEncodedParser, async (req, res) => {
 // --- Запуск сервера ---
 (async () => {
     try {
-        await ensureUploadsDir();
+        await ensureUploadsDir(); // Убедимся, что папка uploads существует
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on port ${PORT}`);
             console.log(`Data file path: ${DATA_FILE}`);
