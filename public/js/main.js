@@ -1,4 +1,12 @@
 // main.js
+
+// --- Убедимся, что goToRegistration доступна глобально ---
+// Это нужно, потому что она вызывается из onclick в HTML-карточках
+window.goToRegistration = function(eventId) {
+    window.location.href = `/registration/${eventId}`;
+}
+// --- Конец goToRegistration ---
+
 document.addEventListener('DOMContentLoaded', () => {
     // Загружаем мероприятия для главной страницы
     if (window.location.pathname === '/') {
@@ -25,6 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// --- Объявляем переменную для хранения всех мероприятий ---
+let allEventsCache = []; // Будет хранить последние загруженные мероприятия
+// --- Конец объявления переменной ---
+
 // Загрузка мероприятий с сервера
 async function loadEvents(type = null) {
     try {
@@ -37,12 +49,15 @@ async function loadEvents(type = null) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const events = await response.json();
-        // Сохраняем оригинальный список для фильтрации
-        window.originalEvents = events;
+        // Сохраняем список в кэше для фильтрации
+        allEventsCache = events;
         displayEvents(events);
     } catch (error) {
         console.error("Error loading events:", error);
-        document.getElementById('events-container').innerHTML = '<p>Ошибка загрузки мероприятий.</p>';
+        const container = document.getElementById('events-container');
+        if (container) {
+            container.innerHTML = '<p>Ошибка загрузки мероприятий.</p>';
+        }
     }
 }
 
@@ -53,14 +68,21 @@ function displayEvents(events) {
 
     container.innerHTML = '';
 
+    if (events.length === 0) {
+        container.innerHTML = '<p>Мероприятия не найдены.</p>';
+        return;
+    }
+
     events.forEach(event => {
         const eventCard = document.createElement('div');
         eventCard.className = 'event-card';
+        // Используем безопасное извлечение имени файла информационного письма
+        const fileName = event.infoLetterFileName;
         eventCard.innerHTML = `
             <h3>${event.name}</h3>
             <p class="event-description">${event.description}</p>
             <div class="event-actions">
-                ${event.infoLetterFileName ? `<a href="/uploads/${event.infoLetterFileName}" class="btn-info" target="_blank">Информационное письмо</a>` : '<span>Письмо скоро</span>'}
+                ${fileName ? `<a href="/uploads/${fileName}" class="btn-info" target="_blank">Информационное письмо</a>` : '<span>Письмо скоро</span>'}
                 <button class="btn-register" onclick="goToRegistration('${event.id}')">Регистрация</button>
             </div>
         `;
@@ -70,29 +92,30 @@ function displayEvents(events) {
 
 // Фильтрация мероприятий (на клиенте)
 function filterEvents(filterType) {
-    if (!window.originalEvents) {
-        console.error("Original events list not available");
+    if (!allEventsCache || allEventsCache.length === 0) {
+        console.warn("Events cache is empty or not loaded yet");
         return;
     }
     // Предполагаем, что subtype совпадает с filterType
-    const filtered = window.originalEvents.filter(e => e.subtype === filterType);
+    // Для "все" показываем все мероприятия
+    const filtered = filterType === 'all' ? allEventsCache : allEventsCache.filter(e => e.subtype === filterType);
     displayEvents(filtered);
 }
 
 // Фильтрация по поиску (на клиенте)
 function filterEventsBySearch(query) {
-    if (!window.originalEvents) {
-        console.error("Original events list not available");
+    if (!allEventsCache || allEventsCache.length === 0) {
+        console.warn("Events cache is empty or not loaded yet");
         return;
     }
-    const filtered = window.originalEvents.filter(e =>
+    if (!query) {
+        // Если запрос пустой, показываем все мероприятия
+        displayEvents(allEventsCache);
+        return;
+    }
+    const filtered = allEventsCache.filter(e =>
         e.name.toLowerCase().includes(query.toLowerCase()) ||
         e.description.toLowerCase().includes(query.toLowerCase())
     );
     displayEvents(filtered);
-}
-
-// Переход на страницу регистрации
-function goToRegistration(eventId) {
-    window.location.href = `/registration/${eventId}`;
 }
