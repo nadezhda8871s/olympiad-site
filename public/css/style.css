@@ -1,14 +1,13 @@
 /* public/css/style.css */
 :root {
-    --primary-color: #007bff;
-    --primary-light: #00aaff;
-    --primary-dark: #0056b3;
-    --secondary-color: #6f42c1;
-    --secondary-light: #8a6cff;
-    --success-color: #28a745;
-    --warning-color: #ffc107;
-    --warning-dark: #e0a800;
-    --danger-color: #dc3545;
+    --primary-color: #6a11cb;
+    --primary-light: #2575fc;
+    --primary-dark: #4a00e0;
+    --secondary-color: #8e2de2;
+    --secondary-light: #4a00e0;
+    --success-color: #00b09b;
+    --warning-color: #ff9a00;
+    --danger-color: #ff5e62;
     --light-bg: #f8f9fa;
     --dark-bg: #343a40;
     --text-light: #ffffff;
@@ -24,7 +23,7 @@
     --border-primary: #ced4da;
     --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     --gradient-secondary: linear-gradient(135deg, var(--secondary-color), var(--secondary-light));
-    --gradient-success: linear-gradient(120deg, var(--success-color), #218838);
+    --gradient-success: linear-gradient(120deg, var(--success-color), #1e7e34);
     --gradient-warning: linear-gradient(120deg, var(--warning-color), var(--warning-dark));
     --gradient-danger: linear-gradient(120deg, var(--danger-color), #c82333);
 }
@@ -36,7 +35,7 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
     background-color: var(--page-primary);
@@ -107,7 +106,72 @@ main {
     margin-bottom: 0.25em;
 }
 
-/* --- НОВЫЕ СТИЛИ ДЛЯ ПОИСКА НА ГЛАВНОЙ --- */
+/* --- Стили для страницы "О нас" --- */
+.about-section {
+    background-color: var(--text-light);
+    padding: 2em;
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2em;
+}
+
+.about-section h1 {
+    text-align: center;
+    margin-bottom: 1em;
+    color: var(--primary-dark);
+}
+
+#editable-about-text-container {
+    margin-bottom: 1em;
+}
+
+#editable-about-text {
+    width: 100%;
+    height: 200px;
+    padding: 1em;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-family: inherit;
+    resize: vertical;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: var(--text-primary);
+    transition: border-color var(--transition);
+}
+
+#editable-about-text:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.about-section p strong {
+    color: var(--primary-dark);
+}
+
+.about-section pre {
+    width: 100%;
+    white-space: pre-wrap;
+    font-family: monospace;
+    font-size: 0.9em;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    border: none;
+    background: none;
+}
+
+.about-section a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.about-section a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+/* --- Конец стилей для "О нас" --- */
+
+/* --- Стили для поиска мероприятий на главной --- */
 .search-section {
     margin-bottom: 2em;
     padding: 1em;
@@ -175,7 +239,7 @@ main {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5em;
 }
-/* --- КОНЕЦ НОВЫХ СТИЛЕЙ ДЛЯ ПОИСКА --- */
+/* --- Конец стилей для поиска --- */
 
 .event-buttons {
     display: grid;
@@ -194,36 +258,17 @@ main {
     transition: var(--transition);
     box-shadow: var(--card-shadow);
     font-weight: bold;
-    position: relative;
-    overflow: hidden;
-    z-index: 1;
-}
-
-.event-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
-    z-index: -1;
-    transition: var(--transition);
 }
 
 .event-btn:hover {
     opacity: 0.8;
-    transform: translateY(-5px);
+    transform: translateY(-3px);
     box-shadow: var(--card-shadow-hover);
     background: linear-gradient(120deg, var(--primary-light), var(--primary-color));
 }
 
-.event-btn:hover::before {
-    opacity: 0;
-}
-
 .btn-olympiads { background: linear-gradient(120deg, var(--primary-color), var(--primary-dark)); }
-.btn-contests { background: linear-gradient(120deg, var(--success-color), #218838); }
+.btn-contests { background: linear-gradient(120deg, var(--success-color), #1e7e34); }
 .btn-conferences { background: linear-gradient(120deg, var(--warning-color), var(--warning-dark)); color: var(--text-dark); }
 .btn-monographs { background: linear-gradient(120deg, var(--secondary-color), #5a32a3); }
 .btn-journal { background: linear-gradient(120deg, var(--danger-color), #c82333); }
@@ -513,6 +558,48 @@ footer {
     resize: vertical; /* Разрешить изменение высоты по вертикали */
     background-color: rgba(255, 255, 255, 0.9);
     color: var(--text-primary);
+}
+
+#edit-about-form input,
+#edit-about-form textarea,
+#edit-about-form select {
+    width: 100%;
+    padding: 0.5em;
+    margin-bottom: 1em;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    box-sizing: border-box;
+    transition: border-color var(--transition);
+    font-family: inherit;
+    font-size: 1em;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: var(--text-primary);
+}
+
+#edit-about-form input:focus,
+#edit-about-form textarea:focus,
+#edit-about-form select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+#edit-about-form button {
+    background: linear-gradient(120deg, var(--primary-color), var(--primary-dark));
+    color: var(--text-light);
+    padding: 0.75em 1.5em;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: var(--transition);
+    width: 100%;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+#edit-about-form button:hover {
+    background: linear-gradient(120deg, var(--primary-light), var(--primary-color));
+    transform: scale(1.02);
 }
 /* --- КОНЕЦ НОВЫХ СТИЛЕЙ ДЛЯ "О НАС" В АДМИНКЕ --- */
 
