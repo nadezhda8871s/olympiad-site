@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" name="option-${questionCounter}-c" placeholder="Вариант C" required>
                 </div>
                 <div class="option-row">
-                    <input type="radio" name="correct-answer-${questionCounter}" value="d"> 
+                    <input type="radio" name="correct-answer-${questionNumber}" value="d"> 
                     <input type="text" name="option-${questionCounter}-d" placeholder="Вариант D">
                 </div>
             </div>
