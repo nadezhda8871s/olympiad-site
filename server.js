@@ -1,488 +1,317 @@
-// server.js
 const express = require('express');
-const multer = require('multer');
-const session = require('cookie-session');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
+const ROOT = __dirname;
+const PUBLIC_DIR = path.join(ROOT, 'public');
+const DATA_FILE = path.join(ROOT, 'data.json');
 
-// --- Конфигурация ---
-const DATA_FILE = path.join(__dirname, 'data.json');
-const UPLOAD_PATH = path.join(__dirname, 'public', 'uploads');
+// --- helpers ---------------------------------------------------
+function ensureDataShape(d) {
+  const safe = d && typeof d === 'object' ? d : {};
+  if (!Array.isArray(safe.events)) safe.events = [];
+  if (!Array.isArray(safe.registrations)) safe.registrations = [];
+  if (!Array.isArray(safe.tests)) safe.tests = [];
+  if (!Array.isArray(safe.testResults)) safe.testResults = [];
+  if (!safe.about || typeof safe.about !== 'object') safe.about = { customText: '' };
+  if (typeof safe.about.customText !== 'string') safe.about.customText = '';
+  return safe;
+}
 
-// --- Промежуточное ПО ---
+function loadData() {
+  try {
+    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    return ensureDataShape(JSON.parse(raw));
+  } catch (e) {
+    const initial = ensureDataShape({});
+    try {
+      fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2), 'utf8');
+    } catch (_e) {}
+    return initial;
+  }
+}
+
+function saveData(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(ensureDataShape(data), null, 2), 'utf8');
+}
+
+function sanitizeQuestions(questions) {
+  const arr = Array.isArray(questions) ? questions : [];
+  return arr.map((q, i) => {
+    const qText = (q && typeof q.text === 'string') ? q.text.trim() : '';
+    const opts = Array.isArray(q?.options) ? q.options.map(o => String(o ?? '')).filter(Boolean) : [];
+    const correct = Number.isInteger(q?.correctIndex) ? q.correctIndex : 0;
+    return {
+      id: q?.id || 'q' + (i + 1),
+      text: qText,
+      options: opts,
+      correctIndex: Math.min(Math.max(correct, 0), Math.max(opts.length - 1, 0))
+    };
+  }).filter(q => q.text && q.options.length > 0);
+}
+
+// --- middleware ------------------------------------------------
+app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(PUBLIC_DIR, { extensions: ['html'] }));
 
-// Конфигурация сессий
-app.use(session({
-    name: 'session',
-    keys: [process.env.SESSION_SECRET || 'your_strong_fallback_secret_key_here_change_it'],
-    maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax'
-}));
-
-// --- Проверка и создание папки uploads при запуске ---
-async function ensureUploadsDir() {
-    try {
-        await fs.access(UPLOAD_PATH);
-        console.log("Uploads directory exists:", UPLOAD_PATH);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            console.log("Uploads directory does not exist, creating:", UPLOAD_PATH);
-            await fs.mkdir(UPLOAD_PATH, { recursive: true });
-            console.log("Uploads directory created:", UPLOAD_PATH);
-        } else {
-            console.error("Error checking/uploads directory:", error);
-            throw error;
-        }
-    }
-}
-
-// --- Вспомогательные функции для работы с JSON файлом ---
-async function readData() {
-    try {
-        const data = await fs.readFile(DATA_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            const initialData = {
-                events: [],
-                // admin: { login: "admin", password: "password" }, // УДАЛЕНО
-                registrations: [],
-                testResults: [],
-                tests: [], // Для хранения тестов
-                about: {
-                    // УДАЛЕНО: Все реквизиты и ООО "РУБИКОН-ПРИНТ"
-                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
-                }
-            };
-            await writeData(initialData);
-            console.log("Created initial data.json file.");
-            return initialData;
-        } else if (error instanceof SyntaxError) {
-            console.error("Syntax error in data.json:", error.message);
-            return { events: [], // admin: { login: "admin", password: "password" }, registrations: [], testResults: [], tests: [], about: {} };
-        } else {
-            console.error("Error reading data file:", error);
-            throw error;
-        }
-    }
-}
-
-async function writeData(data) {
-    try {
-        await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data written successfully");
-    } catch (error) {
-        console.error("Error writing data file:", error);
-        throw error;
-    }
-}
-
-// --- Middleware для проверки администратора (открыто для всех) ---
-function allowAll(req, res, next) {
-    next();
-}
-
-// --- Конфигурация multer для загрузки файлов в админке ---
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, UPLOAD_PATH);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
+// --- pages -----------------------------------------------------
+app.get('/', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
-const upload = multer({ storage: storage });
-
-// --- Маршруты ---
-
-app.get('/', async (req, res) => {
-    try {
-        res.sendFile(path.join(__dirname, 'views', 'index.html'));
-    } catch (error) {
-        console.error("Error serving index:", error);
-        res.status(500).send("Server Error");
-    }
-});
-
-app.get('/olympiads', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'olympiads.html'));
-});
-
-app.get('/contests', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'contests.html'));
-});
-
-app.get('/conferences', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'conferences.html'));
-});
-
-app.get('/registration/:eventId', (req, res) => {
-    if (!req.params.eventId) {
-         res.status(400).send("Event ID is required");
-         return;
-    }
-    res.sendFile(path.join(__dirname, 'views', 'registration.html'));
-});
-
-app.get('/test/:eventId', (req, res) => {
-    if (!req.params.eventId) {
-         res.status(400).send("Event ID is required");
-         return;
-    }
-    res.sendFile(path.join(__dirname, 'views', 'test.html'));
-});
-
 app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'about.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'about.html'));
+});
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'admin.html'));
 });
 
-app.get('/admin', allowAll, (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
+// --- api: health ----------------------------------------------
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
 });
 
-// --- API маршруты ---
+// --- api: about -----------------------------------------------
+app.get('/api/about', (req, res) => {
+  const data = loadData();
+  res.json({ customText: data.about?.customText || '' });
+});
 
-app.get('/api/events', async (req, res) => {
-    try {
-        const data = await readData();
-        const type = req.query.type;
-        let events = data.events;
-        if (type) {
-            events = events.filter(event => event.type === type);
-        }
-        res.json(events);
-    } catch (error) {
-        console.error("Error fetching events:", error);
-        res.status(500).json({ error: 'Failed to fetch events' });
+app.post('/api/about', (req, res) => {
+  const { customText } = req.body || {};
+  if (typeof customText !== 'string') {
+    return res.status(400).json({ error: "Поле 'customText' обязательно и должно быть строкой." });
+  }
+  const data = loadData();
+  data.about = { customText };
+  saveData(data);
+  res.json({ ok: true, customText });
+});
+
+// --- api: events ----------------------------------------------
+app.get('/api/events', (req, res) => {
+  const { type, search } = req.query;
+  const data = loadData();
+  let events = data.events || [];
+  if (type) {
+    events = events.filter(e => String(e.type || '') === String(type));
+  }
+  if (search) {
+    const s = String(search).toLowerCase();
+    events = events.filter(e =>
+      String(e.name || '').toLowerCase().includes(s) ||
+      String(e.description || '').toLowerCase().includes(s)
+    );
+  }
+  res.json(events);
+});
+
+app.get('/api/events/:id', (req, res) => {
+  const data = loadData();
+  const ev = (data.events || []).find(e => e.id === req.params.id);
+  if (!ev) return res.status(404).json({ error: 'Мероприятие не найдено' });
+  res.json(ev);
+});
+
+app.post('/api/events', (req, res) => {
+  const { name, type, description, startDate, endDate, test } = req.body || {};
+  if (!name || !type) {
+    return res.status(400).json({ error: "Поля 'name' и 'type' обязательны" });
+  }
+  const data = loadData();
+  const id = 'evt_' + uuidv4();
+  const event = {
+    id,
+    name: String(name),
+    type: String(type),
+    description: String(description || ''),
+    startDate: startDate || '',
+    endDate: endDate || ''
+  };
+  data.events.push(event);
+
+  if (event.type === 'olympiad' && test?.questions?.length) {
+    const testObj = { eventId: id, questions: sanitizeQuestions(test.questions) };
+    const tests = data.tests || [];
+    tests.push(testObj);
+    data.tests = tests;
+  }
+
+  saveData(data);
+  res.status(201).json(event);
+});
+
+app.put('/api/events/:id', (req, res) => {
+  const id = req.params.id;
+  const { name, type, description, startDate, endDate, test } = req.body || {};
+
+  const data = loadData();
+  const idx = (data.events || []).findIndex(e => e.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Мероприятие не найдено' });
+
+  const current = data.events[idx];
+  const nextType = type ?? current.type;
+
+  data.events[idx] = {
+    ...current,
+    ...(name !== undefined ? { name } : {}),
+    ...(nextType !== undefined ? { type: nextType } : {}),
+    ...(description !== undefined ? { description } : {}),
+    ...(startDate !== undefined ? { startDate } : {}),
+    ...(endDate !== undefined ? { endDate } : {})
+  };
+
+  if (nextType === 'olympiad') {
+    if (test?.questions) {
+      const sanitized = sanitizeQuestions(test.questions);
+      let tests = data.tests || [];
+      const tIdx = tests.findIndex(t => t.eventId === id);
+      const obj = { eventId: id, questions: sanitized };
+      if (tIdx >= 0) tests[tIdx] = obj; else tests.push(obj);
+      data.tests = tests;
     }
+  } else {
+    // удаляем тест, если тип изменился на не-олимпиаду
+    data.tests = (data.tests || []).filter(t => t.eventId !== id);
+  }
+
+  saveData(data);
+  res.json(data.events[idx]);
 });
 
-app.get('/api/admin/events', allowAll, async (req, res) => {
-    try {
-        const data = await readData();
-        res.json(data.events);
-    } catch (error) {
-        console.error("Error fetching events for admin:", error);
-        res.status(500).json({ error: 'Failed to fetch events for admin' });
-    }
+app.delete('/api/events/:id', (req, res) => {
+  const id = req.params.id;
+  const data = loadData();
+  const before = data.events.length;
+  data.events = (data.events || []).filter(e => e.id !== id);
+  data.tests = (data.tests || []).filter(t => t.eventId !== id);
+  data.registrations = (data.registrations || []).filter(r => r.eventId !== id);
+  saveData(data);
+  res.json({ removed: before - data.events.length });
 });
 
-app.get('/api/admin/registrations', allowAll, async (req, res) => {
-    try {
-        const data = await readData();
-        res.json({
-            registrations: data.registrations || [],
-            events: data.events || [],
-            testResults: data.testResults || []
-        });
-    } catch (error) {
-        console.error("Error fetching registrations:", error);
-        res.status(500).json({ error: 'Failed to fetch registrations' });
-    }
+// --- api: tests -----------------------------------------------
+app.get('/api/tests/:eventId', (req, res) => {
+  const data = loadData();
+  const test = (data.tests || []).find(t => t.eventId === req.params.eventId);
+  res.json(test || { eventId: req.params.eventId, questions: [] });
 });
 
-app.get('/api/admin/test-results', allowAll, async (req, res) => {
-    try {
-        const data = await readData();
-        res.json(data.testResults || []);
-    } catch (error) {
-        console.error("Error fetching test results:", error);
-        res.status(500).json({ error: 'Failed to fetch test results' });
-    }
+app.put('/api/tests/:eventId', (req, res) => {
+  const eventId = req.params.eventId;
+  const data = loadData();
+  const ev = (data.events || []).find(e => e.id === eventId);
+  if (!ev) return res.status(404).json({ error: 'Мероприятие не найдено' });
+
+  const sanitized = sanitizeQuestions((req.body && req.body.questions) || []);
+  let tests = data.tests || [];
+  const idx = tests.findIndex(t => t.eventId === eventId);
+  const obj = { eventId, questions: sanitized };
+  if (idx >= 0) tests[idx] = obj; else tests.push(obj);
+  data.tests = tests;
+  saveData(data);
+  res.json(obj);
 });
 
-app.get('/api/events/:id', async (req, res) => {
-    try {
-        const data = await readData();
-        const event = data.events.find(e => e.id === req.params.id);
-        if (!event) {
-            return res.status(404).json({ error: 'Event not found' });
-        }
-        res.json(event);
-    } catch (error) {
-        console.error("Error fetching event:", error);
-        res.status(500).json({ error: 'Failed to fetch event' });
+// --- api: registrations ---------------------------------------
+app.post('/api/events/:id/register', (req, res) => {
+  const id = req.params.id;
+  const { fullName, email, phone, extra } = req.body || {};
+
+  const data = loadData();
+  const ev = (data.events || []).find(e => e.id === id);
+  if (!ev) return res.status(404).json({ error: 'Мероприятие не найдено' });
+  if (!fullName || !email) return res.status(400).json({ error: "Поля 'fullName' и 'email' обязательны" });
+
+  const reg = {
+    id: 'reg_' + uuidv4(),
+    eventId: id,
+    eventName: ev.name,
+    fullName: String(fullName),
+    email: String(email),
+    phone: String(phone || ''),
+    extra: extra || {},
+    createdAt: new Date().toISOString(),
+    payment: {
+      provider: 'robokassa',
+      status: 'pending',
+      stubUrl: '' // заполним ниже после вычисления id
     }
+  };
+  reg.payment.stubUrl = `/payment-stub?reg=${encodeURIComponent(reg.id)}`;
+
+  data.registrations = data.registrations || [];
+  data.registrations.push(reg);
+  saveData(data);
+
+  res.status(201).json({ registration: reg, paymentUrl: reg.payment.stubUrl });
 });
 
-// --- НОВЫЕ API маршруты для работы с "О нас" ---
-
-// Получить данные "О нас" (для админки - теперь доступно без аутентификации)
-app.get('/api/admin/about', allowAll, async (req, res) => {
-    try {
-        const data = await readData();
-        const aboutData = {
-            customText: data.about?.customText || '',
-            // УДАЛЕНО: Все реквизиты и ООО "РУБИКОН-ПРИНТ"
-        };
-        res.json(aboutData);
-    } catch (error) {
-        console.error("Error fetching 'about' ", error);
-        res.status(500).json({ error: 'Failed to fetch about data' });
-    }
+app.get('/api/registrations', (req, res) => {
+  const data = loadData();
+  res.json(data.registrations || []);
 });
 
-// Обновить данные "О нас" (для админки - теперь доступно без аутентификации)
-app.post('/api/admin/about', allowAll, async (req, res) => {
-    try {
-        const { customText } = req.body; // Только customText
-        const data = await readData();
-
-        if (!data.about) {
-            data.about = {};
-        }
-
-        // УДАЛЕНО: Все реквизиты и ООО "РУБИКОН-ПРИНТ"
-        data.about.customText = customText;
-
-        await writeData(data);
-        res.json({ success: true });
-    } catch (error) {
-        console.error("Error updating 'about' ", error);
-        res.status(500).json({ error: 'Failed to update about data' });
-    }
-});
-// --- КОНЕЦ НОВЫХ API маршрутов для "О нас" ---
-
-// --- НОВЫЙ маршрут: Получить тест по ID мероприятия ---
-app.get('/api/tests/:eventId', async (req, res) => {
-    try {
-        const data = await readData();
-        if (!data.tests) {
-             return res.status(404).json({ error: 'Test not found' });
-        }
-        const test = data.tests.find(t => t.eventId === req.params.eventId);
-        if (!test) {
-            return res.status(404).json({ error: 'Test not found for this event' });
-        }
-        res.json(test);
-    } catch (error) {
-        console.error("Error fetching test:", error);
-        res.status(500).json({ error: 'Failed to fetch test' });
-    }
-});
-// --- КОНЕЦ НОВОГО маршрута ---
-
-// --- НОВЫЙ маршрут: Добавить мероприятие с тестом ---
-app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
-    try {
-        const data = await readData();
-        const { name, description, type, subtype, testQuestions } = req.body; // subtype и testQuestions добавлены
-
-        const newEvent = {
-            id: uuidv4(),
-            name: name,
-            description: description,
-            type: type,
-            subtype: subtype || type, // subtype для фильтрации, если не передан, используем type
-            infoLetterFileName: req.file ? req.file.filename : null
-        };
-
-        // Обработка теста для олимпиад
-        if (type === 'olympiad' && testQuestions) {
-            try {
-                const questions = JSON.parse(testQuestions);
-                if (Array.isArray(questions) && questions.length > 0) {
-                    if (!data.tests) data.tests = [];
-                    const testId = uuidv4();
-                    data.tests.push({
-                        id: testId,
-                        eventId: newEvent.id,
-                        testName: `${name} - Тест`,
-                        questions: questions, // Массив объектов вопросов
-                        createdAt: new Date().toISOString()
-                    });
-                }
-            } catch (parseError) {
-                console.error("Error parsing test questions:", parseError);
-                // Можно вернуть ошибку, если тест обязателен
-                // return res.status(400).json({ error: 'Некорректный формат данных теста.' });
-            }
-        }
-
-        data.events.push(newEvent);
-        await writeData(data);
-        res.json({ success: true, event: newEvent });
-    } catch (error) {
-        console.error("Error adding event:", error);
-        res.status(500).json({ error: 'Failed to add event' });
-    }
-});
-// --- КОНЕЦ НОВОГО маршрута ---
-
-// --- НОВЫЙ маршрут: Обновить мероприятие ---
-app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req, res) => {
-    try {
-        const data = await readData();
-        const eventId = req.params.id;
-        const { name, description, type, subtype, testQuestions } = req.body; // subtype и testQuestions добавлены
-
-        const eventIndex = data.events.findIndex(e => e.id === eventId);
-        if (eventIndex === -1) {
-            return res.status(404).json({ error: 'Event not found' });
-        }
-
-        const updatedEvent = {
-            id: eventId,
-            name: name,
-            description: description,
-            type: type,
-            subtype: subtype || type, // subtype для фильтрации, если не передан, используем type
-            infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
-        };
-
-        data.events[eventIndex] = updatedEvent;
-
-        // Обработка теста для олимпиад при обновлении
-        if (type === 'olympiad' && testQuestions) {
-            try {
-                const questions = JSON.parse(testQuestions);
-                if (Array.isArray(questions) && questions.length > 0) {
-                    if (!data.tests) data.tests = [];
-                    // Проверяем, существует ли уже тест для этого мероприятия
-                    const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
-                    const testData = {
-                        id: uuidv4(),
-                        eventId: eventId,
-                        testName: `${name} - Тест (Обновлён)`,
-                        questions: questions, // Массив объектов вопросов
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    };
-
-                    if (existingIndex >= 0) {
-                        // Обновляем существующий тест
-                        testData.id = data.tests[existingIndex].id; // Сохраняем ID
-                        testData.createdAt = data.tests[existingIndex].createdAt; // Сохраняем дату создания
-                        data.tests[existingIndex] = testData;
-                    } else {
-                        // Добавляем новый тест
-                        data.tests.push(testData);
-                    }
-                } else {
-                    // Если вопросы пустые, удаляем тест
-                    if (data.tests) {
-                        data.tests = data.tests.filter(t => t.eventId !== eventId);
-                    }
-                }
-            } catch (parseError) {
-                console.error("Error parsing test questions for update:", parseError);
-                // Можно вернуть ошибку, если тест обязателен
-                // return res.status(400).json({ error: 'Некорректный формат данных теста при обновлении.' });
-            }
-        }
-
-        await writeData(data);
-        res.json({ success: true, event: updatedEvent });
-    } catch (error) {
-        console.error("Error updating event:", error);
-        res.status(500).json({ error: 'Failed to update event' });
-    }
-});
-// --- КОНЕЦ НОВОГО маршрута ---
-
-// --- НОВЫЙ маршрут: Удалить мероприятие ---
-app.delete('/api/events/:id', allowAll, async (req, res) => {
-    try {
-        const data = await readData();
-        const originalLength = data.events.length;
-        data.events = data.events.filter(event => event.id !== req.params.id);
-        if (data.events.length === originalLength) {
-            // Мероприятие не найдено
-            return res.status(404).json({ error: 'Event not found' });
-        }
-        // Также удаляем связанный тест, если он есть
-        if (data.tests) {
-            data.tests = data.tests.filter(test => test.eventId !== req.params.id);
-        }
-        await writeData(data);
-        res.json({ success: true });
-    } catch (error) {
-        console.error("Error deleting event:", error);
-        res.status(500).json({ error: 'Failed to delete event' });
-    }
-});
-// --- КОНЕЦ НОВОГО маршрута ---
-
-app.post('/api/test-results', async (req, res) => {
-    try {
-        const { eventId, userId, answers, score } = req.body;
-        if (!eventId || !answers || score === undefined) {
-             return res.status(400).json({ error: 'Event ID, answers, and score are required' });
-        }
-        const data = await readData();
-        if (!data.testResults) {
-            data.testResults = [];
-        }
-        data.testResults.push({
-            id: uuidv4(),
-            eventId: eventId,
-            userId: userId || 'anonymous',
-            answers: answers,
-            score: score,
-            timestamp: new Date().toISOString()
-        });
-        await writeData(data);
-        res.json({ success: true });
-    } catch (error) {
-        console.error("Error saving test results:", error);
-        res.status(500).json({ error: 'Failed to save test results' });
-    }
+app.get('/api/registrations.csv', (req, res) => {
+  const data = loadData();
+  const regs = data.registrations || [];
+  const headers = ['id','eventId','eventName','fullName','email','phone','createdAt','paymentStatus'];
+  const lines = [headers.join(',')].concat(regs.map(r => {
+    const row = [
+      r.id, r.eventId, r.eventName, r.fullName, r.email, r.phone, r.createdAt, (r.payment?.status || '')
+    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`);
+    return row.join(',');
+  }));
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.send(lines.join('\n'));
 });
 
-const urlEncodedParser = multer().none();
-app.post('/api/registration', urlEncodedParser, async (req, res) => {
-    try {
-        const { eventId, surname, name, patronymic, institution, country, city, email, phone } = req.body;
-        if (!eventId || !surname || !name || !email) {
-             return res.status(400).json({ error: 'Event ID, Surname, Name, and Email are required' });
-        }
-        const data = await readData();
-        if (!data.registrations) {
-            data.registrations = [];
-        }
-        data.registrations.push({
-            id: uuidv4(),
-            eventId: eventId,
-            surname: surname,
-            name: name,
-            patronymic: patronymic,
-            institution: institution,
-            country: country,
-            city: city,
-            email: email,
-            phone: phone,
-            timestamp: new Date().toISOString()
-        });
-        await writeData(data);
-        res.json({ success: true });
-    } catch (error) {
-        console.error("Error saving registration:", error);
-        res.status(500).json({ error: 'Failed to save registration' });
-    }
+// --- payment stub & callback reserve --------------------------
+app.get('/payment-stub', (req, res) => {
+  const regId = String(req.query.reg || '');
+  const html = `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Оплата Robokassa — заглушка</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="about-section" style="max-width:860px;margin:2rem auto;">
+    <h1>Оплата — Robokassa (резервная заглушка)</h1>
+    <p>Регистрация <strong>${regId}</strong> создана.</p>
+    <p>Здесь будет перенаправление на оплату Robokassa после интеграции.</p>
+    <p><strong>Точки интеграции:</strong></p>
+    <ul>
+      <li>Редирект пользователя на страницу/виджет Robokassa после успешной регистрации.</li>
+      <li>Обработка уведомлений: <code>POST /api/payments/robokassa/callback</code></li>
+      <li>Обновление статуса оплаты у регистрации (<code>payment.status</code> = <em>paid</em>/<em>failed</em>).</li>
+    </ul>
+    <a class="btn-register" href="/">Вернуться на главную</a>
+  </main>
+</body>
+</html>`;
+  res.status(200).send(html);
 });
 
-// --- Запуск сервера ---
-(async () => {
-    try {
-        await ensureUploadsDir(); // Убедимся, что папка uploads существует
-        app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Server is running on port ${PORT}`);
-            console.log(`Data file path: ${DATA_FILE}`);
-            console.log(`Uploads path: ${UPLOAD_PATH}`);
-        });
-    } catch (err) {
-        console.error("Failed to start server due to setup error:", err);
-        process.exit(1);
-    }
-})();
+// Пока просто заглушка — чтобы была точка входа для веб-хуков Robokassa
+app.post('/api/payments/robokassa/callback', (req, res) => {
+  res.json({ ok: true, note: 'Заглушка для Robokassa. Реальную подпись/валидацию необходимо добавить.' });
+});
+
+// --- 404 fallback for pretty routes ----------------------------
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.accepts('html') && !req.path.startsWith('/api/')) {
+    return res.status(404).sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  }
+  next();
+});
+
+// --- start -----------------------------------------------------
+app.listen(PORT, () => {
+  console.log(`✅ Server listening on http://localhost:${PORT}`);
+});
