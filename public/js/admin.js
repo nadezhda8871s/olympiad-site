@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentFileNameSpan = document.getElementById('current-file-name');
     const editQuestionsContainer = document.getElementById('edit-questions-container');
     const editAddQuestionBtn = document.getElementById('edit-add-question-btn');
-    const cancelEditBtn = document.getElementById('cancel-edit-btn');
     let editingEventId = null;
     let editingEvent = null;
     // --- КОНЕЦ НОВОГО ---
@@ -236,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return questions;
     }
-    // --- КОНЕЦ НОВОЙ ФУНКЦИЯ: Сбор данных формы теста ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
 
     document.getElementById('add-question-btn').addEventListener('click', addQuestionField);
     // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
@@ -250,17 +249,15 @@ document.addEventListener('DOMContentLoaded', () => {
             events.forEach(event => {
                 const eventItem = document.createElement('div');
                 eventItem.className = 'event-item';
-                // --- ИСПРАВЛЕНИЕ: Убрано отображение subtype ---
                 eventItem.innerHTML = `
                     <div>
                         <strong>${event.name}</strong> (${event.type})
-                        <!-- ${event.subtype ? `<br><small>Подтип: ${event.subtype}</small>` : '<br><small>Подтип: не указан</small>'} -->
+                        ${event.subtype ? `<br><small>Подтип: ${event.subtype}</small>` : '<br><small>Подтип: не указан</small>'}
                         ${event.infoLetterFileName ? `<br><small>Файл: ${event.infoLetterFileName}</small>` : '<br><small>Файл: нет</small>'}
                     </div>
                     <button onclick="editEvent('${event.id}')">Редактировать</button>
                     <button onclick="deleteEvent('${event.id}')">Удалить</button>
                 `;
-                // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
                 eventsList.appendChild(eventItem);
             });
         } catch (error) {
@@ -284,9 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('edit-event-name').value = event.name;
             document.getElementById('edit-event-description').value = event.description;
             document.getElementById('edit-event-type').value = event.type;
-            // --- ИСПРАВЛЕНИЕ: Убрано заполнение subtype ---
-            // document.getElementById('edit-event-subtype').value = event.subtype || '';
-            // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
+            document.getElementById('edit-event-subtype').value = event.subtype || '';
 
             // Отображаем текущий файл
             currentFileNameSpan.textContent = event.infoLetterFileName || 'нет';
@@ -475,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return questions;
     }
-    // --- КОНЕЦ НОВОЙ ФУНКЦИЯ: Сбор данных формы редактирования теста ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
 
     // --- НОВАЯ ФУНКЦИЯ: Отправка формы редактирования мероприятия ---
     editEventForm.addEventListener('submit', async (e) => {
@@ -541,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMessage.style.display = 'block';
         }
     });
-    // --- КОНЕЦ НОВОЙ ФУНКЦИЯ: Отправка формы редактирования мероприятия ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
 
     // --- НОВАЯ ФУНКЦИЯ: Отмена редактирования ---
     cancelEditBtn.addEventListener('click', () => {
@@ -550,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editingEventId = null;
         editingEvent = null;
     });
-    // --- КОНЕЦ НОВОЙ ФУНКЦИЯ: Отмена редактирования ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
 
     window.deleteEvent = async function(eventId) {
         if (!confirm('Вы уверены, что хотите удалить это мероприятие?')) return;
