@@ -1,113 +1,139 @@
-// public/js/main.js
-document.addEventListener('DOMContentLoaded', () => {
-    const eventsContainer = document.getElementById('events-container');
-    const filtersContainer = document.querySelector('.filters');
-    const searchInput = document.getElementById('search-input');
-    const errorMessage = document.getElementById('error-message'); // Предполагается, что есть элемент для ошибок
+(function () {
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    // Загружаем мероприятия при загрузке страницы
-    loadEvents();
+  const eventsContainer = document.getElementById('events-container');
+  const searchInput = document.getElementById('search-input-main');
+  const searchBtn = document.getElementById('search-button-main');
+  const filterButtons = document.querySelectorAll('.filter-btn');
 
-    // Обработчики для фильтров (если они есть на странице)
-    if (filtersContainer) {
-        const filterButtons = filtersContainer.querySelectorAll('.filter-btn');
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                const type = button.getAttribute('data-type');
-                filterEvents(type);
-            });
-        });
+  let currentType = '';
+  let currentSearch = '';
+
+  function escapeHTML(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function renderEvents(list) {
+    if (!list.length) {
+      eventsContainer.innerHTML = '<p>Пока нет мероприятий.</p>';
+      return;
     }
+    eventsContainer.innerHTML = list.map(ev => {
+      const desc = escapeHTML(ev.description || '');
+      return `
+        <article class="event-card">
+          <h3>${escapeHTML(ev.name)}</h3>
+          <div class="event-description">${desc}</div>
+          <div class="event-actions">
+            <a class="btn-info" href="#" data-action="details" data-id="${ev.id}">Подробнее</a>
+            <button class="btn-register" data-action="register" data-id="${ev.id}" data-name="${escapeHTML(ev.name)}">Зарегистрироваться</button>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
 
-    // Обработчик для поиска (если он есть на странице)
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            filterEventsBySearch(e.target.value);
-        });
-    }
+  async function loadEvents() {
+    const params = new URLSearchParams();
+    if (currentType) params.set('type', currentType);
+    if (currentSearch) params.set('search', currentSearch);
+    const res = await fetch('/api/events?' + params.toString());
+    const data = await res.json();
+    renderEvents(data);
+  }
 
-    // --- Убедимся, что goToRegistration доступна глобально ---
-    window.goToRegistration = function(eventId) {
-        window.location.href = `/registration/${eventId}`;
-    }
-    // --- Конец goToRegistration ---
-});
-
-async function loadEvents(type = null) {
-    try {
-        let url = '/api/events';
-        if (type) {
-            url += `?type=${type}`;
-        }
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const events = await response.json();
-        // Сохраняем оригинальный список для фильтрации
-        window.originalEvents = events;
-        displayEvents(events);
-    } catch (error) {
-        console.error("Error loading events:", error);
-        const eventsContainer = document.getElementById('events-container');
-        if (eventsContainer) {
-            eventsContainer.innerHTML = '<p>Ошибка загрузки мероприятий.</p>';
-        }
-    }
-}
-
-function displayEvents(events) {
-    const container = document.getElementById('events-container');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (events.length === 0) {
-        container.innerHTML = '<p>Мероприятия не найдены.</p>';
-        return;
-    }
-
-    events.forEach(event => {
-        const eventCard = document.createElement('div');
-        eventCard.className = 'event-card';
-        eventCard.innerHTML = `
-            <h3>${event.name}</h3>
-            <p class="event-description">${event.description}</p>
-            <div class="event-actions">
-                ${event.infoLetterFileName ? `<a href="/uploads/${event.infoLetterFileName}" class="btn-info" target="_blank">Информационное письмо</a>` : '<span>Письмо скоро</span>'}
-                <button class="btn-register" onclick="goToRegistration('${event.id}')">Регистрация</button>
-            </div>
-        `;
-        container.appendChild(eventCard);
+  // Filters
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentType = btn.dataset.type || '';
+      loadEvents();
     });
-}
+  });
 
-function filterEvents(filterType) {
-    if (!window.originalEvents) {
-        console.error("Original events list not available");
-        return;
-    }
-    // Предполагаем, что subtype совпадает с filterType
-    // Для "все" показываем все мероприятия
-    const filtered = filterType === 'all' ? window.originalEvents : window.originalEvents.filter(e => e.subtype === filterType);
-    displayEvents(filtered);
-}
+  // Search
+  if (searchBtn) {
+    searchBtn.addEventListener('click', () => {
+      currentSearch = String(searchInput.value || '').trim();
+      loadEvents();
+    });
+  }
+  if (searchInput) {
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        currentSearch = String(searchInput.value || '').trim();
+        loadEvents();
+      }
+    });
+  }
 
-function filterEventsBySearch(query) {
-    if (!window.originalEvents) {
-        console.error("Original events list not available");
-        return;
+  // Registration dialog
+  const dialog = document.getElementById('register-dialog');
+  const regForm = document.getElementById('register-form');
+  const regCancel = document.getElementById('reg-cancel');
+
+  function openRegister(eventId) {
+    document.getElementById('reg-event-id').value = eventId;
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open','');
     }
-    if (!query) {
-        // Если запрос пустой, показываем все мероприятия
-        displayEvents(window.originalEvents);
-        return;
+  }
+  function closeRegister() {
+    if (typeof dialog.close === 'function') dialog.close();
+    dialog.removeAttribute('open');
+    regForm.reset();
+  }
+
+  regCancel?.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeRegister();
+  });
+
+  regForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('reg-event-id').value;
+    const fullName = document.getElementById('reg-fullname').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
+    if (!fullName || !email) return;
+
+    const res = await fetch(`/api/events/${encodeURIComponent(id)}/register`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ fullName, email, phone })
+    });
+    if (!res.ok) {
+      alert('Ошибка при регистрации');
+      return;
     }
-    const filtered = window.originalEvents.filter(e =>
-        e.name.toLowerCase().includes(query.toLowerCase()) ||
-        e.description.toLowerCase().includes(query.toLowerCase())
-    );
-    displayEvents(filtered);
-}
+    const data = await res.json();
+    closeRegister();
+    // Резерв на оплату Robokassa: переходим на заглушку
+    if (data.paymentUrl) window.location.href = data.paymentUrl;
+  });
+
+  // Click handlers on cards
+  eventsContainer?.addEventListener('click', (e) => {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+    e.preventDefault();
+    const id = target.getAttribute('data-id');
+    const action = target.getAttribute('data-action');
+    if (action === 'register') {
+      openRegister(id);
+    } else if (action === 'details') {
+      // Пока просто покажем alert. Здесь можно сделать модалку с подробностями/пригласительным письмом
+      window.alert('Краткое описание доступно на карточке. При необходимости добавим страницу деталей.');
+    }
+  });
+
+  // Initial
+  loadEvents();
+})();
