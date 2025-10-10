@@ -16,23 +16,8 @@
             <section id="edit-about-section">
                 <h2>Редактировать "О нас"</h2>
                 <form id="edit-about-form">
-                    <label for="about-custom-text">Произвольный текст:</label>
-                    <textarea id="about-custom-text" name="customText" placeholder="Введите произвольный текст для страницы 'О нас'"></textarea>
-
-                    <label for="about-inn">ИНН:</label>
-                    <input type="text" id="about-inn" name="inn" required>
-
-                    <label for="about-phone">Номер телефона:</label>
-                    <input type="text" id="about-phone" name="phone" required>
-
-                    <label for="about-address">Адрес:</label>
-                    <input type="text" id="about-address" name="address" required>
-
-                    <label for="about-email">Email:</label>
-                    <input type="email" id="about-email" name="email" required>
-
-                    <label for="about-requisites">Реквизиты (полный текст):</label>
-                    <textarea id="about-requisites" name="requisites" rows="10" required></textarea>
+                    <label for="about-custom-text">Текст для страницы 'О нас':</label>
+                    <textarea id="about-custom-text" name="customText" placeholder="Введите текст для страницы 'О нас'"></textarea>
 
                     <button type="submit">Сохранить изменения</button>
                 </form>
@@ -54,7 +39,8 @@
                     <option value="conference">Конференция</option>
                 </select>
 
-                <label for="event-subtype">Подтип (для фильтрации):</label>
+                <!-- --- УДАЛЕНО: Подтип (для фильтрации) --->
+                <!-- <label for="event-subtype">Подтип (для фильтрации):</label>
                 <select id="event-subtype" name="subtype">
                     <option value="">Не указан</option>
                     <option value="olympiad-students">Студентам, аспирантам</option>
@@ -63,7 +49,8 @@
                     <option value="contest-article">Статьи</option>
                     <option value="contest-vkr">ВКР</option>
                     <option value="conference-science">Научные конференции</option>
-                </select>
+                </select> -->
+                <!-- --- КОНЕЦ УДАЛЕННОГО --- -->
 
                 <label for="info-letter-file">Файл информационного письма:</label>
                 <input type="file" id="info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
@@ -104,7 +91,8 @@
                         <option value="conference">Конференция</option>
                     </select>
 
-                    <label for="edit-event-subtype">Подтип (для фильтрации):</label>
+                    <!-- --- УДАЛЕНО: Подтип (для фильтрации) --->
+                    <!-- <label for="edit-event-subtype">Подтип (для фильтрации):</label>
                     <select id="edit-event-subtype" name="subtype">
                         <option value="">Не указан</option>
                         <option value="olympiad-students">Студентам, аспирантам</option>
@@ -113,7 +101,8 @@
                         <option value="contest-article">Статьи</option>
                         <option value="contest-vkr">ВКР</option>
                         <option value="conference-science">Научные конференции</option>
-                    </select>
+                    </select> -->
+                    <!-- --- КОНЕЦ УДАЛЕННОГО --- -->
 
                     <label for="edit-info-letter-file">Файл информационного письма (новый):</label>
                     <input type="file" id="edit-info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
