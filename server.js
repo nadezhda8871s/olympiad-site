@@ -54,12 +54,12 @@ async function readData() {
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
-                // admin: { login: "admin", password: "password" }, // Убрано
                 registrations: [],
                 testResults: [],
-                tests: [],
-                about: {
-                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
+                tests: [], // Для хранения тестов
+                about: { // Инициализация данных "О нас"
+                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.",
+                    additionalText: "Дополнительный текст, который будет отображаться над контактными данными."
                 }
             };
             await writeData(initialData);
@@ -215,22 +215,23 @@ app.get('/api/events/:id', async (req, res) => {
 });
 
 // --- НОВЫЕ API маршруты для работы с "О нас" ---
-// Получить произвольный текст "О нас"
-app.get('/api/admin/about/custom-text', allowAll, async (req, res) => {
+app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
-        const customText = data.about?.customText || "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.";
-        res.json({ customText: customText });
+        const aboutData = {
+            customText: data.about?.customText || '',
+            additionalText: data.about?.additionalText || ''
+        };
+        res.json(aboutData);
     } catch (error) {
-        console.error("Error fetching 'about' custom text:", error);
-        res.status(500).json({ error: 'Failed to fetch about custom text' });
+        console.error("Error fetching 'about' ", error);
+        res.status(500).json({ error: 'Failed to fetch about data' });
     }
 });
 
-// Обновить произвольный текст "О нас"
-app.post('/api/admin/about/custom-text', allowAll, async (req, res) => {
+app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
-        const { customText } = req.body;
+        const { customText, additionalText } = req.body;
         const data = await readData();
 
         if (!data.about) {
@@ -238,12 +239,13 @@ app.post('/api/admin/about/custom-text', allowAll, async (req, res) => {
         }
 
         data.about.customText = customText;
+        data.about.additionalText = additionalText;
 
         await writeData(data);
         res.json({ success: true });
     } catch (error) {
-        console.error("Error updating 'about' custom text:", error);
-        res.status(500).json({ error: 'Failed to update about custom text' });
+        console.error("Error updating 'about' ", error);
+        res.status(500).json({ error: 'Failed to update about data' });
     }
 });
 // --- КОНЕЦ НОВЫХ API маршрутов для "О нас" ---
@@ -271,10 +273,10 @@ app.get('/api/tests/:eventId', async (req, res) => {
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
-        const { name, description, type, subtype } = req.body;
+        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
 
         const newEvent = {
-            id: uuidv4(), // ИСПРАВЛЕНО: используем uuidv4()
+            id: uuidv4(),
             name: name,
             description: description,
             type: type,
@@ -288,6 +290,72 @@ app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, r
     } catch (error) {
         console.error("Error adding event:", error);
         res.status(500).json({ error: 'Failed to add event' });
+    }
+});
+// --- КОНЕЦ НОВОГО маршрута ---
+
+// --- НОВЫЙ маршрут: Обновить мероприятие ---
+app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req, res) => {
+    try {
+        const data = await readData();
+        const eventId = req.params.id;
+        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+
+        const eventIndex = data.events.findIndex(e => e.id === eventId);
+        if (eventIndex === -1) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const updatedEvent = {
+            id: eventId,
+            name: name,
+            description: description,
+            type: type,
+            subtype: subtype || type,
+            infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
+        };
+
+        data.events[eventIndex] = updatedEvent;
+
+        // Обработка теста для олимпиад при обновлении
+        if (type === 'olympiad' && testQuestions) {
+            try {
+                const questions = JSON.parse(testQuestions);
+                if (Array.isArray(questions) && questions.length > 0) {
+                    if (!data.tests) data.tests = [];
+                    // Проверяем, существует ли уже тест для этого мероприятия
+                    const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
+                    const testData = {
+                        id: uuidv4(),
+                        eventId: eventId,
+                        testName: `${name} - Тест (Обновлён)`,
+                        questions: questions, // Массив объектов вопросов
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    if (existingIndex >= 0) {
+                        // Обновляем существующий тест
+                        testData.id = data.tests[existingIndex].id; // Сохраняем ID
+                        testData.createdAt = data.tests[existingIndex].createdAt; // Сохраняем дату создания
+                        data.tests[existingIndex] = testData;
+                    } else {
+                        // Добавляем новый тест
+                        data.tests.push(testData);
+                    }
+                }
+            } catch (parseError) {
+                console.error("Error parsing test questions for update:", parseError);
+                // Можно вернуть ошибку, если тест обязателен
+                // return res.status(400).json({ error: 'Некорректный формат данных теста при обновлении.' });
+            }
+        }
+
+        await writeData(data);
+        res.json({ success: true, event: updatedEvent });
+    } catch (error) {
+        console.error("Error updating event:", error);
+        res.status(500).json({ error: 'Failed to update event' });
     }
 });
 // --- КОНЕЦ НОВОГО маршрута ---
@@ -376,7 +444,7 @@ app.post('/api/registration', urlEncodedParser, async (req, res) => {
 // --- Запуск сервера ---
 (async () => {
     try {
-        await ensureUploadsDir();
+        await ensureUploadsDir(); // Убедимся, что папка uploads существует
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on port ${PORT}`);
             console.log(`Data file path: ${DATA_FILE}`);
