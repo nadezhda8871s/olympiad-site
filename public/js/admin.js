@@ -10,11 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- НОВОЕ: Элементы для формы "О нас" ---
     const editAboutForm = document.getElementById('edit-about-form');
     const aboutCustomText = document.getElementById('about-custom-text');
-    const aboutInn = document.getElementById('about-inn');
-    const aboutPhone = document.getElementById('about-phone');
-    const aboutAddress = document.getElementById('about-address');
-    const aboutEmail = document.getElementById('about-email');
-    const aboutRequisites = document.getElementById('about-requisites');
     // --- КОНЕЦ НОВОГО ---
 
     // --- НОВОЕ: Элементы для редактирования мероприятия ---
@@ -42,11 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Заполняем форму данными
             aboutCustomText.value = aboutData.customText || '';
-            aboutInn.value = aboutData.inn || '';
-            aboutPhone.value = aboutData.phone || '';
-            aboutAddress.value = aboutData.address || '';
-            aboutEmail.value = aboutData.email || '';
-            aboutRequisites.value = aboutData.requisites || '';
 
         } catch (error) {
             console.error("Error loading 'about' ", error);
@@ -61,12 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const formData = new FormData(editAboutForm);
         const aboutData = {
-            customText: formData.get('customText'),
-            inn: formData.get('inn'),
-            phone: formData.get('phone'),
-            address: formData.get('address'),
-            email: formData.get('email'),
-            requisites: formData.get('requisites')
+            customText: formData.get('customText')
         };
 
         try {
@@ -299,9 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('edit-event-name').value = event.name;
             document.getElementById('edit-event-description').value = event.description;
             document.getElementById('edit-event-type').value = event.type;
-            // --- ИСПРАВЛЕНИЕ: Убрано заполнение subtype ---
-            // document.getElementById('edit-event-subtype').value = event.subtype || '';
-            // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
+            document.getElementById('edit-event-subtype').value = event.subtype || '';
 
             // Отображаем текущий файл
             currentFileNameSpan.textContent = event.infoLetterFileName || 'нет';
