@@ -54,21 +54,15 @@
                     <option value="conference">Конференция</option>
                 </select>
 
-                <label for="event-subtype">Подтип (для фильтрации):</label>
-                <select id="event-subtype" name="subtype">
-                    <option value="">Не указан</option>
-                    <option value="olympiad-students">Студентам, аспирантам</option>
-                    <option value="olympiad-school">Школьникам и СПО</option>
-                    <option value="olympiad-teachers">Научным руководителям, учителям, преподавателям</option>
-                    <option value="contest-article">Статьи</option>
-                    <option value="contest-vkr">ВКР</option>
-                    <option value="conference-science">Научные конференции</option>
-                </select>
+                <!-- --- ИСПРАВЛЕНО: Поле для нескольких подтипов --->
+                <label for="event-subtypes">Подтипы (для фильтрации, через запятую):</label>
+                <input type="text" id="event-subtypes" name="subtypes" placeholder="olympiad-students, olympiad-school">
+                <!-- --- КОНЕЦ ИСПРАВЛЕНИЯ --- -->
 
                 <label for="info-letter-file">Файл информационного письма:</label>
                 <input type="file" id="info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
 
-                <!-- --- Секция для теста (только для олимпиад) --->
+                <!-- --- Секция для теста (только для олимпиад) --- -->
                 <div id="olympiad-test-section" style="display:none;">
                     <h3>Вопросы теста</h3>
                     <div id="questions-container">
@@ -104,16 +98,10 @@
                         <option value="conference">Конференция</option>
                     </select>
 
-                    <label for="edit-event-subtype">Подтип (для фильтрации):</label>
-                    <select id="edit-event-subtype" name="subtype">
-                        <option value="">Не указан</option>
-                        <option value="olympiad-students">Студентам, аспирантам</option>
-                        <option value="olympiad-school">Школьникам и СПО</option>
-                        <option value="olympiad-teachers">Научным руководителям, учителям, преподавателям</option>
-                        <option value="contest-article">Статьи</option>
-                        <option value="contest-vkr">ВКР</option>
-                        <option value="conference-science">Научные конференции</option>
-                    </select>
+                    <!-- --- ИСПРАВЛЕНО: Поле для нескольких подтипов --->
+                    <label for="edit-event-subtypes">Подтипы (для фильтрации, через запятую):</label>
+                    <input type="text" id="edit-event-subtypes" name="subtypes" placeholder="olympiad-students, olympiad-school">
+                    <!-- --- КОНЕЦ ИСПРАВЛЕНИЯ --- -->
 
                     <label for="edit-info-letter-file">Файл информационного письма (новый):</label>
                     <input type="file" id="edit-info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
