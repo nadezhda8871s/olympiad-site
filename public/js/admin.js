@@ -17,13 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const aboutRequisites = document.getElementById('about-requisites');
     // --- КОНЕЦ НОВОГО ---
 
-    // --- НОВОЕ: Элементы для формы редактирования мероприятия ---
+    // --- НОВОЕ: Элементы для редактирования мероприятия ---
     const editEventSection = document.getElementById('edit-event-section');
     const editEventForm = document.getElementById('edit-event-form');
     const currentFileNameSpan = document.getElementById('current-file-name');
     const editQuestionsContainer = document.getElementById('edit-questions-container');
     const editAddQuestionBtn = document.getElementById('edit-add-question-btn');
-    const cancelEditBtn = document.getElementById('cancel-edit-btn');
     let editingEventId = null;
     let editingEvent = null;
     // --- КОНЕЦ НОВОГО ---
@@ -33,9 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Показываем панель управления сразу, так как аутентификация отсутствует
     adminPanel.style.display = 'block';
 
-    // --- НОВОЕ: Загрузка и отображение данных "О нас" ---
-    loadAboutData();
-
+    // --- НОВАЯ ФУНКЦИЯ: Загрузка и отображение данных "О нас" ---
     async function loadAboutData() {
         try {
             const response = await fetch('/api/admin/about');
@@ -49,15 +46,16 @@ document.addEventListener('DOMContentLoaded', () => {
             aboutAddress.value = aboutData.address || '';
             aboutEmail.value = aboutData.email || '';
             aboutRequisites.value = aboutData.requisites || '';
+
         } catch (error) {
             console.error("Error loading 'about' ", error);
             errorMessage.textContent = 'Ошибка загрузки данных "О нас".';
             errorMessage.style.display = 'block';
         }
     }
-    // --- КОНЕЦ НОВОГО ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
 
-    // --- НОВОЕ: Сохранение данных "О нас" ---
+    // --- НОВАЯ ФУНКЦИЯ: Сохранение данных "О нас" ---
     editAboutForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(editAboutForm);
@@ -99,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMessage.style.display = 'block';
         }
     });
-    // --- КОНЕЦ НОВОГО ---
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
 
     addEventForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -161,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Логика для работы с тестами ---
+    // --- ИСПРАВЛЕНИЕ: Логика для работы с тестами ---
     let questionCounter = 0;
 
     function addQuestionField() {
@@ -199,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         document.getElementById('questions-container').appendChild(questionDiv);
 
+        // Добавляем обработчик для кнопки удаления этого вопроса
         questionDiv.querySelector('.remove-question-btn').addEventListener('click', function() {
             removeQuestionField(this.dataset.questionNumber);
         });
@@ -254,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
 
     document.getElementById('add-question-btn').addEventListener('click', addQuestionField);
-    // --- КОНЕЦ ЛОГИКИ ДЛЯ ТЕСТОВ ---
+    // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
     async function loadEventsList() {
         try {
@@ -512,20 +511,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 const testName = formData.get('name') + ' - Тест (Обновлён)';
                 const questions = collectEditedTestQuestions();
                 
-                const testResponse = await fetch(`/api/events/${editingEventId}/test`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        testName: testName,
-                        questions: questions
-                    })
-                });
+                if (questions.length > 0) {
+                    const testResponse = await fetch(`/api/events/${editingEventId}/test`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            testName: testName,
+                            questions: questions
+                        })
+                    });
 
-                if (!testResponse.ok) {
-                    const testErrorData = await testResponse.json();
-                    throw new Error(testErrorData.error || 'Ошибка при обновлении теста.');
+                    if (!testResponse.ok) {
+                        const testErrorData = await testResponse.json();
+                        throw new Error(testErrorData.error || 'Ошибка при обновлении теста.');
+                    }
+                } else {
+                    // Если вопросы пустые, удаляем тест
+                    const deleteTestResponse = await fetch(`/api/tests/${editingEventId}`, {
+                        method: 'DELETE'
+                    });
+                    if (!deleteTestResponse.ok && deleteTestResponse.status !== 404) {
+                        const deleteTestErrorData = await deleteTestResponse.json();
+                        console.warn("Error deleting test:", deleteTestErrorData.error);
+                    }
                 }
             }
 
@@ -562,7 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 loadEventsList(); // Обновляем список
-                errorMessage.style.display = 'none'; // Скрываем ошибки
+                errorMessage.style.display = 'none';
             } else {
                 const errorData = await response.json();
                 errorMessage.textContent = errorData.error || 'Ошибка при удалении мероприятия.';
@@ -606,7 +616,6 @@ document.addEventListener('DOMContentLoaded', () => {
             table.appendChild(headerRow);
 
             registrations.forEach(reg => {
-                const row = document.createElement('tr');
                 const safeReg = {
                     id: reg.id,
                     surname: reg.surname.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
@@ -700,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             testSection.style.display = 'none';
         }
     });
-    
+
     // Показываем/скрываем секцию теста при изменении типа мероприятия в форме редактирования
     document.getElementById('edit-event-type').addEventListener('change', function() {
         const editTestSection = document.getElementById('edit-olympiad-test-section');
