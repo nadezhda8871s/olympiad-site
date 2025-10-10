@@ -49,10 +49,8 @@ async function ensureUploadsDir() {
 async function readData() {
     try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
-        console.log("Data read successfully from:", DATA_FILE); // Лог для отладки
         return JSON.parse(data);
     } catch (error) {
-        console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
@@ -60,12 +58,8 @@ async function readData() {
                 registrations: [],
                 testResults: [],
                 tests: [], // Для хранения тестов
-                about: { // Инициализация данных "О нас"
-                    inn: "231120569701",
-                    phone: "89184455287",
-                    address: "г. Краснодар, ул. Виноградная, 58",
-                    email: "vsemnayka@gmail.com",
-                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104",
+                about: {
+                    // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
                     customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
                 }
             };
@@ -76,6 +70,7 @@ async function readData() {
             console.error("Syntax error in data.json:", error.message);
             return { events: [], // admin: { login: "admin", password: "password" }, registrations: [], testResults: [], tests: [], about: {} };
         } else {
+            console.error("Error reading data file:", error);
             throw error;
         }
     }
@@ -83,9 +78,8 @@ async function readData() {
 
 async function writeData(data) {
     try {
-        console.log("Writing data to:", DATA_FILE); // Лог для отладки
         await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data written successfully"); // Лог для отладки
+        console.log("Data written successfully");
     } catch (error) {
         console.error("Error writing data file:", error);
         throw error;
@@ -232,12 +226,8 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
         const aboutData = {
-            inn: data.about?.inn || '',
-            phone: data.about?.phone || '',
-            address: data.about?.address || '',
-            email: data.about?.email || '',
-            requisites: data.about?.requisites || '',
-            customText: data.about?.customText || ''
+            customText: data.about?.customText || '',
+            // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
         };
         res.json(aboutData);
     } catch (error) {
@@ -249,19 +239,15 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
 // Обновить данные "О нас" (для админки - теперь доступно без аутентификации)
 app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
-        const { inn, phone, address, email, requisites, customText } = req.body;
+        const { customText } = req.body; // Только customText
         const data = await readData();
 
         if (!data.about) {
             data.about = {};
         }
 
-        data.about.inn = inn;
-        data.about.phone = phone;
-        data.about.address = address;
-        data.about.email = email;
-        data.about.requisites = requisites;
-        data.about.customText = customText; // Сохраняем произвольный текст
+        // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
+        data.about.customText = customText;
 
         await writeData(data);
         res.json({ success: true });
@@ -295,14 +281,14 @@ app.get('/api/tests/:eventId', async (req, res) => {
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
-        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+        const { name, description, type, testQuestions } = req.body; // Удалён subtype
 
         const newEvent = {
             id: uuidv4(),
             name: name,
             description: description,
             type: type,
-            subtype: subtype || type,
+            // subtype: subtype || type, // Удалён subtype
             infoLetterFileName: req.file ? req.file.filename : null
         };
 
@@ -343,7 +329,7 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
     try {
         const data = await readData();
         const eventId = req.params.id;
-        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+        const { name, description, type, testQuestions } = req.body; // Удалён subtype
 
         const eventIndex = data.events.findIndex(e => e.id === eventId);
         if (eventIndex === -1) {
@@ -355,7 +341,7 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
             name: name,
             description: description,
             type: type,
-            subtype: subtype || type,
+            // subtype: subtype || type, // Удалён subtype
             infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
         };
 
