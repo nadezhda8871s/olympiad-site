@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- НОВОЕ: Элементы для формы "О нас" ---
     const editAboutForm = document.getElementById('edit-about-form');
     const aboutCustomText = document.getElementById('about-custom-text');
+    const aboutInn = document.getElementById('about-inn');
+    const aboutPhone = document.getElementById('about-phone');
+    const aboutAddress = document.getElementById('about-address');
+    const aboutEmail = document.getElementById('about-email');
+    const aboutRequisites = document.getElementById('about-requisites');
     // --- КОНЕЦ НОВОГО ---
 
     // --- НОВОЕ: Элементы для редактирования мероприятия ---
@@ -37,6 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Заполняем форму данными
             aboutCustomText.value = aboutData.customText || '';
+            aboutInn.value = aboutData.inn || '';
+            aboutPhone.value = aboutData.phone || '';
+            aboutAddress.value = aboutData.address || '';
+            aboutEmail.value = aboutData.email || '';
+            aboutRequisites.value = aboutData.requisites || '';
 
         } catch (error) {
             console.error("Error loading 'about' ", error);
@@ -51,7 +61,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const formData = new FormData(editAboutForm);
         const aboutData = {
-            customText: formData.get('customText')
+            customText: formData.get('customText'),
+            inn: formData.get('inn'),
+            phone: formData.get('phone'),
+            address: formData.get('address'),
+            email: formData.get('email'),
+            requisites: formData.get('requisites')
         };
 
         try {
@@ -250,17 +265,15 @@ document.addEventListener('DOMContentLoaded', () => {
             events.forEach(event => {
                 const eventItem = document.createElement('div');
                 eventItem.className = 'event-item';
-                // --- ИСПРАВЛЕНИЕ: Убрано отображение subtype ---
                 eventItem.innerHTML = `
                     <div>
                         <strong>${event.name}</strong> (${event.type})
-                        <!-- ${event.subtype ? `<br><small>Подтип: ${event.subtype}</small>` : '<br><small>Подтип: не указан</small>'} -->
+                        ${event.subtype ? `<br><small>Подтип: ${event.subtype}</small>` : '<br><small>Подтип: не указан</small>'}
                         ${event.infoLetterFileName ? `<br><small>Файл: ${event.infoLetterFileName}</small>` : '<br><small>Файл: нет</small>'}
                     </div>
                     <button onclick="editEvent('${event.id}')">Редактировать</button>
                     <button onclick="deleteEvent('${event.id}')">Удалить</button>
                 `;
-                // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
                 eventsList.appendChild(eventItem);
             });
         } catch (error) {
