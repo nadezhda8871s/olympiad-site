@@ -21,23 +21,12 @@
 
     <main>
         <h1>Тест для мероприятия</h1>
-        <form id="test-form">
-            <!-- Пример вопроса. В реальности вопросы будут подгружаться или быть жестко заданы. -->
-            <div class="question">
-                <h3>Вопрос 1: Какой цвет неба в ясный день?</h3>
-                <label><input type="radio" name="q1" value="a"> Синий</label><br>
-                <label><input type="radio" name="q1" value="b"> Красный</label><br>
-                <label><input type="radio" name="q1" value="c"> Зеленый</label><br>
-            </div>
-            <!-- ... 14 других вопросов ... -->
-            <div class="question">
-                <h3>Вопрос 15: Какой последний день недели?</h3>
-                <label><input type="radio" name="q15" value="a"> Понедельник</label><br>
-                <label><input type="radio" name="q15" value="b"> Суббота</label><br>
-                <label><input type="radio" name="q15" value="c"> Воскресенье</label><br>
-            </div>
-
+        <!-- Форма теста, вопросы будут загружены сюда -->
+        <form id="test-form" style="display: none;"> <!-- Изначально скрыта -->
             <input type="hidden" id="event-id" name="eventId">
+            <div id="questions-container">
+                <!-- Вопросы будут вставлены сюда JS -->
+            </div>
             <button type="submit">Отправить тест</button>
         </form>
 
