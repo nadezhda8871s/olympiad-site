@@ -49,8 +49,10 @@ async function ensureUploadsDir() {
 async function readData() {
     try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
+        console.log("Data read successfully from:", DATA_FILE); // Лог для отладки
         return JSON.parse(data);
     } catch (error) {
+        console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
@@ -58,8 +60,12 @@ async function readData() {
                 registrations: [],
                 testResults: [],
                 tests: [], // Для хранения тестов
-                about: {
-                    // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
+                about: { // Инициализация данных "О нас"
+                    inn: "231120569701",
+                    phone: "89184455287",
+                    address: "г. Краснодар, ул. Виноградная, 58",
+                    email: "vsemnayka@gmail.com",
+                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104",
                     customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
                 }
             };
@@ -70,7 +76,6 @@ async function readData() {
             console.error("Syntax error in data.json:", error.message);
             return { events: [], // admin: { login: "admin", password: "password" }, registrations: [], testResults: [], tests: [], about: {} };
         } else {
-            console.error("Error reading data file:", error);
             throw error;
         }
     }
@@ -78,8 +83,9 @@ async function readData() {
 
 async function writeData(data) {
     try {
+        console.log("Writing data to:", DATA_FILE); // Лог для отладки
         await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data written successfully");
+        console.log("Data written successfully"); // Лог для отладки
     } catch (error) {
         console.error("Error writing data file:", error);
         throw error;
@@ -146,6 +152,7 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
+// Страница администратора - теперь доступна всем, без проверки сессии
 app.get('/admin', allowAll, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
@@ -167,6 +174,7 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
+// Получить все мероприятия (для админки - теперь доступно без аутентификации)
 app.get('/api/admin/events', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -177,6 +185,7 @@ app.get('/api/admin/events', allowAll, async (req, res) => {
     }
 });
 
+// Получить регистрации (для админки - теперь доступно без аутентификации)
 app.get('/api/admin/registrations', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -191,6 +200,7 @@ app.get('/api/admin/registrations', allowAll, async (req, res) => {
     }
 });
 
+// Получить результаты тестов (для админки - теперь доступно без аутентификации)
 app.get('/api/admin/test-results', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -216,12 +226,18 @@ app.get('/api/events/:id', async (req, res) => {
 });
 
 // --- НОВЫЕ API маршруты для работы с "О нас" ---
+
+// Получить данные "О нас" (для админки - теперь доступно без аутентификации)
 app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
         const aboutData = {
-            customText: data.about?.customText || '',
-            // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
+            inn: data.about?.inn || '',
+            phone: data.about?.phone || '',
+            address: data.about?.address || '',
+            email: data.about?.email || '',
+            requisites: data.about?.requisites || '',
+            customText: data.about?.customText || ''
         };
         res.json(aboutData);
     } catch (error) {
@@ -230,17 +246,22 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
     }
 });
 
+// Обновить данные "О нас" (для админки - теперь доступно без аутентификации)
 app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
-        const { customText } = req.body; // Только customText
+        const { inn, phone, address, email, requisites, customText } = req.body;
         const data = await readData();
 
         if (!data.about) {
             data.about = {};
         }
 
-        // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
-        data.about.customText = customText;
+        data.about.inn = inn;
+        data.about.phone = phone;
+        data.about.address = address;
+        data.about.email = email;
+        data.about.requisites = requisites;
+        data.about.customText = customText; // Сохраняем произвольный текст
 
         await writeData(data);
         res.json({ success: true });
@@ -274,14 +295,14 @@ app.get('/api/tests/:eventId', async (req, res) => {
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
-        const { name, description, type, subtype, testQuestions } = req.body; // subtype и testQuestions добавлены
+        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
 
         const newEvent = {
             id: uuidv4(),
             name: name,
             description: description,
             type: type,
-            subtype: subtype || type, // subtype для фильтрации, если не передан, используем type
+            subtype: subtype || type,
             infoLetterFileName: req.file ? req.file.filename : null
         };
 
@@ -317,12 +338,12 @@ app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, r
 });
 // --- КОНЕЦ НОВОГО маршрута ---
 
-// --- НОВЫЙ маршрут: Обновить мероприятие с тестом ---
+// --- НОВЫЙ маршрут: Обновить мероприятие ---
 app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
         const eventId = req.params.id;
-        const { name, description, type, subtype, testQuestions } = req.body; // subtype и testQuestions добавлены
+        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
 
         const eventIndex = data.events.findIndex(e => e.id === eventId);
         if (eventIndex === -1) {
@@ -334,7 +355,7 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
             name: name,
             description: description,
             type: type,
-            subtype: subtype || type, // subtype для фильтрации, если не передан, используем type
+            subtype: subtype || type,
             infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
         };
 
@@ -349,12 +370,12 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
                     // Проверяем, существует ли уже тест для этого мероприятия
                     const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
                     const testData = {
-                        id: uuidv4(), // Новый ID для теста
+                        id: uuidv4(),
                         eventId: eventId,
                         testName: `${name} - Тест (Обновлён)`,
                         questions: questions, // Массив объектов вопросов
                         createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString() // Добавлено поле обновления
+                        updatedAt: new Date().toISOString()
                     };
 
                     if (existingIndex >= 0) {
