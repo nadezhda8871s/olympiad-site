@@ -1,10 +1,8 @@
+<!-- admin.html (обновлённый фрагмент) -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель управления</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <!-- ... (предыдущий head) ... -->
 </head>
 <body>
     <main>
@@ -12,48 +10,48 @@
 
         <div id="admin-panel">
             <h2>Добавить мероприятие</h2>
-            <form id="add-event-form" enctype="multipart/form-data">
-                <label for="event-name">Название:</label>
-                <input type="text" id="event-name" name="name" required>
-
-                <label for="event-description">Описание:</label>
-                <textarea id="event-description" name="description" required></textarea>
-
-                <label for="event-type">Тип:</label>
-                <select id="event-type" name="type" required>
-                    <option value="olympiad">Олимпиада</option>
-                    <option value="contest">Конкурс</option>
-                    <option value="conference">Конференция</option>
-                </select>
-
-                <label for="event-subtype">Подтип (для фильтрации олимпиад):</label>
-                <select id="event-subtype" name="subtype">
-                    <option value="">Не указан</option>
-                    <option value="olympiad-students">Студентам, аспирантам</option>
-                    <option value="olympiad-school">Школьникам и СПО</option>
-                    <option value="olympiad-teachers">Научным руководителям, учителям, преподавателям</option>
-                </select>
-
-                <label for="info-letter-file">Файл информационного письма:</label>
-                <input type="file" id="info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
-
-                <button type="submit">Добавить</button>
-            </form>
+            <!-- ... (форма добавления мероприятия) ... -->
 
             <h2>Список мероприятий</h2>
             <div id="events-list">
-                <!-- Список мероприятий будет вставлен сюда -->
+                <!-- ... (список мероприятий) ... -->
             </div>
 
+            <!-- --- НОВЫЙ РАЗДЕЛ: Загрузка тестов --- -->
+            <h2>Загрузить тест</h2>
+            <form id="upload-test-form">
+                <label for="test-event-id">Выберите мероприятие:</label>
+                <select id="test-event-id" name="eventId" required>
+                    <!-- Опции будут заполнены динамически JS -->
+                </select>
+
+                <label for="test-name">Название теста:</label>
+                <input type="text" id="test-name" name="testName" required>
+
+                <h3>Вопросы</h3>
+                <div id="questions-container">
+                    <!-- Вопросы будут добавлены сюда динамически -->
+                </div>
+                <button type="button" id="add-question-btn">Добавить вопрос</button>
+                <br><br>
+                <button type="submit">Сохранить тест</button>
+            </form>
+            <!-- --- КОНЕЦ НОВОГО РАЗДЕЛА --- -->
+
             <h2>Список регистраций</h2>
-            <button id="download-registrations-btn">Скачать Excel (CSV)</button>
             <div id="registrations-list">
-                <!-- Список регистраций будет вставлен сюда -->
+                <!-- ... (список регистраций) ... -->
             </div>
+
+            <!-- --- НОВАЯ КНОПКА: Скачать Excel --- -->
+            <h2>Экспорт данных</h2>
+            <button id="download-registrations-btn">Скачать регистрации (Excel)</button>
+            <!-- --- КОНЕЦ НОВОЙ КНОПКИ --- -->
+
         </div>
 
         <div id="error-message" style="display: none; color: red;">
-            <!-- Сообщения об ошибках будут отображаться здесь -->
+            <!-- ... (сообщения об ошибках) ... -->
         </div>
     </main>
 
