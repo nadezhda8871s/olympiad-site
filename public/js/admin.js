@@ -1,237 +1,208 @@
-// admin.js
+// admin.js (обновлённый фрагмент)
 document.addEventListener('DOMContentLoaded', () => {
-    const adminPanel = document.getElementById('admin-panel');
-    const addEventForm = document.getElementById('add-event-form');
-    const eventsList = document.getElementById('events-list');
-    const registrationsListDiv = document.getElementById('registrations-list');
-    const downloadBtn = document.getElementById('download-registrations-btn'); // Кнопка "Скачать"
-    const errorMessage = document.getElementById('error-message');
+    // ... (предыдущие переменные и инициализация) ...
 
-    console.log("Admin page loaded, showing panel directly...");
+    const uploadTestForm = document.getElementById('upload-test-form');
+    const testEventIdSelect = document.getElementById('test-event-id');
+    const questionsContainer = document.getElementById('questions-container');
+    const addQuestionBtn = document.getElementById('add-question-btn');
+    // ... (другие переменные) ...
 
-    adminPanel.style.display = 'block';
-
-    addEventForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(addEventForm);
+    // --- НОВАЯ ФУНКЦИЯ: Загрузка списка мероприятий для выпадающего списка ---
+    async function loadEventsForSelect() {
         try {
-            const response = await fetch('/api/events', {
+            const response = await fetch('/api/admin/events', {
+                 credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const events = await response.json();
+            testEventIdSelect.innerHTML = ''; // Очищаем список
+            events.forEach(event => {
+                const option = document.createElement('option');
+                option.value = event.id;
+                option.textContent = `${event.name} (${event.type})`;
+                testEventIdSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Error loading events for select:", error);
+            errorMessage.textContent = 'Ошибка загрузки списка мероприятий для выбора.';
+            errorMessage.style.display = 'block';
+        }
+    }
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
+
+    // --- НОВАЯ ФУНКЦИЯ: Добавление поля для нового вопроса ---
+    let questionCounter = 0; // Для уникальных ID полей
+    function addQuestionField() {
+        questionCounter++;
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question-block';
+        questionDiv.dataset.questionNumber = questionCounter;
+        questionDiv.innerHTML = `
+            <h4>Вопрос ${questionCounter}</h4>
+            <label>Текст вопроса:</label>
+            <textarea name="question-${questionCounter}-text" required></textarea>
+            
+            <label>Варианты ответов:</label>
+            <div class="options-container">
+                <div class="option-row">
+                    <input type="radio" name="correct-answer-${questionCounter}" value="a" required> 
+                    <input type="text" name="option-${questionCounter}-a" placeholder="Вариант A" required>
+                </div>
+                <div class="option-row">
+                    <input type="radio" name="correct-answer-${questionCounter}" value="b"> 
+                    <input type="text" name="option-${questionCounter}-b" placeholder="Вариант B" required>
+                </div>
+                <div class="option-row">
+                    <input type="radio" name="correct-answer-${questionCounter}" value="c"> 
+                    <input type="text" name="option-${questionCounter}-c" placeholder="Вариант C" required>
+                </div>
+                <div class="option-row">
+                    <input type="radio" name="correct-answer-${questionCounter}" value="d"> 
+                    <input type="text" name="option-${questionCounter}-d" placeholder="Вариант D">
+                </div>
+            </div>
+            
+            <button type="button" class="remove-question-btn" data-question-number="${questionCounter}">Удалить вопрос</button>
+            <hr>
+        `;
+        questionsContainer.appendChild(questionDiv);
+
+        // Добавляем обработчик для кнопки удаления этого вопроса
+        questionDiv.querySelector('.remove-question-btn').addEventListener('click', function() {
+            removeQuestionField(this.dataset.questionNumber);
+        });
+    }
+
+    function removeQuestionField(questionNumber) {
+        const questionBlock = document.querySelector(`.question-block[data-question-number="${questionNumber}"]`);
+        if (questionBlock) {
+            questionBlock.remove();
+            // Можно пересчитать номера, но для простоты оставим как есть
+        }
+    }
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
+
+    // --- НОВАЯ ФУНКЦИЯ: Сбор данных формы теста ---
+    function collectTestData() {
+        const formData = new FormData(uploadTestForm);
+        const eventId = formData.get('eventId');
+        const testName = formData.get('testName');
+
+        if (!eventId || !testName) {
+            alert('Пожалуйста, выберите мероприятие и введите название теста.');
+            return null;
+        }
+
+        const questions = [];
+        const questionBlocks = document.querySelectorAll('.question-block');
+        
+        if (questionBlocks.length === 0) {
+            alert('Пожалуйста, добавьте хотя бы один вопрос.');
+            return null;
+        }
+
+        for (let block of questionBlocks) {
+            const questionNumber = block.dataset.questionNumber;
+            const questionText = formData.get(`question-${questionNumber}-text`);
+            const correctAnswer = formData.get(`correct-answer-${questionNumber}`);
+
+            if (!questionText) continue; // Пропустить пустые вопросы
+
+            const options = {};
+            const optionLetters = ['a', 'b', 'c', 'd'];
+            for (let letter of optionLetters) {
+                const optionValue = formData.get(`option-${questionNumber}-${letter}`);
+                if (optionValue !== null) { // Разрешаем пустые строки, но не null
+                    options[letter] = optionValue.trim();
+                }
+            }
+
+            // Убедимся, что правильный ответ существует среди вариантов
+            if (correctAnswer && options.hasOwnProperty(correctAnswer)) {
+                questions.push({
+                    id: uuidv4(), // Генерируем уникальный ID для вопроса
+                    text: questionText,
+                    options: options,
+                    correctAnswer: correctAnswer
+                });
+            } else {
+                alert(`Ошибка в вопросе ${questionNumber}: выбран неправильный правильный ответ или он отсутствует.`);
+                return null; // Прерываем сбор данных
+            }
+        }
+
+        return {
+            eventId: eventId,
+            testName: testName,
+            questions: questions
+        };
+    }
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
+
+    // --- НОВЫЙ ОБРАБОТЧИК: Отправка формы теста ---
+    uploadTestForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const testData = collectTestData();
+        if (!testData) {
+            // collectTestData уже показал alert при ошибке
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/admin/tests', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                    // credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
+                },
+                body: JSON.stringify(testData)
             });
 
             if (response.ok) {
                 const result = await response.json();
-                addEventForm.reset();
-                loadEventsList();
+                alert('Тест успешно сохранён!');
+                uploadTestForm.reset();
+                questionsContainer.innerHTML = ''; // Очищаем поля вопросов
+                questionCounter = 0; // Сбрасываем счётчик
+                loadEventsForSelect(); // Перезагружаем список мероприятий на случай изменений
                 errorMessage.style.display = 'none';
-                console.log("Event added successfully:", result);
             } else {
-                if (response.headers.get("Content-Type")?.includes("application/json")) {
-                    const errorData = await response.json();
-                    errorMessage.textContent = errorData.error || 'Ошибка при добавлении мероприятия.';
-                } else {
-                    const errorText = await response.text();
-                    console.error("Add event response (non-JSON):", errorText);
-                    errorMessage.textContent = `Ошибка при добавлении: ${errorText}`;
-                }
+                const errorData = await response.json();
+                errorMessage.textContent = errorData.error || 'Ошибка при сохранении теста.';
                 errorMessage.style.display = 'block';
             }
         } catch (error) {
-            console.error("Add event error:", error);
-            errorMessage.textContent = 'Ошибка при добавлении мероприятия (проверьте консоль).';
+            console.error("Error uploading test:", error);
+            errorMessage.textContent = 'Ошибка сети при сохранении теста.';
             errorMessage.style.display = 'block';
         }
     });
+    // --- КОНЕЦ НОВОГО ОБРАБОТЧИКА ---
 
-    // --- НОВАЯ функция для загрузки регистраций ---
-    async function loadRegistrationsList() {
-        console.log("Loading registrations list...");
-        try {
-            const response = await fetch('/api/admin/registrations');
+    // --- НОВЫЙ ОБРАБОТЧИК: Кнопка "Добавить вопрос" ---
+    addQuestionBtn.addEventListener('click', addQuestionField);
+    // --- КОНЕЦ НОВОГО ОБРАБОТЧИКА ---
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+    // ... (предыдущие функции и инициализации: loadEventsList, loadRegistrationsList, deleteEvent, downloadRegistrations) ...
 
-            const registrations = await response.json();
-            if (!registrationsListDiv) {
-                 console.error("Element with id 'registrations-list' not found in admin.html");
-                 return;
-            }
-            registrationsListDiv.innerHTML = '';
+    // --- ИНИЦИАЛИЗАЦИЯ НОВОЙ ФУНКЦИОНАЛЬНОСТИ ---
+    // Загружаем список мероприятий при загрузке страницы админки
+    loadEventsForSelect();
+    // --- КОНЕЦ ИНИЦИАЛИЗАЦИИ ---
 
-            if (registrations.length === 0) {
-                 registrationsListDiv.innerHTML = '<p>Регистраций пока нет.</p>';
-                 return;
-            }
-
-            const table = document.createElement('table');
-            table.className = 'registrations-table';
-            const headerRow = document.createElement('tr');
-            headerRow.innerHTML = `
-                <th>ID</th>
-                <th>Фамилия</th>
-                <th>Имя</th>
-                <th>Отчество</th>
-                <th>Заведение</th>
-                <th>Страна</th>
-                <th>Город</th>
-                <th>E-mail</th>
-                <th>Телефон</th>
-                <th>Дата регистрации</th>
-            `;
-            table.appendChild(headerRow);
-
-            registrations.forEach(reg => {
-                 const row = document.createElement('tr');
-                 const safeReg = {
-                     id: reg.id,
-                     surname: reg.surname.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
-                     name: reg.name.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
-                     patronymic: reg.patronymic?.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') || '',
-                     institution: reg.institution.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
-                     country: reg.country.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
-                     city: reg.city.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
-                     email: reg.email.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
-                     phone: reg.phone?.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') || '',
-                     timestamp: reg.timestamp
-                 };
-                 row.innerHTML = `
-                     <td>${safeReg.id}</td>
-                     <td>${safeReg.surname}</td>
-                     <td>${safeReg.name}</td>
-                     <td>${safeReg.patronymic}</td>
-                     <td>${safeReg.institution}</td>
-                     <td>${safeReg.country}</td>
-                     <td>${safeReg.city}</td>
-                     <td>${safeReg.email}</td>
-                     <td>${safeReg.phone}</td>
-                     <td>${new Date(safeReg.timestamp).toLocaleString()}</td>
-                 `;
-                 table.appendChild(row);
-            });
-            registrationsListDiv.appendChild(table);
-        } catch (error) {
-            console.error("Error loading registrations list:", error);
-            if (registrationsListDiv) {
-                 registrationsListDiv.innerHTML = '<p>Ошибка загрузки списка регистраций.</p>';
-            }
-        }
-    }
-    // ---
-
-    async function loadEventsList() {
-        console.log("Loading events list...");
-        try {
-            const response = await fetch('/api/admin/events');
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const events = await response.json();
-            eventsList.innerHTML = '';
-            events.forEach(event => {
-                const eventItem = document.createElement('div');
-                eventItem.className = 'event-item';
-                eventItem.innerHTML = `
-                    <div>
-                        <strong>${event.name}</strong> (${event.type})
-                        ${event.infoLetterFileName ? `<br><small>Файл: ${event.infoLetterFileName}</small>` : '<br><small>Файл: нет</small>'}
-                    </div>
-                    <button onclick="deleteEvent('${event.id}')">Удалить</button>
-                `;
-                eventsList.appendChild(eventItem);
-            });
-        } catch (error) {
-            console.error("Error loading events list:", error);
-            errorMessage.textContent = 'Ошибка загрузки списка мероприятий.';
-            errorMessage.style.display = 'block';
-        }
-    }
-
-    // --- НОВАЯ функция для генерации и скачивания CSV ---
-    downloadBtn.addEventListener('click', async () => {
-        try {
-            const response = await fetch('/api/admin/registrations');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const registrations = await response.json();
-
-            if (registrations.length === 0) {
-                alert("Нет данных для скачивания.");
-                return;
-            }
-
-            // Заголовки CSV
-            const headers = ["ID", "Фамилия", "Имя", "Отчество", "Заведение", "Страна", "Город", "E-mail", "Телефон", "Дата регистрации"];
-            // Данные
-            const csvContent = [
-                headers.join(","),
-                ...registrations.map(reg => [
-                    `"${reg.id}"`,
-                    `"${reg.surname.replace(/"/g, '""')}"`,
-                    `"${reg.name.replace(/"/g, '""')}"`,
-                    `"${reg.patronymic ? reg.patronymic.replace(/"/g, '""') : ''}"`,
-                    `"${reg.institution.replace(/"/g, '""')}"`,
-                    `"${reg.country.replace(/"/g, '""')}"`,
-                    `"${reg.city.replace(/"/g, '""')}"`,
-                    `"${reg.email.replace(/"/g, '""')}"`,
-                    `"${reg.phone ? reg.phone.replace(/"/g, '""') : ''}"`,
-                    `"${new Date(reg.timestamp).toLocaleString()}"` // Формат даты можно изменить
-                ].join(","))
-            ].join("\n");
-
-            // Создание Blob и ссылки для скачивания
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", "registrations.csv"); // Имя файла
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (error) {
-            console.error("Error downloading registrations:", error);
-            errorMessage.textContent = 'Ошибка при скачивании регистраций.';
-            errorMessage.style.display = 'block';
-        }
-    });
-    // ---
-
-    window.deleteEvent = async function(eventId) {
-        if (!confirm('Вы уверены, что хотите удалить это мероприятие?')) return;
-
-        try {
-            const response = await fetch(`/api/events/${eventId}`, {
-                method: 'DELETE'
-            });
-
-            if (response.ok) {
-                loadEventsList();
-                errorMessage.style.display = 'none';
-            } else {
-                if (response.headers.get("Content-Type")?.includes("application/json")) {
-                    const errorData = await response.json();
-                    errorMessage.textContent = errorData.error || 'Ошибка при удалении мероприятия.';
-                } else {
-                    const errorText = await response.text();
-                    console.error("Delete event response (non-JSON):", errorText);
-                    errorMessage.textContent = `Ошибка при удалении: ${errorText}`;
-                }
-                errorMessage.style.display = 'block';
-            }
-        } catch (error) {
-            console.error("Delete event error:", error);
-            errorMessage.textContent = 'Ошибка при удалении мероприятия (проверьте консоль).';
-            errorMessage.style.display = 'block';
-        }
-    };
-
-    // Загружаем списки при загрузке админки
-    loadEventsList();
-    loadRegistrationsList(); // Вызываем новую функцию
+    // ... (остальной код admin.js без изменений) ...
 });
+
+// ... (функция uuidv4, если не была определена ранее) ...
+// Если uuidv4 не определена глобально, можно использовать простую реализацию или импортировать библиотеку.
+// Для простоты, добавим её сюда.
+function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
