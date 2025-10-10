@@ -6,7 +6,6 @@ const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 
-// --- Создание приложения Express (ДОЛЖНО БЫТЬ ПЕРВЫМ) ---
 const app = express();
 const PORT = process.env.PORT || 10000;
 
@@ -22,9 +21,11 @@ app.use(express.static('public'));
 // Конфигурация сессий
 app.use(session({
     name: 'session',
-    keys: [process.env.SESSION_SECRET || 'your_fallback_secret_key_here'],
+    keys: [process.env.SESSION_SECRET || 'your_strong_fallback_secret_key_here_change_it'],
     maxAge: 24 * 60 * 60 * 1000,
-    // cookie: { secure: false } // Установите true, если используете HTTPS
+    httpOnly: true,
+    secure: false, // Установите true, если используете HTTPS
+    sameSite: 'lax'
 }));
 
 // --- Проверка и создание папки uploads при запуске ---
@@ -38,7 +39,7 @@ async function ensureUploadsDir() {
             await fs.mkdir(UPLOAD_PATH, { recursive: true });
             console.log("Uploads directory created:", UPLOAD_PATH);
         } else {
-            console.error("Error checking uploads directory:", error);
+            console.error("Error checking/uploads directory:", error);
             throw error;
         }
     }
@@ -53,14 +54,24 @@ async function readData() {
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
-                admin: { login: "admin", password: "password" }
+                admin: { login: "admin", password: "password" },
+                registrations: [],
+                testResults: [],
+                tests: [],
+                about: {
+                    inn: "231120569701",
+                    phone: "89184455287",
+                    address: "г. Краснодар, ул. Виноградная, 58",
+                    email: "vsemnayka@gmail.com",
+                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104"
+                }
             };
             await writeData(initialData);
             console.log("Created initial data.json file.");
             return initialData;
         } else if (error instanceof SyntaxError) {
             console.error("Syntax error in data.json:", error.message);
-            return { events: [], admin: { login: "admin", password: "password" }, registrations: [], testResults: [] };
+            return { events: [], admin: { login: "admin", password: "password" }, registrations: [], testResults: [], tests: [], about: {} };
         } else {
             console.error("Error reading data file:", error);
             throw error;
@@ -71,7 +82,6 @@ async function readData() {
 async function writeData(data) {
     try {
         await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data written successfully");
     } catch (error) {
         console.error("Error writing data file:", error);
         throw error;
@@ -173,15 +183,33 @@ app.get('/api/admin/events', requireAdmin, async (req, res) => {
     }
 });
 
+// --- НОВЫЙ маршрут для получения регистраций с данными мероприятий ---
 app.get('/api/admin/registrations', requireAdmin, async (req, res) => {
     try {
         const data = await readData();
-        res.json(data.registrations || []);
+        res.json({
+            registrations: data.registrations || [],
+            events: data.events || [],
+            testResults: data.testResults || []
+        });
     } catch (error) {
-        console.error("Error fetching registrations:", error);
-        res.status(500).json({ error: 'Failed to fetch registrations' });
+        console.error("Error fetching registrations for export:", error);
+        res.status(500).json({ error: 'Failed to fetch registrations for export' });
     }
 });
+// --- КОНЕЦ НОВОГО маршрута ---
+
+// --- НОВЫЙ маршрут для получения результатов тестов (для экспорта) ---
+app.get('/api/admin/test-results', requireAdmin, async (req, res) => {
+    try {
+        const data = await readData();
+        res.json(data.testResults || []);
+    } catch (error) {
+        console.error("Error fetching test results for export:", error);
+        res.status(500).json({ error: 'Failed to fetch test results for export' });
+    }
+});
+// --- КОНЕЦ НОВОГО маршрута ---
 
 app.get('/api/events/:id', async (req, res) => {
     try {
@@ -197,48 +225,51 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
-// --- НОВЫЕ API маршруты для работы с тестами ---
-
-// Сохранить тест (требует аутентификации администратора)
-app.post('/api/admin/tests', requireAdmin, async (req, res) => {
+// --- НОВЫЙ маршрут для получения данных "О нас" ---
+app.get('/api/admin/about', requireAdmin, async (req, res) => {
     try {
-        const { eventId, testName, questions } = req.body;
-        if (!eventId || !testName || !questions || !Array.isArray(questions)) {
-             return res.status(400).json({ error: 'Event ID, Test Name, and Questions array are required' });
-        }
-
         const data = await readData();
-        if (!data.tests) {
-            data.tests = [];
-        }
-
-        const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
-        const testData = {
-            id: uuidv4(),
-            eventId: eventId,
-            testName: testName,
-            questions: questions,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+        const aboutData = {
+            inn: data.about?.inn || '',
+            phone: data.about?.phone || '',
+            address: data.about?.address || '',
+            email: data.about?.email || '',
+            requisites: data.about?.requisites || ''
         };
-
-        if (existingIndex >= 0) {
-            testData.id = data.tests[existingIndex].id;
-            testData.createdAt = data.tests[existingIndex].createdAt;
-            data.tests[existingIndex] = testData;
-        } else {
-            data.tests.push(testData);
-        }
-
-        await writeData(data);
-        res.json({ success: true, test: testData });
+        res.json(aboutData);
     } catch (error) {
-        console.error("Error saving test:", error);
-        res.status(500).json({ error: 'Failed to save test' });
+        console.error("Error fetching 'about' data:", error);
+        res.status(500).json({ error: 'Failed to fetch about data' });
     }
 });
+// --- КОНЕЦ НОВОГО маршрута ---
 
-// Получить тест по ID мероприятия (для клиента)
+// --- НОВЫЙ маршрут для обновления данных "О нас" ---
+app.post('/api/admin/about', requireAdmin, async (req, res) => {
+    try {
+        const { inn, phone, address, email, requisites } = req.body;
+        const data = await readData();
+
+        if (!data.about) {
+            data.about = {};
+        }
+
+        data.about.inn = inn;
+        data.about.phone = phone;
+        data.about.address = address;
+        data.about.email = email;
+        data.about.requisites = requisites;
+
+        await writeData(data);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error updating 'about' data:", error);
+        res.status(500).json({ error: 'Failed to update about data' });
+    }
+});
+// --- КОНЕЦ НОВОГО маршрута ---
+
+// --- НОВЫЙ маршрут для получения теста по ID мероприятия ---
 app.get('/api/tests/:eventId', async (req, res) => {
     try {
         const data = await readData();
@@ -255,20 +286,48 @@ app.get('/api/tests/:eventId', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch test' });
     }
 });
+// --- КОНЕЦ НОВОГО маршрута ---
 
-// --- Остальные API маршруты (без изменений) ---
-
+// --- Маршрут для добавления мероприятия с тестом ---
 app.post('/api/events', requireAdmin, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
+        const { name, description, type, subtype } = req.body;
+
         const newEvent = {
             id: uuidv4(),
-            name: req.body.name,
-            description: req.body.description,
-            type: req.body.type,
-            subtype: req.body.subtype || req.body.type,
+            name: name,
+            description: description,
+            type: type,
+            subtype: subtype || type,
             infoLetterFileName: req.file ? req.file.filename : null
         };
+
+        // Обработка теста для олимпиад
+        if (type === 'olympiad') {
+            try {
+                const testQuestionsStr = req.body.testQuestions;
+                if (testQuestionsStr) {
+                    const questions = JSON.parse(testQuestionsStr);
+                    if (Array.isArray(questions) && questions.length > 0) {
+                        if (!data.tests) data.tests = [];
+                        const testId = uuidv4();
+                        data.tests.push({
+                            id: testId,
+                            eventId: newEvent.id,
+                            testName: `${name} - Тест`,
+                            questions: questions,
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                }
+            } catch (parseError) {
+                console.error("Error parsing test questions:", parseError);
+                // Можно вернуть ошибку, если тест обязателен
+                // return res.status(400).json({ error: 'Некорректный формат данных теста.' });
+            }
+        }
+
         data.events.push(newEvent);
         await writeData(data);
         res.json({ success: true, event: newEvent });
@@ -353,15 +412,16 @@ app.post('/api/registration', urlEncodedParser, async (req, res) => {
 });
 
 // --- Запуск сервера ---
-// Привязываем к 0.0.0.0 и используем переменную PORT
-app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Data file path: ${DATA_FILE}`);
-    console.log(`Uploads path: ${UPLOAD_PATH}`);
-    // Убедимся, что папка uploads существует при запуске
-    await ensureUploadsDir().catch(err => {
-        console.error("Critical error ensuring uploads directory:", err);
-        // В реальном приложении это может привести к остановке сервера
-        // process.exit(1);
-    });
-});
+(async () => {
+    try {
+        await ensureUploadsDir();
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server is running on port ${PORT}`);
+            console.log(`Data file path: ${DATA_FILE}`);
+            console.log(`Uploads path: ${UPLOAD_PATH}`);
+        });
+    } catch (err) {
+        console.error("Failed to start server due to setup error:", err);
+        process.exit(1);
+    }
+})();
