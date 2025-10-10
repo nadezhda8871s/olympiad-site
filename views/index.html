@@ -1,64 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Олимпиады, конкурсы, конференции</title>
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="utf-8">
+  <title>Научные мероприятия — Олимпиады, Конкурсы, Конференции</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="/css/style.css" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="/">Главная</a></li>
-                <li><a href="/olympiads">Олимпиады</a></li>
-                <li><a href="/contests">Конкурсы</a></li>
-                <li><a href="/conferences">Конференции</a></li>
-                <li><a href="/about">О нас</a></li>
-            </ul>
-        </nav>
-    </header>
+<header>
+  <nav>
+    <ul>
+      <li><a href="/">Главная</a></li>
+      <li><a href="/about">О нас</a></li>
+      <li><a href="/admin">Админка</a></li>
+    </ul>
+  </nav>
+</header>
 
-    <main>
-        <section class="hero">
-            <h1>Добро пожаловать!</h1>
-            <p>Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!</p>
-            <p>Документы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.</p>
-        </section>
+<main>
+  <section class="hero">
+    <h1>Научные мероприятия</h1>
+    <p>Олимпиады, конкурсы, конференции, монографии и журналы.</p>
+    <p>Современный интерфейс, удобная регистрация, резерв на оплату Robokassa.</p>
+  </section>
 
-        <!-- --- НОВЫЙ РАЗДЕЛ: Поиск мероприятий --->
-        <section class="search-section">
-            <h2>Поиск мероприятий</h2>
-            <div class="search-container">
-                <input type="text" id="search-input-main" placeholder="Введите любое ключевое слово">
-                <button id="search-button-main">Найти</button>
-            </div>
-            <div id="search-results-main">
-                <!-- Результаты поиска будут отображаться здесь -->
-            </div>
-        </section>
-        <!-- --- КОНЕЦ НОВОГО РАЗДЕЛА --- -->
+  <section class="search-section">
+    <h2>Найдите подходящее мероприятие</h2>
+    <div class="search-container">
+      <input id="search-input-main" type="search" placeholder="Поиск по названию или описанию…">
+      <button id="search-button-main">Найти</button>
+    </div>
+    <div class="filters">
+      <button class="filter-btn active" data-type="">Все</button>
+      <button class="filter-btn" data-type="olympiad">Олимпиады</button>
+      <button class="filter-btn" data-type="contest">Конкурсы</button>
+      <button class="filter-btn" data-type="conference">Конференции</button>
+      <button class="filter-btn" data-type="monograph">Монографии</button>
+      <button class="filter-btn" data-type="journal">Журналы</button>
+    </div>
+  </section>
 
-        <section class="event-buttons">
-            <a href="/olympiads" class="event-btn btn-olympiads">Олимпиады для школьников, СПО, студентов, аспирантов</a>
-            <a href="/contests" class="event-btn btn-contests">Конкурсы научных работ, СТАТЕЙ, ВКР</a>
-            <a href="/conferences" class="event-btn btn-conferences">Конференции</a>
-            <a href="https://vsem.site/" target="_blank" class="event-btn btn-monographs">Монографии</a>
-            <a href="https://vsem.site/" target="_blank" class="event-btn btn-journal">Научный журнал</a>
-        </section>
+  <section class="events-section">
+    <h2>Список мероприятий</h2>
+    <div id="events-container" class="events-grid"></div>
+  </section>
 
-        <section class="events-section">
-            <h2>Актуальные мероприятия</h2>
-            <div id="events-container">
-                <!-- Карточки мероприятий будут вставлены сюда с помощью JavaScript -->
-            </div>
-        </section>
-    </main>
+  <!-- Модальное окно регистрации (native <dialog>) -->
+  <dialog id="register-dialog">
+    <form id="register-form" method="dialog" style="min-width: min(90vw, 520px);">
+      <h3>Регистрация на мероприятие</h3>
+      <input type="hidden" id="reg-event-id" />
+      <label>ФИО
+        <input type="text" id="reg-fullname" required>
+      </label>
+      <label>Email
+        <input type="email" id="reg-email" required>
+      </label>
+      <label>Телефон (необязательно)
+        <input type="tel" id="reg-phone">
+      </label>
+      <div style="display:flex; gap: .5rem;">
+        <button type="submit" class="btn-register">Отправить</button>
+        <button type="button" id="reg-cancel" class="btn-info">Отмена</button>
+      </div>
+      <p style="font-size:.9em;color:#6c757d;margin-top:.5rem;">
+        После регистрации откроется резервная страница оплаты Robokassa.
+      </p>
+    </form>
+  </dialog>
+</main>
 
-    <footer>
-        <p>&copy; 2024. Все права защищены.</p>
-    </footer>
+<footer>
+  <p>&copy; <span id="year"></span> Организатор научных мероприятий</p>
+</footer>
 
-    <script src="/js/main.js"></script>
+<script src="/js/main.js" defer></script>
 </body>
 </html>
