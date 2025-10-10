@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
 
-// Конфигурация сессий (может остаться для других целей)
+// Конфигурация сессий
 app.use(session({
     name: 'session',
     keys: [process.env.SESSION_SECRET || 'your_strong_fallback_secret_key_here_change_it'],
@@ -49,22 +49,23 @@ async function ensureUploadsDir() {
 async function readData() {
     try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
+        console.log("Data read successfully from:", DATA_FILE); // Лог для отладки
         return JSON.parse(data);
     } catch (error) {
+        console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
-                // admin: { login: "admin", password: "password" }, // Удалено
                 registrations: [],
                 testResults: [],
                 tests: [], // Для хранения тестов
                 about: { // Инициализация данных "О нас"
+                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.",
                     inn: "231120569701",
                     phone: "89184455287",
                     address: "г. Краснодар, ул. Виноградная, 58",
                     email: "vsemnayka@gmail.com",
-                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104",
-                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
+                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104"
                 }
             };
             await writeData(initialData);
@@ -74,7 +75,6 @@ async function readData() {
             console.error("Syntax error in data.json:", error.message);
             return { events: [], registrations: [], testResults: [], tests: [], about: {} };
         } else {
-            console.error("Error reading data file:", error);
             throw error;
         }
     }
@@ -82,8 +82,9 @@ async function readData() {
 
 async function writeData(data) {
     try {
+        console.log("Writing data to:", DATA_FILE); // Лог для отладки
         await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data written successfully");
+        console.log("Data written successfully to:", DATA_FILE); // Лог для отладки
     } catch (error) {
         console.error("Error writing data file:", error);
         throw error;
@@ -150,7 +151,6 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
-// --- Страница администратора теперь доступна всем ---
 app.get('/admin', allowAll, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
@@ -172,7 +172,6 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
-// --- API маршруты админки теперь доступны всем ---
 app.get('/api/admin/events', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -183,6 +182,7 @@ app.get('/api/admin/events', allowAll, async (req, res) => {
     }
 });
 
+// --- НОВЫЙ маршрут: Получить регистрационные данные для экспорта ---
 app.get('/api/admin/registrations', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -192,20 +192,23 @@ app.get('/api/admin/registrations', allowAll, async (req, res) => {
             testResults: data.testResults || []
         });
     } catch (error) {
-        console.error("Error fetching registrations:", error);
-        res.status(500).json({ error: 'Failed to fetch registrations' });
+        console.error("Error fetching registrations for export:", error);
+        res.status(500).json({ error: 'Failed to fetch registrations for export' });
     }
 });
+// --- КОНЕЦ НОВОГО маршрута ---
 
+// --- НОВЫЙ маршрут: Получить результаты тестов для экспорта ---
 app.get('/api/admin/test-results', allowAll, async (req, res) => {
     try {
         const data = await readData();
         res.json(data.testResults || []);
     } catch (error) {
-        console.error("Error fetching test results:", error);
-        res.status(500).json({ error: 'Failed to fetch test results' });
+        console.error("Error fetching test results for export:", error);
+        res.status(500).json({ error: 'Failed to fetch test results for export' });
     }
 });
+// --- КОНЕЦ НОВОГО маршрута ---
 
 app.get('/api/events/:id', async (req, res) => {
     try {
@@ -221,17 +224,17 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
-// --- НОВЫЕ API маршруты для работы с "О нас" ---
+// --- НОВЫЙ маршрут: Получить данные "О нас" ---
 app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
         const aboutData = {
+            customText: data.about?.customText || '',
             inn: data.about?.inn || '',
             phone: data.about?.phone || '',
             address: data.about?.address || '',
             email: data.about?.email || '',
-            requisites: data.about?.requisites || '',
-            customText: data.about?.customText || 'Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.'
+            requisites: data.about?.requisites || ''
         };
         res.json(aboutData);
     } catch (error) {
@@ -239,22 +242,25 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch about data' });
     }
 });
+// --- КОНЕЦ НОВОГО маршрута ---
 
+// --- НОВЫЙ маршрут: Обновить данные "О нас" ---
 app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
-        const { inn, phone, address, email, requisites, customText } = req.body;
+        const { customText, inn, phone, address, email, requisites } = req.body;
         const data = await readData();
 
         if (!data.about) {
             data.about = {};
         }
 
-        data.about.inn = inn;
-        data.about.phone = phone;
-        data.about.address = address;
-        data.about.email = email;
-        data.about.requisites = requisites;
         data.about.customText = customText; // Сохраняем произвольный текст
+        // Остальные поля остаются без изменений, как в data.json
+        // data.about.inn = inn;
+        // data.about.phone = phone;
+        // data.about.address = address;
+        // data.about.email = email;
+        // data.about.requisites = requisites;
 
         await writeData(data);
         res.json({ success: true });
@@ -263,7 +269,7 @@ app.post('/api/admin/about', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to update about data' });
     }
 });
-// --- КОНЕЦ НОВЫХ API маршрутов для "О нас" ---
+// --- КОНЕЦ НОВОГО маршрута ---
 
 // --- НОВЫЙ маршрут: Получить тест по ID мероприятия ---
 app.get('/api/tests/:eventId', async (req, res) => {
@@ -284,35 +290,40 @@ app.get('/api/tests/:eventId', async (req, res) => {
 });
 // --- КОНЕЦ НОВОГО маршрута ---
 
-// --- НОВЫЙ маршрут: Добавить/Обновить мероприятие с тестом ---
+// --- НОВЫЙ маршрут: Добавить мероприятие с тестом ---
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
-        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+        // ИСПРАВЛЕНО: Обработка нескольких подтипов
+        const { name, description, type, subtypes } = req.body; // subtypes как строка, разделённая запятыми
 
         const newEvent = {
             id: uuidv4(),
             name: name,
             description: description,
             type: type,
-            subtype: subtype || type,
+            // ИСПРАВЛЕНО: Преобразование строки subtypes в массив
+            subtypes: subtypes ? subtypes.split(',').map(s => s.trim()).filter(s => s) : [], // Разбиваем по запятым, убираем пробелы, фильтруем пустые
             infoLetterFileName: req.file ? req.file.filename : null
         };
 
         // Обработка теста для олимпиад
-        if (type === 'olympiad' && testQuestions) {
+        if (type === 'olympiad') {
             try {
-                const questions = JSON.parse(testQuestions);
-                if (Array.isArray(questions) && questions.length > 0) {
-                    if (!data.tests) data.tests = [];
-                    const testId = uuidv4();
-                    data.tests.push({
-                        id: testId,
-                        eventId: newEvent.id,
-                        testName: `${name} - Тест`,
-                        questions: questions, // Массив объектов вопросов
-                        createdAt: new Date().toISOString()
-                    });
+                const testQuestionsStr = req.body.testQuestions;
+                if (testQuestionsStr) {
+                    const questions = JSON.parse(testQuestionsStr);
+                    if (Array.isArray(questions) && questions.length > 0) {
+                        if (!data.tests) data.tests = [];
+                        const testId = uuidv4();
+                        data.tests.push({
+                            id: testId,
+                            eventId: newEvent.id,
+                            testName: `${name} - Тест`,
+                            questions: questions, // Массив объектов вопросов
+                            createdAt: new Date().toISOString()
+                        });
+                    }
                 }
             } catch (parseError) {
                 console.error("Error parsing test questions:", parseError);
@@ -331,12 +342,13 @@ app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, r
 });
 // --- КОНЕЦ НОВОГО маршрута ---
 
-// --- НОВЫЙ маршрут: Обновить мероприятие ---
+// --- НОВЫЙ маршрут: Обновить мероприятие с тестом ---
 app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
         const eventId = req.params.id;
-        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+        // ИСПРАВЛЕНО: Обработка нескольких подтипов
+        const { name, description, type, subtypes } = req.body; // subtypes как строка, разделённая запятыми
 
         const eventIndex = data.events.findIndex(e => e.id === eventId);
         if (eventIndex === -1) {
@@ -348,42 +360,46 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
             name: name,
             description: description,
             type: type,
-            subtype: subtype || type,
+            // ИСПРАВЛЕНО: Преобразование строки subtypes в массив
+            subtypes: subtypes ? subtypes.split(',').map(s => s.trim()).filter(s => s) : [], // Разбиваем по запятым, убираем пробелы, фильтруем пустые
             infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
         };
 
         data.events[eventIndex] = updatedEvent;
 
         // Обработка теста для олимпиад при обновлении
-        if (type === 'olympiad' && testQuestions) {
+        if (type === 'olympiad') {
             try {
-                const questions = JSON.parse(testQuestions);
-                if (Array.isArray(questions) && questions.length > 0) {
-                    if (!data.tests) data.tests = [];
-                    // Проверяем, существует ли уже тест для этого мероприятия
-                    const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
-                    const testData = {
-                        id: uuidv4(),
-                        eventId: eventId,
-                        testName: `${name} - Тест (Обновлён)`,
-                        questions: questions, // Массив объектов вопросов
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    };
+                const testQuestionsStr = req.body.testQuestions;
+                if (testQuestionsStr) {
+                    const questions = JSON.parse(testQuestionsStr);
+                    if (Array.isArray(questions) && questions.length > 0) {
+                        if (!data.tests) data.tests = [];
+                        // Проверяем, существует ли уже тест для этого мероприятия
+                        const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
+                        const testData = {
+                            id: uuidv4(),
+                            eventId: eventId,
+                            testName: `${name} - Тест (Обновлён)`,
+                            questions: questions, // Массив объектов вопросов
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
 
-                    if (existingIndex >= 0) {
-                        // Обновляем существующий тест
-                        testData.id = data.tests[existingIndex].id; // Сохраняем ID
-                        testData.createdAt = data.tests[existingIndex].createdAt; // Сохраняем дату создания
-                        data.tests[existingIndex] = testData;
+                        if (existingIndex >= 0) {
+                            // Обновляем существующий тест
+                            testData.id = data.tests[existingIndex].id; // Сохраняем ID
+                            testData.createdAt = data.tests[existingIndex].createdAt; // Сохраняем дату создания
+                            data.tests[existingIndex] = testData;
+                        } else {
+                            // Добавляем новый тест
+                            data.tests.push(testData);
+                        }
                     } else {
-                        // Добавляем новый тест
-                        data.tests.push(testData);
-                    }
-                } else {
-                    // Если вопросы пустые, удаляем тест
-                    if (data.tests) {
-                        data.tests = data.tests.filter(t => t.eventId !== eventId);
+                        // Если вопросы пустые, удаляем тест
+                        if (data.tests) {
+                            data.tests = data.tests.filter(t => t.eventId !== eventId);
+                        }
                     }
                 }
             } catch (parseError) {
