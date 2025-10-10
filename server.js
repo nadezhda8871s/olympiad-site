@@ -31,20 +31,24 @@ app.use(session({
 // --- Проверка и создание папки uploads при запуске ---
 async function ensureUploadsDir() {
     try {
-        console.log("Checking if uploads directory exists:", UPLOAD_PATH); // Лог для отладки
-        await fs.access(UPLOAD_PATH);
-        console.log("Uploads directory exists:", UPLOAD_PATH);
+        await fs.access(UPLOAD_PATH, fs.constants.F_OK | fs.constants.W_OK); // Проверяем существование и права на запись
+        console.log("Uploads directory exists and is writable:", UPLOAD_PATH);
     } catch (error) {
-        console.log("Error checking uploads directory:", error.code); // Лог для отладки
         if (error.code === 'ENOENT') {
             console.log("Uploads directory does not exist, creating:", UPLOAD_PATH);
+            await fs.mkdir(UPLOAD_PATH, { recursive: true });
+            console.log("Uploads directory created:", UPLOAD_PATH);
+            // Проверяем, можно ли в неё писать после создания
             try {
-                await fs.mkdir(UPLOAD_PATH, { recursive: true });
-                console.log("Uploads directory created:", UPLOAD_PATH);
-            } catch (mkdirError) {
-                console.error("Error creating uploads directory:", mkdirError);
-                throw mkdirError;
+                await fs.access(UPLOAD_PATH, fs.constants.W_OK);
+                console.log("Uploads directory is now writable:", UPLOAD_PATH);
+            } catch (writeError) {
+                console.error("Uploads directory is not writable after creation:", writeError);
+                throw new Error(`Uploads directory is not writable: ${UPLOAD_PATH}`);
             }
+        } else if (error.code === 'EACCES') {
+            console.error("Uploads directory exists but is not writable:", UPLOAD_PATH);
+            throw new Error(`Uploads directory is not writable: ${UPLOAD_PATH}`);
         } else {
             console.error("Error checking/uploads directory:", error);
             throw error;
