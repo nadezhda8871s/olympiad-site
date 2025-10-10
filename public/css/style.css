@@ -40,6 +40,7 @@ main {
     margin-bottom: 2em;
 }
 
+/* ИСПРАВЛЕНО: Обновлены стили для .event-buttons */
 .event-buttons {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -125,7 +126,6 @@ main {
     padding: 0.5em 1em;
     border: 1px solid #ccc;
     background-color: #f8f9fa;
-    color: #495057;
     cursor: pointer;
     border-radius: 3px;
 }
@@ -152,10 +152,6 @@ main {
 form {
     max-width: 600px;
     margin: 0 auto;
-    background-color: white;
-    padding: 2em;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 form label {
@@ -201,10 +197,6 @@ footer {
 #admin-panel {
     max-width: 800px;
     margin: 0 auto;
-    background-color: white;
-    padding: 2em;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 #events-list,
@@ -223,6 +215,7 @@ footer {
     align-items: center;
 }
 
+/* ИСПРАВЛЕНО: Добавлены стили для кнопки удаления мероприятий */
 .event-item button {
     background-color: #dc3545;
     color: white;
@@ -235,6 +228,7 @@ footer {
 .event-item button:hover {
     background-color: #c82333;
 }
+/* --- КОНЕЦ ИСПРАВЛЕНИЙ ДЛЯ КНОПКИ УДАЛЕНИЯ --- */
 
 /* --- НОВЫЕ стили для таблицы регистраций и кнопки --- */
 .registrations-table {
@@ -304,5 +298,9 @@ footer {
     .filter-btn {
         width: 100%;
         max-width: 300px;
+    }
+
+    #search-input {
+        max-width: 100%;
     }
 }
