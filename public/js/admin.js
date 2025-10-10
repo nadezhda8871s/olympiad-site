@@ -10,11 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- НОВОЕ: Элементы для формы "О нас" ---
     const editAboutForm = document.getElementById('edit-about-form');
     const aboutCustomText = document.getElementById('about-custom-text');
-    const aboutInn = document.getElementById('about-inn');
-    const aboutPhone = document.getElementById('about-phone');
-    const aboutAddress = document.getElementById('about-address');
-    const aboutEmail = document.getElementById('about-email');
-    const aboutRequisites = document.getElementById('about-requisites');
     // --- КОНЕЦ НОВОГО ---
 
     // --- НОВОЕ: Элементы для редактирования мероприятия ---
@@ -35,17 +30,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- НОВАЯ ФУНКЦИЯ: Загрузка и отображение данных "О нас" ---
     async function loadAboutData() {
         try {
-            const response = await fetch('/api/admin/about');
+            const response = await fetch('/api/admin/about', {
+                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
+            });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const aboutData = await response.json();
 
             // Заполняем форму данными
             aboutCustomText.value = aboutData.customText || '';
-            aboutInn.value = aboutData.inn || '';
-            aboutPhone.value = aboutData.phone || '';
-            aboutAddress.value = aboutData.address || '';
-            aboutEmail.value = aboutData.email || '';
-            aboutRequisites.value = aboutData.requisites || '';
+            // Остальные поля не редактируются в админке, но можно их отобразить для справки
+            // document.getElementById('about-inn').textContent = aboutData.inn || '';
+            // document.getElementById('about-phone').textContent = aboutData.phone || '';
+            // document.getElementById('about-address').textContent = aboutData.address || '';
+            // document.getElementById('about-email').textContent = aboutData.email || '';
+            // document.getElementById('about-requisites').textContent = aboutData.requisites || '';
 
         } catch (error) {
             console.error("Error loading 'about' ", error);
@@ -61,11 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(editAboutForm);
         const aboutData = {
             customText: formData.get('customText'),
-            inn: formData.get('inn'),
-            phone: formData.get('phone'),
-            address: formData.get('address'),
-            email: formData.get('email'),
-            requisites: formData.get('requisites')
+            // inn, phone, address, email, requisites не отправляются из формы
         };
 
         try {
@@ -73,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
                 },
                 body: JSON.stringify(aboutData)
             });
@@ -105,7 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/events', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
             });
 
             if (response.ok) {
@@ -122,7 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         const testResponse = await fetch(`/api/events/${eventId}/test`, {
                             method: 'PUT',
                             headers: {
-                                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json',
+                                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
                             },
                             body: JSON.stringify({
                                 testName: testName,
@@ -187,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" name="option-${questionCounter}-c" placeholder="Вариант C" required>
                 </div>
                 <div class="option-row">
-                    <input type="radio" name="correct-answer-${questionCounter}" value="d"> 
+                    <input type="radio" name="correct-answer-${questionNumber}" value="d"> 
                     <input type="text" name="option-${questionCounter}-d" placeholder="Вариант D">
                 </div>
             </div>
@@ -257,17 +254,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadEventsList() {
         try {
-            const response = await fetch('/api/admin/events');
+            const response = await fetch('/api/admin/events', {
+                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
+            });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const events = await response.json();
             eventsList.innerHTML = '';
             events.forEach(event => {
                 const eventItem = document.createElement('div');
                 eventItem.className = 'event-item';
+                // ИСПРАВЛЕНО: Отображение нескольких подтипов
                 eventItem.innerHTML = `
                     <div>
                         <strong>${event.name}</strong> (${event.type})
-                        ${event.subtype ? `<br><small>Подтип: ${event.subtype}</small>` : '<br><small>Подтип: не указан</small>'}
+                        ${event.subtypes && event.subtypes.length > 0 ? `<br><small>Подтипы: ${event.subtypes.join(', ')}</small>` : '<br><small>Подтипы: нет</small>'}
                         ${event.infoLetterFileName ? `<br><small>Файл: ${event.infoLetterFileName}</small>` : '<br><small>Файл: нет</small>'}
                     </div>
                     <button onclick="editEvent('${event.id}')">Редактировать</button>
@@ -285,7 +285,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- НОВАЯ ФУНКЦИЯ: Редактирование мероприятия ---
     window.editEvent = async function(eventId) {
         try {
-            const response = await fetch(`/api/events/${eventId}`);
+            const response = await fetch(`/api/events/${eventId}`, {
+                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
+            });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const event = await response.json();
             
@@ -296,7 +298,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('edit-event-name').value = event.name;
             document.getElementById('edit-event-description').value = event.description;
             document.getElementById('edit-event-type').value = event.type;
-            document.getElementById('edit-event-subtype').value = event.subtype || '';
+            // ИСПРАВЛЕНО: Преобразование массива subtypes в строку
+            document.getElementById('edit-event-subtypes').value = event.subtypes ? event.subtypes.join(', ') : '';
 
             // Отображаем текущий файл
             currentFileNameSpan.textContent = event.infoLetterFileName || 'нет';
@@ -326,7 +329,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- НОВАЯ ФУНКЦИЯ: Загрузка вопросов теста для редактирования ---
     async function loadTestQuestionsForEditing(eventId) {
         try {
-            const response = await fetch(`/api/tests/${eventId}`);
+            const response = await fetch(`/api/tests/${eventId}`, {
+                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
+            });
             if (response.ok) {
                 const test = await response.json();
                 displayTestQuestionsForEditing(test.questions);
@@ -495,7 +500,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Сначала обновляем основные данные мероприятия
             const updateResponse = await fetch(`/api/events/${editingEventId}`, {
                 method: 'PUT',
-                body: formData
+                body: formData,
+                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
             });
 
             if (!updateResponse.ok) {
@@ -511,31 +517,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const testName = formData.get('name') + ' - Тест (Обновлён)';
                 const questions = collectEditedTestQuestions();
                 
-                if (questions.length > 0) {
-                    const testResponse = await fetch(`/api/events/${editingEventId}/test`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            testName: testName,
-                            questions: questions
-                        })
-                    });
+                const testResponse = await fetch(`/api/events/${editingEventId}/test`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
+                    },
+                    body: JSON.stringify({
+                        testName: testName,
+                        questions: questions
+                    })
+                });
 
-                    if (!testResponse.ok) {
-                        const testErrorData = await testResponse.json();
-                        throw new Error(testErrorData.error || 'Ошибка при обновлении теста.');
-                    }
-                } else {
-                    // Если вопросы пустые, удаляем тест
-                    const deleteTestResponse = await fetch(`/api/tests/${editingEventId}`, {
-                        method: 'DELETE'
-                    });
-                    if (!deleteTestResponse.ok && deleteTestResponse.status !== 404) {
-                        const deleteTestErrorData = await deleteTestResponse.json();
-                        console.warn("Error deleting test:", deleteTestErrorData.error);
-                    }
+                if (!testResponse.ok) {
+                    const testErrorData = await testResponse.json();
+                    throw new Error(testErrorData.error || 'Ошибка при обновлении теста.');
                 }
             }
 
@@ -567,12 +563,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const response = await fetch(`/api/events/${eventId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
             });
 
             if (response.ok) {
                 loadEventsList(); // Обновляем список
-                errorMessage.style.display = 'none';
+                errorMessage.style.display = 'none'; // Скрываем ошибки
             } else {
                 const errorData = await response.json();
                 errorMessage.textContent = errorData.error || 'Ошибка при удалении мероприятия.';
@@ -587,7 +584,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadRegistrationsList() {
         try {
-            const response = await fetch('/api/admin/registrations');
+            const response = await fetch('/api/admin/registrations', {
+                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
+            });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
             const registrations = data.registrations || [];
@@ -652,7 +651,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     downloadBtn.addEventListener('click', async () => {
         try {
-            const response = await fetch('/api/admin/registrations');
+            const response = await fetch('/api/admin/registrations', {
+                credentials: 'include' // Убедитесь, что сессия передаётся, если требуется
+            });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
             const registrations = data.registrations || [];
