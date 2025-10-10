@@ -31,13 +31,20 @@ app.use(session({
 // --- Проверка и создание папки uploads при запуске ---
 async function ensureUploadsDir() {
     try {
+        console.log("Checking if uploads directory exists:", UPLOAD_PATH); // Лог для отладки
         await fs.access(UPLOAD_PATH);
         console.log("Uploads directory exists:", UPLOAD_PATH);
     } catch (error) {
+        console.log("Error checking uploads directory:", error.code); // Лог для отладки
         if (error.code === 'ENOENT') {
             console.log("Uploads directory does not exist, creating:", UPLOAD_PATH);
-            await fs.mkdir(UPLOAD_PATH, { recursive: true });
-            console.log("Uploads directory created:", UPLOAD_PATH);
+            try {
+                await fs.mkdir(UPLOAD_PATH, { recursive: true });
+                console.log("Uploads directory created:", UPLOAD_PATH);
+            } catch (mkdirError) {
+                console.error("Error creating uploads directory:", mkdirError);
+                throw mkdirError;
+            }
         } else {
             console.error("Error checking/uploads directory:", error);
             throw error;
