@@ -54,15 +54,12 @@ async function readData() {
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
+                admin: { login: "admin", password: "password" },
                 registrations: [],
                 testResults: [],
                 tests: [],
                 about: {
-                    inn: "231120569701",
-                    phone: "89184455287",
-                    address: "г. Краснодар, ул. Виноградная, 58",
-                    email: "vsemnayka@gmail.com",
-                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104",
+                    // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
                     customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
                 }
             };
@@ -71,7 +68,7 @@ async function readData() {
             return initialData;
         } else if (error instanceof SyntaxError) {
             console.error("Syntax error in data.json:", error.message);
-            return { events: [], registrations: [], testResults: [], tests: [], about: {} };
+            return { events: [], admin: { login: "admin", password: "password" }, registrations: [], testResults: [], tests: [], about: {} };
         } else {
             console.error("Error reading data file:", error);
             throw error;
@@ -218,15 +215,12 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
+// --- НОВЫЕ API маршруты для работы с "О нас" ---
 app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
         const aboutData = {
-            inn: data.about?.inn || '',
-            phone: data.about?.phone || '',
-            address: data.about?.address || '',
-            email: data.about?.email || '',
-            requisites: data.about?.requisites || '',
+            // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
             customText: data.about?.customText || ''
         };
         res.json(aboutData);
@@ -238,18 +232,14 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
 
 app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
-        const { inn, phone, address, email, requisites, customText } = req.body;
+        const { customText } = req.body;
         const data = await readData();
 
         if (!data.about) {
             data.about = {};
         }
 
-        data.about.inn = inn;
-        data.about.phone = phone;
-        data.about.address = address;
-        data.about.email = email;
-        data.about.requisites = requisites;
+        // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
         data.about.customText = customText;
 
         await writeData(data);
@@ -259,6 +249,7 @@ app.post('/api/admin/about', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to update about data' });
     }
 });
+// --- КОНЕЦ НОВЫХ API маршрутов для "О нас" ---
 
 // --- НОВЫЙ маршрут: Получить тест по ID мероприятия ---
 app.get('/api/tests/:eventId', async (req, res) => {
@@ -278,82 +269,6 @@ app.get('/api/tests/:eventId', async (req, res) => {
     }
 });
 // --- КОНЕЦ НОВОГО маршрута ---
-
-// --- НОВЫЙ маршрут: Добавить мероприятие ---
-app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
-    try {
-        const data = await readData();
-        const { name, description, type, subtype } = req.body;
-
-        const newEvent = {
-            id: uuidv4(),
-            name: name,
-            description: description,
-            type: type,
-            subtype: subtype || type,
-            infoLetterFileName: req.file ? req.file.filename : null
-        };
-
-        data.events.push(newEvent);
-        await writeData(data);
-        res.json({ success: true, event: newEvent });
-    } catch (error) {
-        console.error("Error adding event:", error);
-        res.status(500).json({ error: 'Failed to add event' });
-    }
-});
-
-// --- НОВЫЙ маршрут: Обновить мероприятие ---
-app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req, res) => {
-    try {
-        const data = await readData();
-        const eventId = req.params.id;
-        const { name, description, type, subtype } = req.body;
-
-        const eventIndex = data.events.findIndex(e => e.id === eventId);
-        if (eventIndex === -1) {
-            return res.status(404).json({ error: 'Event not found' });
-        }
-
-        const updatedEvent = {
-            id: eventId,
-            name: name,
-            description: description,
-            type: type,
-            subtype: subtype || type,
-            infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
-        };
-
-        data.events[eventIndex] = updatedEvent;
-        await writeData(data);
-        res.json({ success: true, event: updatedEvent });
-    } catch (error) {
-        console.error("Error updating event:", error);
-        res.status(500).json({ error: 'Failed to update event' });
-    }
-});
-
-// --- НОВЫЙ маршрут: Удалить мероприятие ---
-app.delete('/api/events/:id', allowAll, async (req, res) => {
-    try {
-        const data = await readData();
-        const originalLength = data.events.length;
-        data.events = data.events.filter(event => event.id !== req.params.id);
-        if (data.events.length === originalLength) {
-            // Мероприятие не найдено
-            return res.status(404).json({ error: 'Event not found' });
-        }
-        // Также удаляем связанный тест, если он есть
-        if (data.tests) {
-            data.tests = data.tests.filter(test => test.eventId !== req.params.id);
-        }
-        await writeData(data);
-        res.json({ success: true });
-    } catch (error) {
-        console.error("Error deleting event:", error);
-        res.status(500).json({ error: 'Failed to delete event' });
-    }
-});
 
 // --- НОВЫЙ маршрут: Создать/Обновить тест для мероприятия ---
 app.put('/api/events/:eventId/test', allowAll, async (req, res) => {
@@ -396,6 +311,54 @@ app.put('/api/events/:eventId/test', allowAll, async (req, res) => {
     } catch (error) {
         console.error("Error saving/updating test:", error);
         res.status(500).json({ error: 'Failed to save/update test' });
+    }
+});
+// --- КОНЕЦ НОВОГО маршрута ---
+
+// --- НОВЫЙ маршрут: Добавить мероприятие ---
+app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
+    try {
+        const data = await readData();
+        const { name, description, type } = req.body; // Удалено subtype
+
+        const newEvent = {
+            id: uuidv4(),
+            name: name,
+            description: description,
+            type: type,
+            // subtype: subtype || type, // Удалено
+            infoLetterFileName: req.file ? req.file.filename : null
+        };
+
+        data.events.push(newEvent);
+        await writeData(data);
+        res.json({ success: true, event: newEvent });
+    } catch (error) {
+        console.error("Error adding event:", error);
+        res.status(500).json({ error: 'Failed to add event' });
+    }
+});
+// --- КОНЕЦ НОВОГО маршрута ---
+
+// --- НОВЫЙ маршрут: Удалить мероприятие ---
+app.delete('/api/events/:id', allowAll, async (req, res) => {
+    try {
+        const data = await readData();
+        const originalLength = data.events.length;
+        data.events = data.events.filter(event => event.id !== req.params.id);
+        if (data.events.length === originalLength) {
+            // Мероприятие не найдено
+            return res.status(404).json({ error: 'Event not found' });
+        }
+        // Также удаляем связанный тест, если он есть
+        if (data.tests) {
+            data.tests = data.tests.filter(test => test.eventId !== req.params.id);
+        }
+        await writeData(data);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error deleting event:", error);
+        res.status(500).json({ error: 'Failed to delete event' });
     }
 });
 // --- КОНЕЦ НОВОГО маршрута ---
@@ -461,7 +424,7 @@ app.post('/api/registration', urlEncodedParser, async (req, res) => {
 // --- Запуск сервера ---
 (async () => {
     try {
-        await ensureUploadsDir(); // Убедимся, что папка uploads существует
+        await ensureUploadsDir();
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on port ${PORT}`);
             console.log(`Data file path: ${DATA_FILE}`);
