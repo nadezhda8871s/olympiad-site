@@ -49,23 +49,17 @@ async function ensureUploadsDir() {
 async function readData() {
     try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
-        console.log("Data read successfully from:", DATA_FILE); // Лог для отладки
         return JSON.parse(data);
     } catch (error) {
-        console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
+                // admin: { login: "admin", password: "password" }, // Убрано
                 registrations: [],
                 testResults: [],
-                tests: [], // Для хранения тестов
-                about: { // Инициализация данных "О нас"
-                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.",
-                    inn: "231120569701",
-                    phone: "89184455287",
-                    address: "г. Краснодар, ул. Виноградная, 58",
-                    email: "vsemnayka@gmail.com",
-                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104"
+                tests: [],
+                about: {
+                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
                 }
             };
             await writeData(initialData);
@@ -75,6 +69,7 @@ async function readData() {
             console.error("Syntax error in data.json:", error.message);
             return { events: [], registrations: [], testResults: [], tests: [], about: {} };
         } else {
+            console.error("Error reading data file:", error);
             throw error;
         }
     }
@@ -82,9 +77,8 @@ async function readData() {
 
 async function writeData(data) {
     try {
-        console.log("Writing data to:", DATA_FILE); // Лог для отладки
         await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data written successfully to:", DATA_FILE); // Лог для отладки
+        console.log("Data written successfully");
     } catch (error) {
         console.error("Error writing data file:", error);
         throw error;
@@ -182,7 +176,6 @@ app.get('/api/admin/events', allowAll, async (req, res) => {
     }
 });
 
-// --- НОВЫЙ маршрут: Получить регистрационные данные для экспорта ---
 app.get('/api/admin/registrations', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -192,23 +185,20 @@ app.get('/api/admin/registrations', allowAll, async (req, res) => {
             testResults: data.testResults || []
         });
     } catch (error) {
-        console.error("Error fetching registrations for export:", error);
-        res.status(500).json({ error: 'Failed to fetch registrations for export' });
+        console.error("Error fetching registrations:", error);
+        res.status(500).json({ error: 'Failed to fetch registrations' });
     }
 });
-// --- КОНЕЦ НОВОГО маршрута ---
 
-// --- НОВЫЙ маршрут: Получить результаты тестов для экспорта ---
 app.get('/api/admin/test-results', allowAll, async (req, res) => {
     try {
         const data = await readData();
         res.json(data.testResults || []);
     } catch (error) {
-        console.error("Error fetching test results for export:", error);
-        res.status(500).json({ error: 'Failed to fetch test results for export' });
+        console.error("Error fetching test results:", error);
+        res.status(500).json({ error: 'Failed to fetch test results' });
     }
 });
-// --- КОНЕЦ НОВОГО маршрута ---
 
 app.get('/api/events/:id', async (req, res) => {
     try {
@@ -224,52 +214,39 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
-// --- НОВЫЙ маршрут: Получить данные "О нас" ---
-app.get('/api/admin/about', allowAll, async (req, res) => {
+// --- НОВЫЕ API маршруты для работы с "О нас" ---
+// Получить произвольный текст "О нас"
+app.get('/api/admin/about/custom-text', allowAll, async (req, res) => {
     try {
         const data = await readData();
-        const aboutData = {
-            customText: data.about?.customText || '',
-            inn: data.about?.inn || '',
-            phone: data.about?.phone || '',
-            address: data.about?.address || '',
-            email: data.about?.email || '',
-            requisites: data.about?.requisites || ''
-        };
-        res.json(aboutData);
+        const customText = data.about?.customText || "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.";
+        res.json({ customText: customText });
     } catch (error) {
-        console.error("Error fetching 'about' ", error);
-        res.status(500).json({ error: 'Failed to fetch about data' });
+        console.error("Error fetching 'about' custom text:", error);
+        res.status(500).json({ error: 'Failed to fetch about custom text' });
     }
 });
-// --- КОНЕЦ НОВОГО маршрута ---
 
-// --- НОВЫЙ маршрут: Обновить данные "О нас" ---
-app.post('/api/admin/about', allowAll, async (req, res) => {
+// Обновить произвольный текст "О нас"
+app.post('/api/admin/about/custom-text', allowAll, async (req, res) => {
     try {
-        const { customText, inn, phone, address, email, requisites } = req.body;
+        const { customText } = req.body;
         const data = await readData();
 
         if (!data.about) {
             data.about = {};
         }
 
-        data.about.customText = customText; // Сохраняем произвольный текст
-        // Остальные поля остаются без изменений, как в data.json
-        // data.about.inn = inn;
-        // data.about.phone = phone;
-        // data.about.address = address;
-        // data.about.email = email;
-        // data.about.requisites = requisites;
+        data.about.customText = customText;
 
         await writeData(data);
         res.json({ success: true });
     } catch (error) {
-        console.error("Error updating 'about' ", error);
-        res.status(500).json({ error: 'Failed to update about data' });
+        console.error("Error updating 'about' custom text:", error);
+        res.status(500).json({ error: 'Failed to update about custom text' });
     }
 });
-// --- КОНЕЦ НОВОГО маршрута ---
+// --- КОНЕЦ НОВЫХ API маршрутов для "О нас" ---
 
 // --- НОВЫЙ маршрут: Получить тест по ID мероприятия ---
 app.get('/api/tests/:eventId', async (req, res) => {
@@ -290,47 +267,20 @@ app.get('/api/tests/:eventId', async (req, res) => {
 });
 // --- КОНЕЦ НОВОГО маршрута ---
 
-// --- НОВЫЙ маршрут: Добавить мероприятие с тестом ---
+// --- НОВЫЙ маршрут: Добавить мероприятие ---
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
-        // ИСПРАВЛЕНО: Обработка нескольких подтипов
-        const { name, description, type, subtypes } = req.body; // subtypes как строка, разделённая запятыми
+        const { name, description, type, subtype } = req.body;
 
         const newEvent = {
-            id: uuidv4(),
+            id: uuidv4(), // ИСПРАВЛЕНО: используем uuidv4()
             name: name,
             description: description,
             type: type,
-            // ИСПРАВЛЕНО: Преобразование строки subtypes в массив
-            subtypes: subtypes ? subtypes.split(',').map(s => s.trim()).filter(s => s) : [], // Разбиваем по запятым, убираем пробелы, фильтруем пустые
+            subtype: subtype || type,
             infoLetterFileName: req.file ? req.file.filename : null
         };
-
-        // Обработка теста для олимпиад
-        if (type === 'olympiad') {
-            try {
-                const testQuestionsStr = req.body.testQuestions;
-                if (testQuestionsStr) {
-                    const questions = JSON.parse(testQuestionsStr);
-                    if (Array.isArray(questions) && questions.length > 0) {
-                        if (!data.tests) data.tests = [];
-                        const testId = uuidv4();
-                        data.tests.push({
-                            id: testId,
-                            eventId: newEvent.id,
-                            testName: `${name} - Тест`,
-                            questions: questions, // Массив объектов вопросов
-                            createdAt: new Date().toISOString()
-                        });
-                    }
-                }
-            } catch (parseError) {
-                console.error("Error parsing test questions:", parseError);
-                // Можно вернуть ошибку, если тест обязателен
-                // return res.status(400).json({ error: 'Некорректный формат данных теста.' });
-            }
-        }
 
         data.events.push(newEvent);
         await writeData(data);
@@ -338,82 +288,6 @@ app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, r
     } catch (error) {
         console.error("Error adding event:", error);
         res.status(500).json({ error: 'Failed to add event' });
-    }
-});
-// --- КОНЕЦ НОВОГО маршрута ---
-
-// --- НОВЫЙ маршрут: Обновить мероприятие с тестом ---
-app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req, res) => {
-    try {
-        const data = await readData();
-        const eventId = req.params.id;
-        // ИСПРАВЛЕНО: Обработка нескольких подтипов
-        const { name, description, type, subtypes } = req.body; // subtypes как строка, разделённая запятыми
-
-        const eventIndex = data.events.findIndex(e => e.id === eventId);
-        if (eventIndex === -1) {
-            return res.status(404).json({ error: 'Event not found' });
-        }
-
-        const updatedEvent = {
-            id: eventId,
-            name: name,
-            description: description,
-            type: type,
-            // ИСПРАВЛЕНО: Преобразование строки subtypes в массив
-            subtypes: subtypes ? subtypes.split(',').map(s => s.trim()).filter(s => s) : [], // Разбиваем по запятым, убираем пробелы, фильтруем пустые
-            infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
-        };
-
-        data.events[eventIndex] = updatedEvent;
-
-        // Обработка теста для олимпиад при обновлении
-        if (type === 'olympiad') {
-            try {
-                const testQuestionsStr = req.body.testQuestions;
-                if (testQuestionsStr) {
-                    const questions = JSON.parse(testQuestionsStr);
-                    if (Array.isArray(questions) && questions.length > 0) {
-                        if (!data.tests) data.tests = [];
-                        // Проверяем, существует ли уже тест для этого мероприятия
-                        const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
-                        const testData = {
-                            id: uuidv4(),
-                            eventId: eventId,
-                            testName: `${name} - Тест (Обновлён)`,
-                            questions: questions, // Массив объектов вопросов
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                        };
-
-                        if (existingIndex >= 0) {
-                            // Обновляем существующий тест
-                            testData.id = data.tests[existingIndex].id; // Сохраняем ID
-                            testData.createdAt = data.tests[existingIndex].createdAt; // Сохраняем дату создания
-                            data.tests[existingIndex] = testData;
-                        } else {
-                            // Добавляем новый тест
-                            data.tests.push(testData);
-                        }
-                    } else {
-                        // Если вопросы пустые, удаляем тест
-                        if (data.tests) {
-                            data.tests = data.tests.filter(t => t.eventId !== eventId);
-                        }
-                    }
-                }
-            } catch (parseError) {
-                console.error("Error parsing test questions for update:", parseError);
-                // Можно вернуть ошибку, если тест обязателен
-                // return res.status(400).json({ error: 'Некорректный формат данных теста при обновлении.' });
-            }
-        }
-
-        await writeData(data);
-        res.json({ success: true, event: updatedEvent });
-    } catch (error) {
-        console.error("Error updating event:", error);
-        res.status(500).json({ error: 'Failed to update event' });
     }
 });
 // --- КОНЕЦ НОВОГО маршрута ---
@@ -502,7 +376,7 @@ app.post('/api/registration', urlEncodedParser, async (req, res) => {
 // --- Запуск сервера ---
 (async () => {
     try {
-        await ensureUploadsDir(); // Убедимся, что папка uploads существует
+        await ensureUploadsDir();
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on port ${PORT}`);
             console.log(`Data file path: ${DATA_FILE}`);
