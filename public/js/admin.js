@@ -7,18 +7,92 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadBtn = document.getElementById('download-registrations-btn');
     const errorMessage = document.getElementById('error-message');
 
+    // --- НОВОЕ: Элементы для формы "О нас" ---
+    const editAboutForm = document.getElementById('edit-about-form');
+    // --- КОНЕЦ НОВОГО ---
+
     console.log("Admin page loaded, showing panel directly...");
 
     // Показываем панель управления сразу, так как аутентификация отсутствует
     adminPanel.style.display = 'block';
 
+    // --- НОВОЕ: Логика для формы "О нас" ---
+    // Загружаем текущие данные "О нас" при загрузке страницы
+    loadAboutData();
+
+    editAboutForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(editAboutForm);
+        const aboutData = {
+            inn: formData.get('inn'),
+            phone: formData.get('phone'),
+            address: formData.get('address'),
+            email: formData.get('email'),
+            requisites: formData.get('requisites')
+        };
+
+        try {
+            // Отправляем данные на сервер
+            const response = await fetch('/api/admin/about', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // credentials: 'include' // Не нужно, если сессия не используется
+                },
+                body: JSON.stringify(aboutData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    alert('Данные "О нас" успешно обновлены!');
+                    errorMessage.style.display = 'none';
+                } else {
+                    errorMessage.textContent = result.error || 'Ошибка при обновлении "О нас".';
+                    errorMessage.style.display = 'block';
+                }
+            } else {
+                const errorData = await response.json();
+                errorMessage.textContent = errorData.error || 'Ошибка при обновлении "О нас".';
+                errorMessage.style.display = 'block';
+            }
+        } catch (error) {
+            console.error("Error updating 'about' data:", error);
+            errorMessage.textContent = 'Ошибка сети при обновлении "О нас".';
+            errorMessage.style.display = 'block';
+        }
+    });
+
+    async function loadAboutData() {
+        try {
+            const response = await fetch('/api/admin/about');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const aboutData = await response.json();
+
+            // Заполняем форму данными
+            document.getElementById('about-inn').value = aboutData.inn || '';
+            document.getElementById('about-phone').value = aboutData.phone || '';
+            document.getElementById('about-address').value = aboutData.address || '';
+            document.getElementById('about-email').value = aboutData.email || '';
+            document.getElementById('about-requisites').value = aboutData.requisites || '';
+
+        } catch (error) {
+            console.error("Error loading 'about' data:", error);
+            errorMessage.textContent = 'Ошибка загрузки данных "О нас".';
+            errorMessage.style.display = 'block';
+        }
+    }
+    // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
     addEventForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(addEventForm);
         try {
+            // ИСПРАВЛЕНО: убран credentials: 'include'
             const response = await fetch('/api/events', {
                 method: 'POST',
                 body: formData
+                // credentials: 'include' // <-- УБРАНО: не отправлять куки сессии
             });
 
             if (response.ok) {
@@ -36,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json'
+                                // credentials: 'include' // <-- УБРАНО
                             },
                             body: JSON.stringify({
                                 testName: testName,
@@ -150,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Убедимся, что правильный ответ существует среди вариантов
             if (correctAnswer && options.hasOwnProperty(correctAnswer)) {
                 questions.push({
-                    id: uuidv4(),
+                    id: uuidv4(), // Предполагается, что uuidv4 определена глобально или импортирована
                     text: questionText,
                     options: options,
                     correctAnswer: correctAnswer
@@ -170,6 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadEventsList() {
         try {
+            // ИСПРАВЛЕНО: убран credentials: 'include'
             const response = await fetch('/api/admin/events');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const events = await response.json();
@@ -198,16 +274,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!confirm('Вы уверены, что хотите удалить это мероприятие?')) return;
 
         try {
+            // ИСПРАВЛЕНО: убран credentials: 'include'
             const response = await fetch(`/api/events/${eventId}`, {
                 method: 'DELETE'
+                // credentials: 'include' // <-- УБРАНО: не отправлять куки сессии
             });
 
             if (response.ok) {
-                loadEventsList();
-                errorMessage.style.display = 'none';
+                loadEventsList(); // Обновляем список
+                errorMessage.style.display = 'none'; // Скрываем ошибки
             } else {
-                const errorData = await response.json();
-                errorMessage.textContent = errorData.error || 'Ошибка при удалении мероприятия.';
+                // Обработка ошибки удаления
+                if (response.headers.get("Content-Type")?.includes("application/json")) {
+                    const errorData = await response.json();
+                    errorMessage.textContent = errorData.error || 'Ошибка при удалении мероприятия.';
+                } else {
+                    // Если сервер вернул текст (например, "Unauthorized")
+                    const errorText = await response.text();
+                    console.error("Delete event response (non-JSON):", errorText);
+                    errorMessage.textContent = `Ошибка при удалении: ${errorText}`;
+                }
                 errorMessage.style.display = 'block';
             }
         } catch (error) {
@@ -219,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadRegistrationsList() {
         try {
+            // ИСПРАВЛЕНО: убран credentials: 'include'
             const response = await fetch('/api/admin/registrations');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
@@ -249,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             registrations.forEach(reg => {
                 const row = document.createElement('tr');
+                // Убираем теги <script> из данных (на всякий случай)
                 const safeReg = {
                     id: reg.id,
                     surname: reg.surname.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
@@ -285,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     downloadBtn.addEventListener('click', async () => {
         try {
+            // ИСПРАВЛЕНО: убран credentials: 'include'
             const response = await fetch('/api/admin/registrations');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
