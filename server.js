@@ -1,7 +1,7 @@
 // server.js
 const express = require('express');
 const multer = require('multer');
-const session = require('cookie-session'); // Оставлен для других целей, если понадобится
+const session = require('cookie-session');
 const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
@@ -18,12 +18,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
 
-// Конфигурация сессий - Оставлено, если нужно для других целей
+// Конфигурация сессий
 app.use(session({
     name: 'session',
-    keys: [process.env.SESSION_SECRET || 'your_fallback_secret_key_here'],
-    maxAge: 24 * 60 * 60 * 1000
-    // cookie: { secure: false }
+    keys: [process.env.SESSION_SECRET || 'your_strong_fallback_secret_key_here_change_it'],
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax'
 }));
 
 // --- Проверка и создание папки uploads при запуске ---
@@ -37,7 +39,7 @@ async function ensureUploadsDir() {
             await fs.mkdir(UPLOAD_PATH, { recursive: true });
             console.log("Uploads directory created:", UPLOAD_PATH);
         } else {
-            console.error("Error checking uploads directory:", error);
+            console.error("Error checking/uploads directory:", error);
             throw error;
         }
     }
@@ -47,16 +49,19 @@ async function ensureUploadsDir() {
 async function readData() {
     try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
-        return JSON.parse(data);
+        const parsedData = JSON.parse(data);
+        console.log("Data read successfully from:", DATA_FILE);
+        return parsedData;
     } catch (error) {
+        console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
-                // admin: { login: "admin", password: "password" }, // Убрано
+                admin: { login: "admin", password: "password" },
                 registrations: [],
                 testResults: [],
-                tests: [], // Для хранения тестов
-                about: { // Инициализация данных "О нас"
+                tests: [],
+                about: {
                     inn: "231120569701",
                     phone: "89184455287",
                     address: "г. Краснодар, ул. Виноградная, 58",
@@ -69,9 +74,8 @@ async function readData() {
             return initialData;
         } else if (error instanceof SyntaxError) {
             console.error("Syntax error in data.json:", error.message);
-            return { events: [], registrations: [], testResults: [], tests: [], about: {} };
+            return { events: [], admin: { login: "admin", password: "password" }, registrations: [], testResults: [], tests: [], about: {} };
         } else {
-            console.error("Error reading data file:", error);
             throw error;
         }
     }
@@ -79,25 +83,18 @@ async function readData() {
 
 async function writeData(data) {
     try {
+        console.log("Writing data to:", DATA_FILE);
         await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data written successfully");
+        console.log("Data written successfully to:", DATA_FILE);
     } catch (error) {
         console.error("Error writing data file:", error);
         throw error;
     }
 }
 
-// --- Middleware для проверки администратора (убрана проверка) ---
-// function requireAdmin(req, res, next) {
-//     if (req.session && req.session.adminLoggedIn) {
-//         next();
-//     } else {
-//         res.status(401).send('Unauthorized');
-//     }
-// }
-// Теперь доступ к админке открыт для всех
+// --- Middleware для проверки администратора (открыто для всех) ---
 function allowAll(req, res, next) {
-    next(); // Пропускаем всех
+    next();
 }
 
 // --- Конфигурация multer для загрузки файлов в админке ---
@@ -155,7 +152,6 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
-// --- Маршрут админки теперь доступен всем ---
 app.get('/admin', allowAll, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
@@ -177,7 +173,6 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
-// --- API маршруты админки теперь доступны всем ---
 app.get('/api/admin/events', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -197,8 +192,8 @@ app.get('/api/admin/registrations', allowAll, async (req, res) => {
             testResults: data.testResults || []
         });
     } catch (error) {
-        console.error("Error fetching registrations:", error);
-        res.status(500).json({ error: 'Failed to fetch registrations' });
+        console.error("Error fetching registrations for export:", error);
+        res.status(500).json({ error: 'Failed to fetch registrations for export' });
     }
 });
 
@@ -207,8 +202,22 @@ app.get('/api/admin/test-results', allowAll, async (req, res) => {
         const data = await readData();
         res.json(data.testResults || []);
     } catch (error) {
-        console.error("Error fetching test results:", error);
-        res.status(500).json({ error: 'Failed to fetch test results' });
+        console.error("Error fetching test results for export:", error);
+        res.status(500).json({ error: 'Failed to fetch test results for export' });
+    }
+});
+
+app.get('/api/events/:id', async (req, res) => {
+    try {
+        const data = await readData();
+        const event = data.events.find(e => e.id === req.params.id);
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+        res.json(event);
+    } catch (error) {
+        console.error("Error fetching event:", error);
+        res.status(500).json({ error: 'Failed to fetch event' });
     }
 });
 
@@ -224,7 +233,7 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
         };
         res.json(aboutData);
     } catch (error) {
-        console.error("Error fetching 'about' data:", error);
+        console.error("Error fetching 'about' ", error);
         res.status(500).json({ error: 'Failed to fetch about data' });
     }
 });
@@ -247,30 +256,81 @@ app.post('/api/admin/about', allowAll, async (req, res) => {
         await writeData(data);
         res.json({ success: true });
     } catch (error) {
-        console.error("Error updating 'about' data:", error);
+        console.error("Error updating 'about' ", error);
         res.status(500).json({ error: 'Failed to update about data' });
     }
 });
 
-app.get('/api/events/:id', async (req, res) => {
+// --- ИСПРАВЛЕННЫЕ МАРШРУТЫ ДЛЯ РАБОТЫ С ТЕСТАМИ ---
+
+// Получить тест по ID мероприятия
+app.get('/api/tests/:eventId', async (req, res) => {
     try {
         const data = await readData();
-        const event = data.events.find(e => e.id === req.params.id);
-        if (!event) {
-            return res.status(404).json({ error: 'Event not found' });
+        if (!data.tests) {
+             return res.status(404).json({ error: 'Test not found' });
         }
-        res.json(event);
+        const test = data.tests.find(t => t.eventId === req.params.eventId);
+        if (!test) {
+            return res.status(404).json({ error: 'Test not found for this event' });
+        }
+        res.json(test);
     } catch (error) {
-        console.error("Error fetching event:", error);
-        res.status(500).json({ error: 'Failed to fetch event' });
+        console.error("Error fetching test:", error);
+        res.status(500).json({ error: 'Failed to fetch test' });
     }
 });
 
-// --- Маршруты для работы с тестами ---
+// --- НОВЫЙ маршрут: Создать/Обновить тест для мероприятия ---
+app.put('/api/events/:eventId/test', allowAll, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { testName, questions } = req.body;
+
+        if (!testName || !questions || !Array.isArray(questions)) {
+             return res.status(400).json({ error: 'Test name and questions array are required' });
+        }
+
+        const data = await readData();
+        if (!data.tests) {
+            data.tests = [];
+        }
+
+        // Проверяем, существует ли уже тест для этого мероприятия
+        const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
+        const testData = {
+            id: uuidv4(),
+            eventId: eventId,
+            testName: testName,
+            questions: questions,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        if (existingIndex >= 0) {
+            // Обновляем существующий тест
+            testData.id = data.tests[existingIndex].id; // Сохраняем ID
+            testData.createdAt = data.tests[existingIndex].createdAt; // Сохраняем дату создания
+            data.tests[existingIndex] = testData;
+        } else {
+            // Добавляем новый тест
+            data.tests.push(testData);
+        }
+
+        await writeData(data);
+        res.json({ success: true, test: testData });
+    } catch (error) {
+        console.error("Error saving/updating test:", error);
+        res.status(500).json({ error: 'Failed to save/update test' });
+    }
+});
+
+// --- КОНЕЦ ИСПРАВЛЕННЫХ МАРШРУТОВ ДЛЯ ТЕСТОВ ---
+
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
-        const { name, description, type, subtype, testQuestions } = req.body;
+        const { name, description, type, subtype } = req.body;
 
         const newEvent = {
             id: uuidv4(),
@@ -280,26 +340,6 @@ app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, r
             subtype: subtype || type,
             infoLetterFileName: req.file ? req.file.filename : null
         };
-
-        // Обработка теста для олимпиад
-        if (type === 'olympiad' && testQuestions) {
-            try {
-                const questions = JSON.parse(testQuestions);
-                if (Array.isArray(questions) && questions.length > 0) {
-                    if (!data.tests) data.tests = [];
-                    const testId = uuidv4();
-                    data.tests.push({
-                        id: testId,
-                        eventId: newEvent.id,
-                        testName: `${name} - Тест`,
-                        questions: questions,
-                        createdAt: new Date().toISOString()
-                    });
-                }
-            } catch (parseError) {
-                console.error("Error parsing test questions:", parseError);
-            }
-        }
 
         data.events.push(newEvent);
         await writeData(data);
@@ -327,24 +367,6 @@ app.delete('/api/events/:id', allowAll, async (req, res) => {
     } catch (error) {
         console.error("Error deleting event:", error);
         res.status(500).json({ error: 'Failed to delete event' });
-    }
-});
-
-// --- Получение теста по ID мероприятия ---
-app.get('/api/tests/:eventId', async (req, res) => {
-    try {
-        const data = await readData();
-        if (!data.tests) {
-             return res.status(404).json({ error: 'Test not found' });
-        }
-        const test = data.tests.find(t => t.eventId === req.params.eventId);
-        if (!test) {
-            return res.status(404).json({ error: 'Test not found for this event' });
-        }
-        res.json(test);
-    } catch (error) {
-        console.error("Error fetching test:", error);
-        res.status(500).json({ error: 'Failed to fetch test' });
     }
 });
 
