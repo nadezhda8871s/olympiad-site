@@ -11,109 +11,57 @@
         <h1>Панель управления</h1>
 
         <div id="admin-panel">
-            <!-- Вкладки -->
-            <div class="tabs">
-                <button class="tab-button active" data-tab="events">Мероприятия</button>
-                <button class="tab-button" data-tab="about">О нас</button>
-                <button class="tab-button" data-tab="export">Экспорт</button>
+            <h2>Добавить мероприятие</h2>
+            <form id="add-event-form" enctype="multipart/form-data">
+                <label for="event-name">Название:</label>
+                <input type="text" id="event-name" name="name" required>
+
+                <label for="event-description">Описание:</label>
+                <textarea id="event-description" name="description" required></textarea>
+
+                <label for="event-type">Тип:</label>
+                <select id="event-type" name="type" required>
+                    <option value="olympiad">Олимпиада</option>
+                    <option value="contest">Конкурс</option>
+                    <option value="conference">Конференция</option>
+                </select>
+
+                <label for="event-subtype">Подтип (для фильтрации):</label>
+                <select id="event-subtype" name="subtype">
+                    <option value="">Не указан</option>
+                    <option value="olympiad-students">Студентам, аспирантам</option>
+                    <option value="olympiad-school">Школьникам и СПО</option>
+                    <option value="olympiad-teachers">Научным руководителям, учителям, преподавателям</option>
+                    <option value="contest-article">Статьи</option>
+                    <option value="contest-vkr">ВКР</option>
+                    <option value="conference-science">Научные конференции</option>
+                </select>
+
+                <label for="info-letter-file">Файл информационного письма:</label>
+                <input type="file" id="info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
+
+                <!-- --- Секция для теста (только для олимпиад) --- -->
+                <div id="olympiad-test-section" style="display:none;">
+                    <h3>Вопросы теста</h3>
+                    <div id="questions-container">
+                        <!-- Вопросы будут добавлены сюда -->
+                    </div>
+                    <button type="button" id="add-question-btn">Добавить вопрос</button>
+                </div>
+                <!-- --- Конец секции для теста --- -->
+
+                <button type="submit">Добавить</button>
+            </form>
+
+            <h2>Список мероприятий</h2>
+            <div id="events-list">
+                <!-- Список мероприятий будет вставлен сюда -->
             </div>
 
-            <!-- Содержимое вкладок -->
-            <div class="tab-content">
-
-                <!-- Вкладка: Мероприятия -->
-                <div id="events-tab" class="tab-pane active">
-                    <h2>Добавить мероприятие</h2>
-                    
-                    <!-- Выбор типа мероприятия -->
-                    <label for="event-type-selector">Тип мероприятия:</label>
-                    <select id="event-type-selector">
-                        <option value="olympiad">Олимпиада</option>
-                        <option value="contest">Конкурс</option>
-                        <option value="conference">Конференция</option>
-                    </select>
-                    <br><br>
-
-                    <!-- Форма для добавления мероприятия (изначально показана форма олимпиады) -->
-                    <form id="add-event-form" enctype="multipart/form-data">
-                        <input type="hidden" id="event-type" name="type" value="olympiad"> <!-- Будет меняться JS -->
-
-                        <label for="event-name">Название:</label>
-                        <input type="text" id="event-name" name="name" required>
-
-                        <label for="event-description">Описание:</label>
-                        <textarea id="event-description" name="description" required></textarea>
-
-                        <!-- Subtype (ярлык-фильтр) -->
-                        <label for="event-subtype">Ярлык (для фильтрации):</label>
-                        <select id="event-subtype" name="subtype" required>
-                            <option value="">-- Выберите ярлык --</option>
-                            <option value="olympiad-students">Студентам, аспирантам</option>
-                            <option value="olympiad-school">Школьникам и СПО</option>
-                            <option value="olympiad-teachers">Научным руководителям, учителям, преподавателям</option>
-                            <option value="contest-article">Статьи</option>
-                            <option value="contest-vkr">ВКР</option>
-                            <option value="conference-science">Научные конференции</option>
-                        </select>
-
-                        <!-- Поле для теста (только для олимпиад) -->
-                        <div id="olympiad-test-section" style="display:none;">
-                            <h3>Вопросы теста</h3>
-                            <div id="questions-container">
-                                <!-- Вопросы будут добавлены сюда динамически -->
-                            </div>
-                            <button type="button" id="add-question-btn">Добавить вопрос</button>
-                        </div>
-
-                        <label for="info-letter-file">Файл информационного письма:</label>
-                        <input type="file" id="info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
-
-                        <button type="submit">Добавить</button>
-                    </form>
-
-                    <h2>Список мероприятий</h2>
-                    <div id="events-list">
-                        <!-- Список мероприятий будет вставлен сюда -->
-                    </div>
-                </div>
-
-                <!-- Вкладка: О нас -->
-                <div id="about-tab" class="tab-pane">
-                    <h2>Редактировать "О нас"</h2>
-                    <form id="edit-about-form">
-                        <label for="about-inn">ИНН:</label>
-                        <input type="text" id="about-inn" name="inn" required>
-
-                        <label for="about-phone">Номер телефона:</label>
-                        <input type="text" id="about-phone" name="phone" required>
-
-                        <label for="about-address">Адрес:</label>
-                        <input type="text" id="about-address" name="address" required>
-
-                        <label for="about-email">Email:</label>
-                        <input type="email" id="about-email" name="email" required>
-
-                        <label for="about-requisites">Реквизиты (полный текст):</label>
-                        <textarea id="about-requisites" name="requisites" rows="10" required></textarea>
-
-                        <button type="submit">Сохранить изменения</button>
-                    </form>
-                </div>
-
-                <!-- Вкладка: Экспорт -->
-                <div id="export-tab" class="tab-pane">
-                    <h2>Экспорт данных</h2>
-                    <button id="download-registrations-btn">Скачать Excel (CSV)</button>
-                    <div id="export-info">
-                        <p>Будет создан CSV-файл со следующими данными:</p>
-                        <ul>
-                            <li>Все регистрации пользователей</li>
-                            <li>Результаты тестов (для олимпиад)</li>
-                            <li>Информация о мероприятии, на которое зарегистрировались</li>
-                        </ul>
-                    </div>
-                </div>
-
+            <h2>Список регистраций</h2>
+            <button id="download-registrations-btn">Скачать Excel (CSV)</button>
+            <div id="registrations-list">
+                <!-- Список регистраций будет вставлен сюда -->
             </div>
         </div>
 
