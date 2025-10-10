@@ -56,10 +56,14 @@ async function readData() {
                 events: [],
                 registrations: [],
                 testResults: [],
-                tests: [], // Для хранения тестов
-                about: { // Инициализация данных "О нас"
-                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.",
-                    additionalText: "Дополнительный текст, который будет отображаться над контактными данными."
+                tests: [],
+                about: {
+                    inn: "231120569701",
+                    phone: "89184455287",
+                    address: "г. Краснодар, ул. Виноградная, 58",
+                    email: "vsemnayka@gmail.com",
+                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104",
+                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
                 }
             };
             await writeData(initialData);
@@ -214,13 +218,16 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
-// --- НОВЫЕ API маршруты для работы с "О нас" ---
 app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
         const aboutData = {
-            customText: data.about?.customText || '',
-            additionalText: data.about?.additionalText || ''
+            inn: data.about?.inn || '',
+            phone: data.about?.phone || '',
+            address: data.about?.address || '',
+            email: data.about?.email || '',
+            requisites: data.about?.requisites || '',
+            customText: data.about?.customText || ''
         };
         res.json(aboutData);
     } catch (error) {
@@ -231,15 +238,19 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
 
 app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
-        const { customText, additionalText } = req.body;
+        const { inn, phone, address, email, requisites, customText } = req.body;
         const data = await readData();
 
         if (!data.about) {
             data.about = {};
         }
 
+        data.about.inn = inn;
+        data.about.phone = phone;
+        data.about.address = address;
+        data.about.email = email;
+        data.about.requisites = requisites;
         data.about.customText = customText;
-        data.about.additionalText = additionalText;
 
         await writeData(data);
         res.json({ success: true });
@@ -248,7 +259,6 @@ app.post('/api/admin/about', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to update about data' });
     }
 });
-// --- КОНЕЦ НОВЫХ API маршрутов для "О нас" ---
 
 // --- НОВЫЙ маршрут: Получить тест по ID мероприятия ---
 app.get('/api/tests/:eventId', async (req, res) => {
@@ -273,7 +283,7 @@ app.get('/api/tests/:eventId', async (req, res) => {
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
-        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+        const { name, description, type, subtype } = req.body;
 
         const newEvent = {
             id: uuidv4(),
@@ -292,14 +302,13 @@ app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, r
         res.status(500).json({ error: 'Failed to add event' });
     }
 });
-// --- КОНЕЦ НОВОГО маршрута ---
 
 // --- НОВЫЙ маршрут: Обновить мероприятие ---
 app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
         const eventId = req.params.id;
-        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+        const { name, description, type, subtype } = req.body;
 
         const eventIndex = data.events.findIndex(e => e.id === eventId);
         if (eventIndex === -1) {
@@ -316,41 +325,6 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
         };
 
         data.events[eventIndex] = updatedEvent;
-
-        // Обработка теста для олимпиад при обновлении
-        if (type === 'olympiad' && testQuestions) {
-            try {
-                const questions = JSON.parse(testQuestions);
-                if (Array.isArray(questions) && questions.length > 0) {
-                    if (!data.tests) data.tests = [];
-                    // Проверяем, существует ли уже тест для этого мероприятия
-                    const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
-                    const testData = {
-                        id: uuidv4(),
-                        eventId: eventId,
-                        testName: `${name} - Тест (Обновлён)`,
-                        questions: questions, // Массив объектов вопросов
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    };
-
-                    if (existingIndex >= 0) {
-                        // Обновляем существующий тест
-                        testData.id = data.tests[existingIndex].id; // Сохраняем ID
-                        testData.createdAt = data.tests[existingIndex].createdAt; // Сохраняем дату создания
-                        data.tests[existingIndex] = testData;
-                    } else {
-                        // Добавляем новый тест
-                        data.tests.push(testData);
-                    }
-                }
-            } catch (parseError) {
-                console.error("Error parsing test questions for update:", parseError);
-                // Можно вернуть ошибку, если тест обязателен
-                // return res.status(400).json({ error: 'Некорректный формат данных теста при обновлении.' });
-            }
-        }
-
         await writeData(data);
         res.json({ success: true, event: updatedEvent });
     } catch (error) {
@@ -358,7 +332,6 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
         res.status(500).json({ error: 'Failed to update event' });
     }
 });
-// --- КОНЕЦ НОВОГО маршрута ---
 
 // --- НОВЫЙ маршрут: Удалить мероприятие ---
 app.delete('/api/events/:id', allowAll, async (req, res) => {
@@ -379,6 +352,50 @@ app.delete('/api/events/:id', allowAll, async (req, res) => {
     } catch (error) {
         console.error("Error deleting event:", error);
         res.status(500).json({ error: 'Failed to delete event' });
+    }
+});
+
+// --- НОВЫЙ маршрут: Создать/Обновить тест для мероприятия ---
+app.put('/api/events/:eventId/test', allowAll, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { testName, questions } = req.body;
+
+        if (!testName || !questions || !Array.isArray(questions)) {
+             return res.status(400).json({ error: 'Test name and questions array are required' });
+        }
+
+        const data = await readData();
+        if (!data.tests) {
+            data.tests = [];
+        }
+
+        // Проверяем, существует ли уже тест для этого мероприятия
+        const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
+        const testData = {
+            id: uuidv4(),
+            eventId: eventId,
+            testName: testName,
+            questions: questions,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        if (existingIndex >= 0) {
+            // Обновляем существующий тест
+            testData.id = data.tests[existingIndex].id; // Сохраняем ID
+            testData.createdAt = data.tests[existingIndex].createdAt; // Сохраняем дату создания
+            data.tests[existingIndex] = testData;
+        } else {
+            // Добавляем новый тест
+            data.tests.push(testData);
+        }
+
+        await writeData(data);
+        res.json({ success: true, test: testData });
+    } catch (error) {
+        console.error("Error saving/updating test:", error);
+        res.status(500).json({ error: 'Failed to save/update test' });
     }
 });
 // --- КОНЕЦ НОВОГО маршрута ---
