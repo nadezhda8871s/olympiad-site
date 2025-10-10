@@ -1,8 +1,8 @@
 // public/js/about.js
 document.addEventListener('DOMContentLoaded', () => {
     const aboutSection = document.querySelector('.about-section');
-    const editableTextContainer = document.getElementById('editable-about-text-container');
-    const editableTextParagraph = document.getElementById('editable-about-text');
+    const editableTextArea = document.getElementById('editable-about-text');
+    const saveButton = document.getElementById('save-about-btn');
     const innSpan = document.getElementById('about-inn');
     const phoneSpan = document.getElementById('about-phone');
     const addressSpan = document.getElementById('about-address');
@@ -30,11 +30,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Заполняем редактируемое поле
             // Предположим, что в `aboutData` есть поле `customText`
-            editableTextParagraph.textContent = aboutData.customText || 'Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.';
+            editableTextArea.value = aboutData.customText || 'Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.';
 
+            // --- НОВОЕ: Добавляем обработчик для редактирования ---
+            // Пока что просто делаем поле доступным для редактирования
+            // В реальном приложении здесь должна быть логика аутентификации
+            editableTextArea.readOnly = false; // Разрешаем редактирование
+            // Показываем кнопку сохранения
+            saveButton.style.display = 'block';
+            // Добавляем обработчик события для кнопки сохранения
+            saveButton.addEventListener('click', saveAboutText);
+            // --- КОНЕЦ НОВОГО ---
+            
         } catch (error) {
             console.error("Error loading 'about' ", error);
             // Можно показать сообщение об ошибке пользователю
         }
     }
+
+    // --- НОВАЯ ФУНКЦИЯ: Сохранение текста "О нас" ---
+    async function saveAboutText() {
+        const newCustomText = editableTextArea.value.trim();
+        
+        try {
+            const response = await fetch('/api/admin/about/custom-text', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ customText: newCustomText })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    alert('Текст "О нас" успешно обновлён!');
+                    // Перезагружаем данные, чтобы убедиться, что они сохранились
+                    loadAboutData();
+                } else {
+                    alert('Ошибка при обновлении текста "О нас".');
+                }
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || 'Ошибка при обновлении текста "О нас".');
+            }
+        } catch (error) {
+            console.error("Save about text error:", error);
+            alert('Ошибка сети при обновлении текста "О нас".');
+        }
+    }
+    // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
 });
