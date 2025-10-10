@@ -1,32 +1,26 @@
 // public/js/main.js
 document.addEventListener('DOMContentLoaded', () => {
     const eventsContainer = document.getElementById('events-container');
-    const filtersContainer = document.querySelector('.filters');
-    const searchInput = document.getElementById('search-input');
+    const searchInput = document.getElementById('search-input-main');
+    const searchButton = document.getElementById('search-button-main');
     const errorMessage = document.getElementById('error-message'); // Предполагается, что есть элемент для ошибок
 
     // Загружаем мероприятия при загрузке страницы
     loadEvents();
 
-    // Обработчики для фильтров (если они есть на странице)
-    if (filtersContainer) {
-        const filterButtons = filtersContainer.querySelectorAll('.filter-btn');
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                const type = button.getAttribute('data-type');
-                filterEvents(type);
-            });
-        });
-    }
+    // Обработчик для поиска
+    searchButton.addEventListener('click', () => {
+        const query = searchInput.value.trim();
+        filterEventsBySearch(query);
+    });
 
-    // Обработчик для поиска (если он есть на странице)
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            filterEventsBySearch(e.target.value);
-        });
-    }
+    // Обработчик для поиска по нажатию Enter
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const query = searchInput.value.trim();
+            filterEventsBySearch(query);
+        }
+    });
 
     // --- Убедимся, что goToRegistration доступна глобально ---
     window.goToRegistration = function(eventId) {
@@ -84,27 +78,13 @@ function displayEvents(events) {
     });
 }
 
-function filterEvents(filterType) {
-    if (!window.originalEvents) {
-        console.error("Original events list not available");
-        return;
-    }
-    // Предполагаем, что subtype совпадает с filterType
-    // Для "все" показываем все мероприятия
-    const filtered = filterType === 'all' ? window.originalEvents : window.originalEvents.filter(e => e.subtype === filterType);
-    displayEvents(filtered);
-}
-
 function filterEventsBySearch(query) {
     if (!window.originalEvents) {
         console.error("Original events list not available");
         return;
     }
-    if (!query) {
-        // Если запрос пустой, показываем все мероприятия
-        displayEvents(window.originalEvents);
-        return;
-    }
+    // Предполагаем, что в `originalEvents` есть поле `tests`
+    // Для "все" показываем все мероприятия
     const filtered = window.originalEvents.filter(e =>
         e.name.toLowerCase().includes(query.toLowerCase()) ||
         e.description.toLowerCase().includes(query.toLowerCase())
