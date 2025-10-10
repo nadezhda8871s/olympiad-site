@@ -17,11 +17,7 @@
       "infoLetterFileName": "info_contest_article_example.docx"
     }
   ],
-  "admin": {
-    "login": "admin",
-    "password": "password"
-  },
-  "registrations": [],
+   "registrations": [],
   "testResults": [],
   "tests": [],
   "about": {
