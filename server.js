@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
 
-// Конфигурация сессий (может остаться для других целей, если понадобится)
+// Конфигурация сессий
 app.use(session({
     name: 'session',
     keys: [process.env.SESSION_SECRET || 'your_strong_fallback_secret_key_here_change_it'],
@@ -51,15 +51,14 @@ async function readData() {
         const data = await fs.readFile(DATA_FILE, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
-                // admin: { login: "admin", password: "password" }, // Удалено
+                admin: { login: "admin", password: "password" },
                 registrations: [],
                 testResults: [],
-                tests: [], // Для хранения тестов
-                about: { // Инициализация данных "О нас"
+                tests: [],
+                about: {
                     inn: "231120569701",
                     phone: "89184455287",
                     address: "г. Краснодар, ул. Виноградная, 58",
@@ -72,8 +71,9 @@ async function readData() {
             return initialData;
         } else if (error instanceof SyntaxError) {
             console.error("Syntax error in data.json:", error.message);
-            return { events: [], registrations: [], testResults: [], tests: [], about: {} }; // Упрощено
+            return { events: [], admin: { login: "admin", password: "password" }, registrations: [], testResults: [], tests: [], about: {} };
         } else {
+            console.error("Error reading data file:", error);
             throw error;
         }
     }
@@ -89,15 +89,15 @@ async function writeData(data) {
     }
 }
 
-// --- Middleware для проверки администратора (убрана проверка) ---
+// --- Middleware для проверки администратора (открыто для всех) ---
 function allowAll(req, res, next) {
-    next(); // Разрешаем доступ всем
+    next();
 }
 
 // --- Конфигурация multer для загрузки файлов в админке ---
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, UPLOAD_PATH); // Загружаем в public/uploads
+        cb(null, UPLOAD_PATH);
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -149,7 +149,6 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
-// --- Админка теперь доступна всем ---
 app.get('/admin', allowAll, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
@@ -171,7 +170,6 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
-// --- API маршруты админки теперь доступны всем ---
 app.get('/api/admin/events', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -220,10 +218,6 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
-// --- НОВЫЕ API маршруты для работы с "О нас" ---
-// --- Теперь доступны всем ---
-
-// Получить данные "О нас"
 app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -241,7 +235,6 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
     }
 });
 
-// Обновить данные "О нас"
 app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
         const { inn, phone, address, email, requisites } = req.body;
@@ -264,7 +257,6 @@ app.post('/api/admin/about', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to update about data' });
     }
 });
-// --- КОНЕЦ НОВЫХ API маршрутов для "О нас" ---
 
 // --- НОВЫЕ API маршруты для работы с тестами ---
 
@@ -331,7 +323,7 @@ app.put('/api/events/:eventId/test', allowAll, async (req, res) => {
 });
 // --- КОНЕЦ НОВЫХ API маршрутов для тестов ---
 
-// Добавить мероприятие (теперь доступно всем)
+// --- НОВЫЙ маршрут: Добавить мероприятие ---
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
@@ -355,7 +347,38 @@ app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, r
     }
 });
 
-// Удалить мероприятие (теперь доступно всем)
+// --- НОВЫЙ маршрут: Обновить мероприятие ---
+app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req, res) => {
+    try {
+        const data = await readData();
+        const eventId = req.params.id;
+        const { name, description, type, subtype } = req.body;
+
+        const eventIndex = data.events.findIndex(e => e.id === eventId);
+        if (eventIndex === -1) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const updatedEvent = {
+            id: eventId,
+            name: name,
+            description: description,
+            type: type,
+            subtype: subtype || type,
+            infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
+        };
+
+        data.events[eventIndex] = updatedEvent;
+        await writeData(data);
+        res.json({ success: true, event: updatedEvent });
+    } catch (error) {
+        console.error("Error updating event:", error);
+        res.status(500).json({ error: 'Failed to update event' });
+    }
+});
+// --- КОНЕЦ НОВОГО маршрута: Обновить мероприятие ---
+
+// --- НОВЫЙ маршрут: Удалить мероприятие ---
 app.delete('/api/events/:id', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -376,6 +399,7 @@ app.delete('/api/events/:id', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to delete event' });
     }
 });
+// --- КОНЕЦ НОВОГО маршрута: Удалить мероприятие ---
 
 app.post('/api/test-results', async (req, res) => {
     try {
