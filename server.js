@@ -54,12 +54,12 @@ async function readData() {
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
-                // admin: { login: "admin", password: "password" }, // Удалено
+                // admin: { login: "admin", password: "password" }, // УДАЛЕНО
                 registrations: [],
                 testResults: [],
                 tests: [], // Для хранения тестов
                 about: {
-                    // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
+                    // УДАЛЕНО: Все реквизиты и ООО "РУБИКОН-ПРИНТ"
                     customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
                 }
             };
@@ -146,7 +146,6 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
-// Страница администратора - теперь доступна всем, без проверки сессии
 app.get('/admin', allowAll, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
@@ -168,7 +167,6 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
-// Получить все мероприятия (для админки - теперь доступно без аутентификации)
 app.get('/api/admin/events', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -179,7 +177,6 @@ app.get('/api/admin/events', allowAll, async (req, res) => {
     }
 });
 
-// Получить регистрации (для админки - теперь доступно без аутентификации)
 app.get('/api/admin/registrations', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -194,7 +191,6 @@ app.get('/api/admin/registrations', allowAll, async (req, res) => {
     }
 });
 
-// Получить результаты тестов (для админки - теперь доступно без аутентификации)
 app.get('/api/admin/test-results', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -227,7 +223,7 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
         const data = await readData();
         const aboutData = {
             customText: data.about?.customText || '',
-            // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
+            // УДАЛЕНО: Все реквизиты и ООО "РУБИКОН-ПРИНТ"
         };
         res.json(aboutData);
     } catch (error) {
@@ -246,7 +242,7 @@ app.post('/api/admin/about', allowAll, async (req, res) => {
             data.about = {};
         }
 
-        // Удалены реквизиты и ООО "РУБИКОН-ПРИНТ"
+        // УДАЛЕНО: Все реквизиты и ООО "РУБИКОН-ПРИНТ"
         data.about.customText = customText;
 
         await writeData(data);
@@ -281,7 +277,7 @@ app.get('/api/tests/:eventId', async (req, res) => {
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
-        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+        const { name, description, type, subtype, testQuestions } = req.body; // subtype и testQuestions добавлены
 
         const newEvent = {
             id: uuidv4(),
@@ -329,7 +325,7 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
     try {
         const data = await readData();
         const eventId = req.params.id;
-        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+        const { name, description, type, subtype, testQuestions } = req.body; // subtype и testQuestions добавлены
 
         const eventIndex = data.events.findIndex(e => e.id === eventId);
         if (eventIndex === -1) {
@@ -356,12 +352,12 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
                     // Проверяем, существует ли уже тест для этого мероприятия
                     const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
                     const testData = {
-                        id: uuidv4(), // Новый ID для теста
+                        id: uuidv4(),
                         eventId: eventId,
                         testName: `${name} - Тест (Обновлён)`,
                         questions: questions, // Массив объектов вопросов
                         createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString() // Добавлено поле обновления
+                        updatedAt: new Date().toISOString()
                     };
 
                     if (existingIndex >= 0) {
