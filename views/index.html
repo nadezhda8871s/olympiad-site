@@ -26,19 +26,6 @@
             <p>Документы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.</p>
         </section>
 
-        <!-- --- НОВЫЙ РАЗДЕЛ: Поиск мероприятий --- -->
-        <section class="search-section">
-            <h2>Поиск мероприятий</h2>
-            <div class="search-container">
-                <input type="text" id="search-input-main" placeholder="Введите любое ключевое слово">
-                <button id="search-button-main">Найти</button>
-            </div>
-            <div id="search-results-main">
-                <!-- Результаты поиска будут отображаться здесь -->
-            </div>
-        </section>
-        <!-- --- КОНЕЦ НОВОГО РАЗДЕЛА --- -->
-
         <section class="event-buttons">
             <a href="/olympiads" class="event-btn btn-olympiads">Олимпиады для школьников, СПО, студентов, аспирантов</a>
             <a href="/contests" class="event-btn btn-contests">Конкурсы научных работ, СТАТЕЙ, ВКР</a>
@@ -60,79 +47,5 @@
     </footer>
 
     <script src="/js/main.js"></script>
-    <script>
-        // При загрузке страницы загружаем мероприятия для главной страницы
-        document.addEventListener('DOMContentLoaded', () => {
-            loadEvents(); // Загружаем все мероприятия
-            
-            // --- НОВАЯ ЛОГИКА ПОИСКА НА ГЛАВНОЙ ---
-            const searchInput = document.getElementById('search-input-main');
-            const searchButton = document.getElementById('search-button-main');
-            const searchResultsDiv = document.getElementById('search-results-main');
-
-            async function performSearch(query) {
-                if (!query) {
-                    searchResultsDiv.innerHTML = '';
-                    searchResultsDiv.style.display = 'none';
-                    return;
-                }
-
-                try {
-                    // Получаем все мероприятия с сервера
-                    const response = await fetch('/api/events');
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    const allEvents = await response.json();
-
-                    // Простой поиск по подстроке в названии (регистрозависимый)
-                    // Для более сложного поиска (по однокоренным словам) потребовалась бы библиотека типа Fuse.js или серверный поиск.
-                    // Пока реализуем базовый вариант.
-                    const results = allEvents.filter(event => 
-                        event.name.toLowerCase().includes(query.toLowerCase())
-                    );
-
-                    if (results.length === 0) {
-                        searchResultsDiv.innerHTML = '<p>Мероприятия не найдены.</p>';
-                    } else {
-                        searchResultsDiv.innerHTML = ''; // Очищаем результаты
-                        const resultsContainer = document.createElement('div');
-                        resultsContainer.className = 'events-grid'; // Используем ту же сетку, что и для актуальных
-                        
-                        results.forEach(event => {
-                            const eventCard = document.createElement('div');
-                            eventCard.className = 'event-card';
-                            eventCard.innerHTML = `
-                                <h3>${event.name}</h3>
-                                <p class="event-description">${event.description.substring(0, 100)}...</p>
-                                <div class="event-actions">
-                                    ${event.infoLetterFileName ? `<a href="/uploads/${event.infoLetterFileName}" class="btn-info" target="_blank">Информационное письмо</a>` : '<span>Письмо скоро</span>'}
-                                    <button class="btn-register" onclick="goToRegistration('${event.id}')">Регистрация</button>
-                                </div>
-                            `;
-                            resultsContainer.appendChild(eventCard);
-                        });
-                        searchResultsDiv.appendChild(resultsContainer);
-                    }
-                    searchResultsDiv.style.display = 'block';
-                } catch (error) {
-                    console.error("Search error:", error);
-                    searchResultsDiv.innerHTML = '<p>Ошибка при поиске.</p>';
-                    searchResultsDiv.style.display = 'block';
-                }
-            }
-
-            searchButton.addEventListener('click', () => {
-                const query = searchInput.value.trim();
-                performSearch(query);
-            });
-
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    const query = searchInput.value.trim();
-                    performSearch(query);
-                }
-            });
-            // --- КОНЕЦ НОВОЙ ЛОГИКИ ПОИСКА ---
-        });
-    </script>
 </body>
 </html>
