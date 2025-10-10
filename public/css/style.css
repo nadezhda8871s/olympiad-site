@@ -1,33 +1,32 @@
 /* public/css/style.css */
 :root {
-    --primary-color: #6a11cb;
-    --primary-light: #2575fc;
-    --primary-dark: #4a00e0;
-    --secondary-color: #8e2de2;
-    --secondary-light: #4a00e0;
-    --success-color: #00b09b;
-    --warning-color: #ff9a00;
-    --danger-color: #ff5e62;
+    --primary-color: #007bff;
+    --primary-light: #00aaff;
+    --primary-dark: #0056b3;
+    --secondary-color: #6f42c1;
+    --secondary-light: #8a6cff;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --warning-dark: #e0a800;
+    --danger-color: #dc3545;
     --light-bg: #f8f9fa;
     --dark-bg: #343a40;
     --text-light: #ffffff;
     --text-dark: #212529;
     --border-color: #dee2e6;
-    --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    --card-shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.2);
+    --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    --card-shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.15);
     --transition: all 0.3s ease;
-    --page-primary: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --page-primary: #f4f4f4;
     --page-secondary: #e9ecef;
     --text-primary: #212529;
     --text-secondary: #6c757d;
     --border-primary: #ced4da;
-    --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     --gradient-secondary: linear-gradient(135deg, var(--secondary-color), var(--secondary-light));
-    --gradient-success: linear-gradient(135deg, var(--success-color), #007a6d);
-    --gradient-warning: linear-gradient(135deg, var(--warning-color), #e68a00);
-    --gradient-danger: linear-gradient(135deg, var(--danger-color), #e02d31);
-    --font-primary: 'Roboto', sans-serif;
-    --font-secondary: 'Montserrat', sans-serif;
+    --gradient-success: linear-gradient(120deg, var(--success-color), #218838);
+    --gradient-warning: linear-gradient(120deg, var(--warning-color), var(--warning-dark));
+    --gradient-danger: linear-gradient(120deg, var(--danger-color), #c82333);
 }
 
 * {
@@ -37,33 +36,21 @@
 }
 
 body {
-    font-family: var(--font-primary);
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background: var(--page-primary);
+    background-color: var(--page-primary);
     color: var(--text-primary);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    animation: fadeIn 1s ease-in-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
 }
 
 header {
-    background: var(--gradient-primary);
+    background: linear-gradient(to right, var(--dark-bg), var(--primary-dark));
     color: var(--text-light);
     padding: 1em 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    animation: slideDown 0.5s ease-out;
-}
-
-@keyframes slideDown {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(0); }
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 nav ul {
@@ -83,16 +70,13 @@ nav ul li a {
     color: var(--text-light);
     text-decoration: none;
     padding: 0.5em 1em;
-    border-radius: 20px;
+    border-radius: 5px;
     transition: var(--transition);
-    font-family: var(--font-secondary);
-    font-weight: 500;
 }
 
 nav ul li a:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 main {
@@ -101,36 +85,21 @@ main {
     margin: 0 auto;
     flex: 1;
     width: 100%;
-    animation: slideUp 0.7s ease-out;
-}
-
-@keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
 }
 
 .hero {
     text-align: center;
     margin-bottom: 2em;
-    padding: 2em;
-    background: var(--gradient-secondary);
+    padding: 1.5em;
+    background: linear-gradient(120deg, var(--primary-color), var(--secondary-color));
     color: var(--text-light);
-    border-radius: 15px;
+    border-radius: 10px;
     box-shadow: var(--card-shadow);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { box-shadow: var(--card-shadow); }
-    50% { box-shadow: var(--card-shadow-hover); }
-    100% { box-shadow: var(--card-shadow); }
 }
 
 .hero h1 {
     font-size: 2.5em;
     margin-bottom: 0.5em;
-    font-family: var(--font-secondary);
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
 .hero p {
@@ -138,89 +107,19 @@ main {
     margin-bottom: 0.25em;
 }
 
-/* --- Стили для страницы "О нас" --- */
-.about-section {
-    background-color: var(--text-light);
-    padding: 2em;
-    border-radius: 10px;
-    box-shadow: var(--card-shadow);
-    margin-bottom: 2em;
-    animation: fadeInUp 1s ease-out;
-}
-
-@keyframes fadeInUp {
-    from { transform: translateY(30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.about-section h1,
-.about-section h2 {
-    color: var(--primary-dark);
-    margin-bottom: 1em;
-    font-family: var(--font-secondary);
-    text-align: center;
-}
-
-.about-section p {
-    margin-bottom: 1em;
-    line-height: 1.6;
-}
-
-.about-section textarea#editable-about-text {
-    width: 100%;
-    height: 200px;
-    padding: 1em;
-    border: 1px solid var(--border-primary);
-    border-radius: 5px;
-    font-family: inherit;
-    resize: vertical;
-    background-color: rgba(255, 255, 255, 0.8);
-    color: var(--text-primary);
-    transition: border-color var(--transition);
-}
-
-.about-section textarea#editable-about-text:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(106, 17, 203, 0.25);
-}
-
-.about-section button#save-about-btn {
-    background: var(--gradient-success);
-    color: var(--text-light);
-    padding: 0.75em 1.5em;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: var(--transition);
-    font-weight: bold;
-    margin-top: 1em;
-    font-family: var(--font-secondary);
-    box-shadow: var(--card-shadow);
-}
-
-.about-section button#save-about-btn:hover {
-    background: linear-gradient(135deg, #007a6d, var(--success-color));
-    transform: scale(1.05);
-    box-shadow: var(--card-shadow-hover);
-}
-/* --- Конец стилей для "О нас" --- */
-
-/* --- Стили для поиска мероприятий на главной --- */
+/* --- НОВЫЕ СТИЛИ ДЛЯ ПОИСКА НА ГЛАВНОЙ --- */
 .search-section {
     margin-bottom: 2em;
     padding: 1em;
     background-color: var(--page-secondary);
     border-radius: 8px;
     box-shadow: var(--card-shadow);
-    animation: fadeIn 1s ease-in-out;
 }
 
 .search-section h2 {
     text-align: center;
     margin-bottom: 1em;
     color: var(--primary-dark);
-    font-family: var(--font-secondary);
 }
 
 .search-container {
@@ -241,18 +140,17 @@ main {
     background-color: rgba(255, 255, 255, 0.8);
     color: var(--text-primary);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    font-family: inherit;
 }
 
 #search-input-main:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(106, 17, 203, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 #search-button-main {
     padding: 0.75em 1.5em;
-    background: var(--gradient-primary);
+    background: linear-gradient(120deg, var(--primary-color), var(--primary-dark));
     color: var(--text-light);
     border: none;
     border-radius: 25px;
@@ -260,20 +158,16 @@ main {
     font-size: 1em;
     font-weight: bold;
     transition: var(--transition);
-    font-family: var(--font-secondary);
-    box-shadow: var(--card-shadow);
 }
 
 #search-button-main:hover {
-    background: var(--gradient-secondary);
+    background: linear-gradient(120deg, var(--primary-light), var(--primary-color));
     transform: scale(1.02);
-    box-shadow: var(--card-shadow-hover);
 }
 
 #search-results-main {
     display: none;
     margin-top: 1em;
-    animation: fadeIn 0.5s ease-in-out;
 }
 
 .events-grid {
@@ -281,7 +175,7 @@ main {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5em;
 }
-/* --- Конец стилей для поиска --- */
+/* --- КОНЕЦ НОВЫХ СТИЛЕЙ ДЛЯ ПОИСКА --- */
 
 .event-buttons {
     display: grid;
@@ -296,14 +190,13 @@ main {
     text-align: center;
     text-decoration: none;
     color: var(--text-light);
-    border-radius: 10px;
+    border-radius: 5px;
     transition: var(--transition);
     box-shadow: var(--card-shadow);
     font-weight: bold;
     position: relative;
     overflow: hidden;
     z-index: 1;
-    font-family: var(--font-secondary);
 }
 
 .event-btn::before {
@@ -319,26 +212,27 @@ main {
 }
 
 .event-btn:hover {
+    opacity: 0.8;
     transform: translateY(-5px);
     box-shadow: var(--card-shadow-hover);
+    background: linear-gradient(120deg, var(--primary-light), var(--primary-color));
 }
 
 .event-btn:hover::before {
     opacity: 0;
 }
 
-.btn-olympiads { background: var(--gradient-primary); }
-.btn-contests { background: var(--gradient-success); }
-.btn-conferences { background: var(--gradient-warning); color: var(--text-dark); }
-.btn-monographs { background: var(--gradient-secondary); }
-.btn-journal { background: var(--gradient-danger); }
+.btn-olympiads { background: linear-gradient(120deg, var(--primary-color), var(--primary-dark)); }
+.btn-contests { background: linear-gradient(120deg, var(--success-color), #218838); }
+.btn-conferences { background: linear-gradient(120deg, var(--warning-color), var(--warning-dark)); color: var(--text-dark); }
+.btn-monographs { background: linear-gradient(120deg, var(--secondary-color), #5a32a3); }
+.btn-journal { background: linear-gradient(120deg, var(--danger-color), #c82333); }
 
 .events-section h2 {
     text-align: center;
     margin-bottom: 1em;
     font-size: 1.8em;
     color: var(--primary-dark);
-    font-family: var(--font-secondary);
 }
 
 #events-container {
@@ -350,14 +244,13 @@ main {
 .event-card {
     background-color: var(--text-light);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 1.5em;
+    border-radius: 5px;
+    padding: 1em;
     box-shadow: var(--card-shadow);
     transition: var(--transition);
     display: flex;
     flex-direction: column;
     height: 100%;
-    animation: fadeIn 0.5s ease-in-out;
 }
 
 .event-card:hover {
@@ -367,45 +260,41 @@ main {
 
 .event-card h3 {
     margin-top: 0;
-    margin-bottom: 0.75em;
+    margin-bottom: 0.5em;
     color: var(--primary-color);
     font-size: 1.3em;
-    font-family: var(--font-secondary);
 }
 
 .event-card .event-description {
     margin: 0.5em 0;
     flex-grow: 1;
-    line-height: 1.5;
 }
 
 .event-card .event-actions {
     display: flex;
-    gap: 0.75em;
+    gap: 0.5em;
     justify-content: space-between;
     margin-top: auto;
 }
 
 .event-card .event-actions button,
 .event-card .event-actions a {
-    padding: 0.75em 1em;
+    padding: 0.5em 1em;
     text-decoration: none;
     border: none;
-    border-radius: 5px;
+    border-radius: 3px;
     cursor: pointer;
     transition: var(--transition);
     font-weight: 500;
     flex: 1;
     text-align: center;
-    font-family: var(--font-secondary);
-    box-shadow: var(--card-shadow);
 }
 
-.btn-info { background: var(--gradient-primary); color: var(--text-light); }
-.btn-info:hover { background: var(--gradient-secondary); transform: scale(1.02); box-shadow: var(--card-shadow-hover); }
+.btn-info { background: linear-gradient(120deg, #17a2b8, #138496); color: var(--text-light); }
+.btn-info:hover { background: linear-gradient(120deg, #138496, #117a8b); }
 
-.btn-register { background: var(--gradient-success); color: var(--text-light); }
-.btn-register:hover { background: linear-gradient(135deg, #007a6d, var(--success-color)); transform: scale(1.02); box-shadow: var(--card-shadow-hover); }
+.btn-register { background: linear-gradient(120deg, var(--success-color), #218838); color: var(--text-light); }
+.btn-register:hover { background: linear-gradient(120deg, #218838, #1e7e34); }
 
 /* Фильтры и поиск */
 .filters {
@@ -417,7 +306,7 @@ main {
 }
 
 .filter-btn {
-    padding: 0.75em 1.25em;
+    padding: 0.5em 1em;
     border: 1px solid var(--primary-color);
     background-color: var(--text-light);
     color: var(--primary-color);
@@ -425,15 +314,11 @@ main {
     border-radius: 20px;
     transition: var(--transition);
     font-weight: 500;
-    font-family: var(--font-secondary);
-    box-shadow: var(--card-shadow);
 }
 
 .filter-btn:hover {
     background-color: var(--primary-color);
     color: var(--text-light);
-    transform: scale(1.02);
-    box-shadow: var(--card-shadow-hover);
 }
 
 .filter-btn.active {
@@ -443,10 +328,10 @@ main {
 
 #search-input {
     width: 100%;
-    padding: 0.75em;
+    padding: 0.5em;
     margin-bottom: 1em;
-    border: 2px solid var(--border-color);
-    border-radius: 25px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
     transition: border-color var(--transition);
     font-family: inherit;
     font-size: 1em;
@@ -457,7 +342,7 @@ main {
 #search-input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(106, 17, 203, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 /* Формы */
@@ -468,7 +353,6 @@ form {
     padding: 2em;
     border-radius: 10px;
     box-shadow: var(--card-shadow);
-    animation: fadeIn 0.5s ease-in-out;
 }
 
 form label {
@@ -476,17 +360,16 @@ form label {
     margin-bottom: 0.5em;
     font-weight: bold;
     color: var(--text-dark);
-    font-family: var(--font-secondary);
 }
 
 form input,
 form textarea,
 form select {
     width: 100%;
-    padding: 0.75em;
+    padding: 0.5em;
     margin-bottom: 1em;
-    border: 2px solid var(--border-color);
-    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
     box-sizing: border-box;
     transition: border-color var(--transition);
     font-family: inherit;
@@ -500,53 +383,47 @@ form textarea:focus,
 form select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(106, 17, 203, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 form button {
-    background: var(--gradient-primary);
+    background: linear-gradient(120deg, var(--primary-color), var(--primary-dark));
     color: var(--text-light);
-    padding: 0.85em 1.5em;
+    padding: 0.75em 1.5em;
     border: none;
-    border-radius: 25px;
+    border-radius: 3px;
     cursor: pointer;
     transition: var(--transition);
     width: 100%;
     font-size: 1.1em;
     font-weight: bold;
-    font-family: var(--font-secondary);
-    box-shadow: var(--card-shadow);
 }
 
 form button:hover {
-    background: var(--gradient-secondary);
+    background: linear-gradient(120deg, var(--primary-light), var(--primary-color));
     transform: scale(1.02);
-    box-shadow: var(--card-shadow-hover);
 }
 
 footer {
-    background: var(--gradient-primary);
+    background: linear-gradient(to right, var(--dark-bg), var(--primary-dark));
     color: var(--text-light);
     text-align: center;
-    padding: 1.5em 0;
+    padding: 1em 0;
     margin-top: auto;
-    font-family: var(--font-secondary);
-    animation: slideUp 1s ease-out;
 }
 
 /* Админка */
 #admin-panel {
-    max-width: 1000px;
+    max-width: 800px;
     margin: 0 auto;
     background-color: var(--text-light);
     padding: 2em;
     border-radius: 10px;
     box-shadow: var(--card-shadow);
-    animation: fadeIn 0.5s ease-in-out;
 }
 
 #events-list,
-#registrations-list {
+#registrations-list { /* Стили для обоих списков */
     margin-top: 1em;
 }
 
@@ -560,30 +437,25 @@ footer {
     justify-content: space-between;
     align-items: center;
     transition: var(--transition);
-    animation: fadeIn 0.3s ease-in-out;
 }
 
 .event-item:hover {
     background-color: #e9ecef;
-    transform: scale(1.01);
 }
 
 .event-item button {
-    background: var(--gradient-danger);
+    background: linear-gradient(120deg, var(--danger-color), #bd2130);
     color: var(--text-light);
     border: none;
     padding: 0.5em 1em;
     border-radius: 3px;
     cursor: pointer;
     transition: var(--transition);
-    font-family: var(--font-secondary);
-    box-shadow: var(--card-shadow);
 }
 
 .event-item button:hover {
-    background: linear-gradient(135deg, #e02d31, var(--danger-color));
+    background: linear-gradient(120deg, #bd2130, #a71d2a);
     transform: scale(1.05);
-    box-shadow: var(--card-shadow-hover);
 }
 
 /* --- НОВЫЕ стили для таблицы регистраций и кнопки --- */
@@ -591,84 +463,73 @@ footer {
      width: 100%;
      border-collapse: collapse;
      margin-top: 1em;
-     animation: fadeIn 0.5s ease-in-out;
 }
 
 .registrations-table th,
 .registrations-table td {
      border: 1px solid var(--border-color);
-     padding: 0.75em;
+     padding: 0.5em;
      text-align: left;
 }
 
 .registrations-table th {
      background-color: var(--light-bg);
-     color: var(--primary-dark);
-     font-weight: bold;
-     font-family: var(--font-secondary);
 }
 
 #download-registrations-btn {
     margin-bottom: 1em;
-    padding: 0.75em 1.5em;
-    background: var(--gradient-success);
+    padding: 0.5em 1em;
+    background: linear-gradient(120deg, var(--success-color), #218838);
     color: var(--text-light);
     border: none;
-    border-radius: 25px;
+    border-radius: 3px;
     cursor: pointer;
     transition: var(--transition);
-    font-weight: bold;
-    font-family: var(--font-secondary);
-    box-shadow: var(--card-shadow);
 }
 
 #download-registrations-btn:hover {
-    background: linear-gradient(135deg, #007a6d, var(--success-color));
+    background: linear-gradient(120deg, #218838, #1e7e34);
     transform: scale(1.02);
-    box-shadow: var(--card-shadow-hover);
 }
 /* --- */
 
 /* --- НОВЫЕ стили для формы редактирования "О нас" в админке --- */
 #edit-about-section {
     margin-top: 2em;
-    padding: 1.5em;
+    padding: 1em;
     background-color: var(--page-secondary);
     border-radius: 8px;
     box-shadow: var(--card-shadow);
-    animation: fadeIn 0.5s ease-in-out;
 }
 
 #edit-about-section h2 {
     text-align: center;
     margin-bottom: 1em;
     color: var(--primary-dark);
-    font-family: var(--font-secondary);
 }
 
 #edit-about-form textarea {
-    height: 150px;
-    resize: vertical;
+    height: 150px; /* Высота текстового поля */
+    resize: vertical; /* Разрешить изменение высоты по вертикали */
     background-color: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
 }
 /* --- КОНЕЦ НОВЫХ СТИЛЕЙ ДЛЯ "О НАС" В АДМИНКЕ --- */
 
-/* --- НОВЫЕ СТИЛИ ДЛЯ ФОРМЫ РЕДАКТИРОВАНИЯ МЕРОПРИЯТИЯ В АДМИНКЕ --- */
+/* --- НОВЫЕ стили для формы редактирования мероприятия в админке --- */
 #edit-event-section {
     margin-top: 2em;
-    padding: 1.5em;
+    padding: 1em;
     background-color: var(--page-secondary);
     border-radius: 8px;
     box-shadow: var(--card-shadow);
     display: none; /* Изначально скрыто */
-    animation: fadeIn 0.5s ease-in-out;
 }
 
 #edit-event-section h2 {
     text-align: center;
     margin-bottom: 1em;
     color: var(--primary-dark);
-    font-family: var(--font-secondary);
 }
 
 #edit-event-form {
@@ -685,17 +546,16 @@ footer {
     margin-bottom: 0.5em;
     font-weight: bold;
     color: var(--text-dark);
-    font-family: var(--font-secondary);
 }
 
 #edit-event-form input,
 #edit-event-form textarea,
 #edit-event-form select {
     width: 100%;
-    padding: 0.75em;
+    padding: 0.5em;
     margin-bottom: 1em;
-    border: 2px solid var(--border-color);
-    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
     box-sizing: border-box;
     transition: border-color var(--transition);
     font-family: inherit;
@@ -709,40 +569,36 @@ footer {
 #edit-event-form select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(106, 17, 203, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 #edit-event-form button {
-    background: var(--gradient-primary);
+    background: linear-gradient(120deg, var(--primary-color), var(--primary-dark));
     color: var(--text-light);
-    padding: 0.85em 1.5em;
+    padding: 0.75em 1.5em;
     border: none;
-    border-radius: 25px;
+    border-radius: 3px;
     cursor: pointer;
     transition: var(--transition);
     width: 100%;
     font-size: 1.1em;
     font-weight: bold;
-    font-family: var(--font-secondary);
-    box-shadow: var(--card-shadow);
     margin-top: 0.5em;
 }
 
 #edit-event-form button:hover {
-    background: var(--gradient-secondary);
+    background: linear-gradient(120deg, var(--primary-light), var(--primary-color));
     transform: scale(1.02);
-    box-shadow: var(--card-shadow-hover);
 }
 
 #cancel-edit-btn {
-    background: var(--gradient-warning);
+    background: linear-gradient(120deg, var(--warning-color), var(--warning-dark));
     color: var(--text-dark);
 }
 
 #cancel-edit-btn:hover {
-    background: var(--gradient-warning);
+    background: linear-gradient(120deg, var(--warning-dark), #e0a800);
     transform: scale(1.02);
-    box-shadow: var(--card-shadow-hover);
 }
 /* --- КОНЕЦ НОВЫХ СТИЛЕЙ ДЛЯ ФОРМЫ РЕДАКТИРОВАНИЯ МЕРОПРИЯТИЯ --- */
 
