@@ -55,12 +55,13 @@ async function readData() {
     } catch (error) {
         console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
+            // Если файл не существует, создаем пустой объект
             const initialData = {
                 events: [],
                 admin: { login: "admin", password: "password" },
                 registrations: [],
                 testResults: [],
-                tests: [],
+                tests: [], // Инициализируем массив для тестов
                 about: {
                     inn: "231120569701",
                     phone: "89184455287",
@@ -192,8 +193,8 @@ app.get('/api/admin/registrations', allowAll, async (req, res) => {
             testResults: data.testResults || []
         });
     } catch (error) {
-        console.error("Error fetching registrations for export:", error);
-        res.status(500).json({ error: 'Failed to fetch registrations for export' });
+        console.error("Error fetching registrations:", error);
+        res.status(500).json({ error: 'Failed to fetch registrations' });
     }
 });
 
@@ -202,8 +203,8 @@ app.get('/api/admin/test-results', allowAll, async (req, res) => {
         const data = await readData();
         res.json(data.testResults || []);
     } catch (error) {
-        console.error("Error fetching test results for export:", error);
-        res.status(500).json({ error: 'Failed to fetch test results for export' });
+        console.error("Error fetching test results:", error);
+        res.status(500).json({ error: 'Failed to fetch test results' });
     }
 });
 
