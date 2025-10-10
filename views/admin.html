@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Панель управления</title>
-    <!-- ИСПРАВЛЕНО: используем абсолютный путь к CSS -->
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -17,9 +16,11 @@
             <section id="edit-about-section">
                 <h2>Редактировать "О нас"</h2>
                 <form id="edit-about-form">
-                    <!-- ИСПРАВЛЕНО: Убраны поля inn, phone, address, email, requisites -->
                     <label for="about-custom-text">Произвольный текст:</label>
-                    <textarea id="about-custom-text" name="customText" rows="10" placeholder="Введите произвольный текст для страницы 'О нас'"></textarea>
+                    <textarea id="about-custom-text" name="customText" placeholder="Введите произвольный текст для страницы 'О нас'"></textarea>
+                    
+                    <label for="about-additional-text">Дополнительный текст (над контактными данными):</label>
+                    <textarea id="about-additional-text" name="additionalText" placeholder="Введите дополнительный текст, который будет отображаться над контактными данными."></textarea>
 
                     <button type="submit">Сохранить изменения</button>
                 </form>
@@ -41,7 +42,6 @@
                     <option value="conference">Конференция</option>
                 </select>
 
-                <!-- ИСПРАВЛЕНО: Используем select с возможными подтипами -->
                 <label for="event-subtype">Подтип (для фильтрации):</label>
                 <select id="event-subtype" name="subtype">
                     <option value="">Не указан</option>
@@ -56,6 +56,16 @@
                 <label for="info-letter-file">Файл информационного письма:</label>
                 <input type="file" id="info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
 
+                <!-- --- Секция для теста (только для олимпиад) --- -->
+                <div id="olympiad-test-section" style="display:none;">
+                    <h3>Вопросы теста</h3>
+                    <div id="questions-container">
+                        <!-- Вопросы будут добавлены сюда -->
+                    </div>
+                    <button type="button" id="add-question-btn">Добавить вопрос</button>
+                </div>
+                <!-- --- Конец секции для теста --- -->
+
                 <button type="submit">Добавить</button>
             </form>
 
@@ -65,12 +75,60 @@
             </div>
 
             <h2>Список регистраций</h2>
-            <!-- ИСПРАВЛЕНО: Добавлена кнопка для скачивания Excel -->
             <button id="download-registrations-btn">Скачать Excel (CSV)</button>
             <div id="registrations-list">
                 <!-- Список регистраций будет вставлен сюда -->
             </div>
         </div>
+
+        <!-- --- НОВАЯ ФОРМА: Редактирование мероприятия --->
+        <div id="edit-event-section" style="display: none;">
+            <h2>Редактировать мероприятие</h2>
+            <form id="edit-event-form" enctype="multipart/form-data">
+                <input type="hidden" id="edit-event-id" name="id">
+                <label for="edit-event-name">Название:</label>
+                <input type="text" id="edit-event-name" name="name" required>
+
+                <label for="edit-event-description">Описание:</label>
+                <textarea id="edit-event-description" name="description" required></textarea>
+
+                <label for="edit-event-type">Тип:</label>
+                <select id="edit-event-type" name="type" required>
+                    <option value="olympiad">Олимпиада</option>
+                    <option value="contest">Конкурс</option>
+                    <option value="conference">Конференция</option>
+                </select>
+
+                <label for="edit-event-subtype">Подтип (для фильтрации):</label>
+                <select id="edit-event-subtype" name="subtype">
+                    <option value="">Не указан</option>
+                    <option value="olympiad-students">Студентам, аспирантам</option>
+                    <option value="olympiad-school">Школьникам и СПО</option>
+                    <option value="olympiad-teachers">Научным руководителям, учителям, преподавателям</option>
+                    <option value="contest-article">Статьи</option>
+                    <option value="contest-vkr">ВКР</option>
+                    <option value="conference-science">Научные конференции</option>
+                </select>
+
+                <label for="edit-info-letter-file">Файл информационного письма (новый):</label>
+                <input type="file" id="edit-info-letter-file" name="infoLetterFile" accept=".pdf,.doc,.docx">
+                <p>Текущий файл: <span id="current-file-name"></span></p>
+
+                <!-- --- Секция для теста (только для олимпиад) --- -->
+                <div id="edit-olympiad-test-section" style="display:none;">
+                    <h3>Вопросы теста</h3>
+                    <div id="edit-questions-container">
+                        <!-- Вопросы будут добавлены сюда -->
+                    </div>
+                    <button type="button" id="edit-add-question-btn">Добавить вопрос</button>
+                </div>
+                <!-- --- Конец секции для теста --- -->
+
+                <button type="submit">Сохранить изменения</button>
+                <button type="button" id="cancel-edit-btn">Отмена</button>
+            </form>
+        </div>
+        <!-- --- КОНЕЦ НОВОЙ ФОРМЫ --- -->
 
         <div id="error-message" style="display: none; color: red;">
             <!-- Сообщения об ошибках будут отображаться здесь -->
