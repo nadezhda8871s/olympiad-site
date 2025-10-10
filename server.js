@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
 
-// Конфигурация сессий
+// Конфигурация сессий (может остаться для других целей)
 app.use(session({
     name: 'session',
     keys: [process.env.SESSION_SECRET || 'your_strong_fallback_secret_key_here_change_it'],
@@ -36,7 +36,6 @@ async function ensureUploadsDir() {
     } catch (error) {
         if (error.code === 'ENOENT') {
             console.log("Uploads directory does not exist, creating:", UPLOAD_PATH);
-            // ИСПРАВЛЕНО: Создаём папку рекурсивно
             await fs.mkdir(UPLOAD_PATH, { recursive: true });
             console.log("Uploads directory created:", UPLOAD_PATH);
         } else {
@@ -55,16 +54,17 @@ async function readData() {
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
-                // admin: { login: "admin", password: "password" }, // Убрано
+                // admin: { login: "admin", password: "password" }, // Удалено
                 registrations: [],
                 testResults: [],
                 tests: [], // Для хранения тестов
-                about: {
+                about: { // Инициализация данных "О нас"
                     inn: "231120569701",
                     phone: "89184455287",
                     address: "г. Краснодар, ул. Виноградная, 58",
                     email: "vsemnayka@gmail.com",
-                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104"
+                    requisites: "ООО \"РУБИКОН-ПРИНТ\"\nИНН: 2311372333\nР/с: 40702810620000167717\nБанк: ООО \"Банк Точка\"\nБИК: 044525104\nК/с: 30101810745374525104",
+                    customText: "Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий."
                 }
             };
             await writeData(initialData);
@@ -90,7 +90,7 @@ async function writeData(data) {
     }
 }
 
-// --- Middleware для проверки администратора (убрана проверка) ---
+// --- Middleware для проверки администратора (открыто для всех) ---
 function allowAll(req, res, next) {
     next();
 }
@@ -150,6 +150,7 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
+// --- Страница администратора теперь доступна всем ---
 app.get('/admin', allowAll, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
@@ -171,6 +172,7 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
+// --- API маршруты админки теперь доступны всем ---
 app.get('/api/admin/events', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -224,12 +226,12 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
         const aboutData = {
-            customText: data.about?.customText || '', // Новое поле
             inn: data.about?.inn || '',
             phone: data.about?.phone || '',
             address: data.about?.address || '',
             email: data.about?.email || '',
-            requisites: data.about?.requisites || ''
+            requisites: data.about?.requisites || '',
+            customText: data.about?.customText || 'Добро пожаловать! Участвуйте в олимпиадах, конкурсах научных работ, ВКР и конференциях!\nДокументы формируются в течение 5 дней. Удобная оплата. Высокий уровень мероприятий.'
         };
         res.json(aboutData);
     } catch (error) {
@@ -240,19 +242,19 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
 
 app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
-        const { customText, inn, phone, address, email, requisites } = req.body; // Добавлено customText
+        const { inn, phone, address, email, requisites, customText } = req.body;
         const data = await readData();
 
         if (!data.about) {
             data.about = {};
         }
 
-        data.about.customText = customText; // Сохраняем произвольный текст
         data.about.inn = inn;
         data.about.phone = phone;
         data.about.address = address;
         data.about.email = email;
         data.about.requisites = requisites;
+        data.about.customText = customText; // Сохраняем произвольный текст
 
         await writeData(data);
         res.json({ success: true });
@@ -282,7 +284,7 @@ app.get('/api/tests/:eventId', async (req, res) => {
 });
 // --- КОНЕЦ НОВОГО маршрута ---
 
-// --- НОВЫЙ маршрут: Создать/Обновить мероприятие с тестом ---
+// --- НОВЫЙ маршрут: Добавить/Обновить мероприятие с тестом ---
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
@@ -350,10 +352,9 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
             infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
         };
 
-        // Обновляем мероприятие в массиве
         data.events[eventIndex] = updatedEvent;
 
-        // Обработка теста для олимпиад (при обновлении)
+        // Обработка теста для олимпиад при обновлении
         if (type === 'olympiad' && testQuestions) {
             try {
                 const questions = JSON.parse(testQuestions);
@@ -362,12 +363,12 @@ app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req
                     // Проверяем, существует ли уже тест для этого мероприятия
                     const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
                     const testData = {
-                        id: uuidv4(), // Новый ID для теста
+                        id: uuidv4(),
                         eventId: eventId,
                         testName: `${name} - Тест (Обновлён)`,
                         questions: questions, // Массив объектов вопросов
                         createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString() // Добавлено поле обновления
+                        updatedAt: new Date().toISOString()
                     };
 
                     if (existingIndex >= 0) {
