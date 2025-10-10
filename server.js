@@ -46,19 +46,25 @@ async function ensureUploadsDir() {
 }
 
 // --- Вспомогательные функции для работы с JSON файлом ---
+// ИСПРАВЛЕНО: Улучшена обработка ошибок и гарантия структуры initialData
 async function readData() {
     try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
-        return JSON.parse(data);
+        const parsedData = JSON.parse(data);
+        console.log("Data read successfully from:", DATA_FILE); // Лог для отладки
+        return parsedData;
     } catch (error) {
+        console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
+            // Если файл не существует, создаем пустой объект
+            // ИСПРАВЛЕНО: Убедимся, что initialData содержит все необходимые поля
             const initialData = {
                 events: [],
-                admin: { login: "admin", password: "password" },
+                admin: { login: "admin", password: "password" }, // Установите пароль!
                 registrations: [],
                 testResults: [],
-                tests: [],
-                about: {
+                tests: [], // Для хранения тестов
+                about: { // Инициализация данных "О нас"
                     inn: "231120569701",
                     phone: "89184455287",
                     address: "г. Краснодар, ул. Виноградная, 58",
@@ -71,22 +77,27 @@ async function readData() {
             return initialData;
         } else if (error instanceof SyntaxError) {
             console.error("Syntax error in data.json:", error.message);
+            // Возвращаем минимальную структуру вместо сложного объекта
             return { events: [], admin: { login: "admin", password: "password" }, registrations: [], testResults: [], tests: [], about: {} };
         } else {
-            console.error("Error reading data file:", error);
+            // Пробрасываем ошибку дальше, если это не ENOENT или SyntaxError
             throw error;
         }
     }
 }
 
+// ИСПРАВЛЕНО: Добавлена обработка ошибок записи и логирование
 async function writeData(data) {
     try {
+        console.log("Writing data to:", DATA_FILE); // Лог для отладки
         await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+        console.log("Data written successfully to:", DATA_FILE); // Лог для отладки
     } catch (error) {
         console.error("Error writing data file:", error);
-        throw error;
+        throw error; // ВАЖНО: Пробрасываем ошибку, чтобы вызывающая функция знала об ошибке
     }
 }
+// --- Конец вспомогательных функций ---
 
 // --- Middleware для проверки администратора ---
 function requireAdmin(req, res, next) {
