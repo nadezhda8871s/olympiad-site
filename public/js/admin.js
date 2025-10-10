@@ -10,7 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- НОВОЕ: Элементы для формы "О нас" ---
     const editAboutForm = document.getElementById('edit-about-form');
     const aboutCustomText = document.getElementById('about-custom-text');
-    const aboutAdditionalText = document.getElementById('about-additional-text');
+    const aboutInn = document.getElementById('about-inn');
+    const aboutPhone = document.getElementById('about-phone');
+    const aboutAddress = document.getElementById('about-address');
+    const aboutEmail = document.getElementById('about-email');
+    const aboutRequisites = document.getElementById('about-requisites');
     // --- КОНЕЦ НОВОГО ---
 
     // --- НОВОЕ: Элементы для редактирования мероприятия ---
@@ -19,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentFileNameSpan = document.getElementById('current-file-name');
     const editQuestionsContainer = document.getElementById('edit-questions-container');
     const editAddQuestionBtn = document.getElementById('edit-add-question-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
     let editingEventId = null;
     let editingEvent = null;
     // --- КОНЕЦ НОВОГО ---
@@ -37,7 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Заполняем форму данными
             aboutCustomText.value = aboutData.customText || '';
-            aboutAdditionalText.value = aboutData.additionalText || '';
+            aboutInn.value = aboutData.inn || '';
+            aboutPhone.value = aboutData.phone || '';
+            aboutAddress.value = aboutData.address || '';
+            aboutEmail.value = aboutData.email || '';
+            aboutRequisites.value = aboutData.requisites || '';
 
         } catch (error) {
             console.error("Error loading 'about' ", error);
@@ -53,7 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(editAboutForm);
         const aboutData = {
             customText: formData.get('customText'),
-            additionalText: formData.get('additionalText')
+            inn: formData.get('inn'),
+            phone: formData.get('phone'),
+            address: formData.get('address'),
+            email: formData.get('email'),
+            requisites: formData.get('requisites')
         };
 
         try {
@@ -252,14 +265,17 @@ document.addEventListener('DOMContentLoaded', () => {
             events.forEach(event => {
                 const eventItem = document.createElement('div');
                 eventItem.className = 'event-item';
+                // --- ИСПРАВЛЕНИЕ: Убрано отображение subtype ---
                 eventItem.innerHTML = `
                     <div>
                         <strong>${event.name}</strong> (${event.type})
-                        ${event.subtype ? `<br><small>Подтип: ${event.subtype}</small>` : '<br><small>Подтип: не указан</small>'}
+                        <!-- ${event.subtype ? `<br><small>Подтип: ${event.subtype}</small>` : '<br><small>Подтип: не указан</small>'} -->
                         ${event.infoLetterFileName ? `<br><small>Файл: ${event.infoLetterFileName}</small>` : '<br><small>Файл: нет</small>'}
                     </div>
                     <button onclick="editEvent('${event.id}')">Редактировать</button>
+                    <button onclick="deleteEvent('${event.id}')">Удалить</button>
                 `;
+                // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
                 eventsList.appendChild(eventItem);
             });
         } catch (error) {
@@ -283,7 +299,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('edit-event-name').value = event.name;
             document.getElementById('edit-event-description').value = event.description;
             document.getElementById('edit-event-type').value = event.type;
-            document.getElementById('edit-event-subtype').value = event.subtype || '';
+            // --- ИСПРАВЛЕНИЕ: Убрано заполнение subtype ---
+            // document.getElementById('edit-event-subtype').value = event.subtype || '';
+            // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
             // Отображаем текущий файл
             currentFileNameSpan.textContent = event.infoLetterFileName || 'нет';
@@ -498,20 +516,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 const testName = formData.get('name') + ' - Тест (Обновлён)';
                 const questions = collectEditedTestQuestions();
                 
-                const testResponse = await fetch(`/api/events/${editingEventId}/test`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        testName: testName,
-                        questions: questions
-                    })
-                });
+                if (questions.length > 0) {
+                    const testResponse = await fetch(`/api/events/${editingEventId}/test`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            testName: testName,
+                            questions: questions
+                        })
+                    });
 
-                if (!testResponse.ok) {
-                    const testErrorData = await testResponse.json();
-                    throw new Error(testErrorData.error || 'Ошибка при обновлении теста.');
+                    if (!testResponse.ok) {
+                        const testErrorData = await testResponse.json();
+                        throw new Error(testErrorData.error || 'Ошибка при обновлении теста.');
+                    }
+                } else {
+                    // Если вопросы пустые, удаляем тест
+                    const deleteTestResponse = await fetch(`/api/tests/${editingEventId}`, {
+                        method: 'DELETE'
+                    });
+                    if (!deleteTestResponse.ok && deleteTestResponse.status !== 404) {
+                        const deleteTestErrorData = await deleteTestResponse.json();
+                        console.warn("Error deleting test:", deleteTestErrorData.error);
+                    }
                 }
             }
 
@@ -537,6 +566,29 @@ document.addEventListener('DOMContentLoaded', () => {
         editingEvent = null;
     });
     // --- КОНЕЦ НОВОЙ ФУНКЦИИ ---
+
+    window.deleteEvent = async function(eventId) {
+        if (!confirm('Вы уверены, что хотите удалить это мероприятие?')) return;
+
+        try {
+            const response = await fetch(`/api/events/${eventId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                loadEventsList(); // Обновляем список
+                errorMessage.style.display = 'none';
+            } else {
+                const errorData = await response.json();
+                errorMessage.textContent = errorData.error || 'Ошибка при удалении мероприятия.';
+                errorMessage.style.display = 'block';
+            }
+        } catch (error) {
+            console.error("Delete event error:", error);
+            errorMessage.textContent = 'Ошибка при удалении мероприятия (проверьте консоль).';
+            errorMessage.style.display = 'block';
+        }
+    };
 
     async function loadRegistrationsList() {
         try {
@@ -569,7 +621,6 @@ document.addEventListener('DOMContentLoaded', () => {
             table.appendChild(headerRow);
 
             registrations.forEach(reg => {
-                const row = document.createElement('tr');
                 const safeReg = {
                     id: reg.id,
                     surname: reg.surname.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''),
