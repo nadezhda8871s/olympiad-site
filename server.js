@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
 
-// Конфигурация сессий (может остаться для других целей, если понадобится)
+// Конфигурация сессий
 app.use(session({
     name: 'session',
     keys: [process.env.SESSION_SECRET || 'your_strong_fallback_secret_key_here_change_it'],
@@ -36,6 +36,7 @@ async function ensureUploadsDir() {
     } catch (error) {
         if (error.code === 'ENOENT') {
             console.log("Uploads directory does not exist, creating:", UPLOAD_PATH);
+            // ИСПРАВЛЕНО: Создаём папку рекурсивно
             await fs.mkdir(UPLOAD_PATH, { recursive: true });
             console.log("Uploads directory created:", UPLOAD_PATH);
         } else {
@@ -51,15 +52,14 @@ async function readData() {
         const data = await fs.readFile(DATA_FILE, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        console.error("Error reading data file:", error);
         if (error.code === 'ENOENT') {
             const initialData = {
                 events: [],
-                // admin: { login: "admin", password: "password" }, // Удалено
+                // admin: { login: "admin", password: "password" }, // Убрано
                 registrations: [],
                 testResults: [],
                 tests: [], // Для хранения тестов
-                about: { // Инициализация данных "О нас"
+                about: {
                     inn: "231120569701",
                     phone: "89184455287",
                     address: "г. Краснодар, ул. Виноградная, 58",
@@ -72,8 +72,9 @@ async function readData() {
             return initialData;
         } else if (error instanceof SyntaxError) {
             console.error("Syntax error in data.json:", error.message);
-            return { events: [], registrations: [], testResults: [], tests: [], about: {} }; // Упрощено
+            return { events: [], registrations: [], testResults: [], tests: [], about: {} };
         } else {
+            console.error("Error reading data file:", error);
             throw error;
         }
     }
@@ -89,7 +90,7 @@ async function writeData(data) {
     }
 }
 
-// --- Middleware для проверки администратора (открыто для всех) ---
+// --- Middleware для проверки администратора (убрана проверка) ---
 function allowAll(req, res, next) {
     next();
 }
@@ -149,7 +150,6 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'about.html'));
 });
 
-// --- Страница администратора теперь доступна всем ---
 app.get('/admin', allowAll, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
@@ -171,7 +171,6 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
-// --- API маршруты админки теперь доступны всем ---
 app.get('/api/admin/events', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -220,11 +219,12 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
-// --- API маршруты для работы с "О нас" ---
+// --- НОВЫЕ API маршруты для работы с "О нас" ---
 app.get('/api/admin/about', allowAll, async (req, res) => {
     try {
         const data = await readData();
         const aboutData = {
+            customText: data.about?.customText || '', // Новое поле
             inn: data.about?.inn || '',
             phone: data.about?.phone || '',
             address: data.about?.address || '',
@@ -240,13 +240,14 @@ app.get('/api/admin/about', allowAll, async (req, res) => {
 
 app.post('/api/admin/about', allowAll, async (req, res) => {
     try {
-        const { inn, phone, address, email, requisites } = req.body;
+        const { customText, inn, phone, address, email, requisites } = req.body; // Добавлено customText
         const data = await readData();
 
         if (!data.about) {
             data.about = {};
         }
 
+        data.about.customText = customText; // Сохраняем произвольный текст
         data.about.inn = inn;
         data.about.phone = phone;
         data.about.address = address;
@@ -260,9 +261,9 @@ app.post('/api/admin/about', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to update about data' });
     }
 });
-// --- Конец API маршрутов для "О нас" ---
+// --- КОНЕЦ НОВЫХ API маршрутов для "О нас" ---
 
-// --- API маршруты для работы с тестами ---
+// --- НОВЫЙ маршрут: Получить тест по ID мероприятия ---
 app.get('/api/tests/:eventId', async (req, res) => {
     try {
         const data = await readData();
@@ -279,8 +280,9 @@ app.get('/api/tests/:eventId', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch test' });
     }
 });
+// --- КОНЕЦ НОВОГО маршрута ---
 
-// --- Маршрут для добавления/обновления мероприятия с тестом ---
+// --- НОВЫЙ маршрут: Создать/Обновить мероприятие с тестом ---
 app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, res) => {
     try {
         const data = await readData();
@@ -325,8 +327,81 @@ app.post('/api/events', allowAll, upload.single('infoLetterFile'), async (req, r
         res.status(500).json({ error: 'Failed to add event' });
     }
 });
+// --- КОНЕЦ НОВОГО маршрута ---
 
-// --- Маршрут для удаления мероприятия ---
+// --- НОВЫЙ маршрут: Обновить мероприятие ---
+app.put('/api/events/:id', allowAll, upload.single('infoLetterFile'), async (req, res) => {
+    try {
+        const data = await readData();
+        const eventId = req.params.id;
+        const { name, description, type, subtype, testQuestions } = req.body; // Добавлено testQuestions
+
+        const eventIndex = data.events.findIndex(e => e.id === eventId);
+        if (eventIndex === -1) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const updatedEvent = {
+            id: eventId,
+            name: name,
+            description: description,
+            type: type,
+            subtype: subtype || type,
+            infoLetterFileName: req.file ? req.file.filename : data.events[eventIndex].infoLetterFileName // Сохраняем старое имя файла, если новый не загружен
+        };
+
+        // Обновляем мероприятие в массиве
+        data.events[eventIndex] = updatedEvent;
+
+        // Обработка теста для олимпиад (при обновлении)
+        if (type === 'olympiad' && testQuestions) {
+            try {
+                const questions = JSON.parse(testQuestions);
+                if (Array.isArray(questions) && questions.length > 0) {
+                    if (!data.tests) data.tests = [];
+                    // Проверяем, существует ли уже тест для этого мероприятия
+                    const existingIndex = data.tests.findIndex(t => t.eventId === eventId);
+                    const testData = {
+                        id: uuidv4(), // Новый ID для теста
+                        eventId: eventId,
+                        testName: `${name} - Тест (Обновлён)`,
+                        questions: questions, // Массив объектов вопросов
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString() // Добавлено поле обновления
+                    };
+
+                    if (existingIndex >= 0) {
+                        // Обновляем существующий тест
+                        testData.id = data.tests[existingIndex].id; // Сохраняем ID
+                        testData.createdAt = data.tests[existingIndex].createdAt; // Сохраняем дату создания
+                        data.tests[existingIndex] = testData;
+                    } else {
+                        // Добавляем новый тест
+                        data.tests.push(testData);
+                    }
+                } else {
+                    // Если вопросы пустые, удаляем тест
+                    if (data.tests) {
+                        data.tests = data.tests.filter(t => t.eventId !== eventId);
+                    }
+                }
+            } catch (parseError) {
+                console.error("Error parsing test questions for update:", parseError);
+                // Можно вернуть ошибку, если тест обязателен
+                // return res.status(400).json({ error: 'Некорректный формат данных теста при обновлении.' });
+            }
+        }
+
+        await writeData(data);
+        res.json({ success: true, event: updatedEvent });
+    } catch (error) {
+        console.error("Error updating event:", error);
+        res.status(500).json({ error: 'Failed to update event' });
+    }
+});
+// --- КОНЕЦ НОВОГО маршрута ---
+
+// --- НОВЫЙ маршрут: Удалить мероприятие ---
 app.delete('/api/events/:id', allowAll, async (req, res) => {
     try {
         const data = await readData();
@@ -347,7 +422,7 @@ app.delete('/api/events/:id', allowAll, async (req, res) => {
         res.status(500).json({ error: 'Failed to delete event' });
     }
 });
-// --- Конец маршрутов для мероприятий ---
+// --- КОНЕЦ НОВОГО маршрута ---
 
 app.post('/api/test-results', async (req, res) => {
     try {
