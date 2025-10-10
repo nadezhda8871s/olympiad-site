@@ -20,16 +20,39 @@
     </header>
 
     <main>
-        <h1>О нас</h1>
-        <p>ИНН: 231120569701</p>
-        <p>Номер телефона: 89184455287</p>
-        <p>Адрес: г. Краснодар, ул. Виноградная, 58</p>
-        <p><a href="/docs/Оферта.docx" target="_blank">Оферта</a></p>
-        <p><a href="/docs/Политика_конфиденциальности.docx" target="_blank">Политика конфиденциальности</a></p>
+        <section class="about-section">
+            <h1>О нас</h1>
+            
+            <!-- --- НОВОЕ: Поле для редактируемого текста "О нас" --->
+            <textarea id="editable-about-text" readonly>
+                <!-- Текст будет загружен сюда с помощью JavaScript -->
+            </textarea>
+            <button id="save-about-btn" style="display: none;">Сохранить изменения</button>
+            <!-- --- КОНЕЦ НОВОГО --- -->
+            
+            <p><strong>ИНН:</strong> <span id="about-inn">231120569701</span></p>
+            <p><strong>Номер телефона:</strong> <span id="about-phone">89184455287</span></p>
+            <p><strong>Адрес:</strong> <span id="about-address">г. Краснодар, ул. Виноградная, 58</span></p>
+            <p><strong>Email:</strong> <a href="mailto:vsemnayka@gmail.com" id="about-email">vsemnayka@gmail.com</a></p>
+            <p><strong>Реквизиты:</strong></p>
+            <pre id="about-requisites">ООО "РУБИКОН-ПРИНТ"
+ИНН: 2311372333
+Р/с: 40702810620000167717
+Банк: ООО "Банк Точка"
+БИК: 044525104
+К/с: 30101810745374525104</pre>
+            
+            <!-- --- НОВОЕ: Ссылки на документы --->
+            <p><a href="/docs/Оферта.docx" target="_blank">Оферта</a></p>
+            <p><a href="/docs/Политика_конфиденциальности.docx" target="_blank">Политика конфиденциальности</a></p>
+            <!-- --- КОНЕЦ НОВОГО --- -->
+        </section>
     </main>
 
     <footer>
         <p>&copy; 2024. Все права защищены.</p>
     </footer>
+
+    <script src="/js/about.js"></script>
 </body>
 </html>
