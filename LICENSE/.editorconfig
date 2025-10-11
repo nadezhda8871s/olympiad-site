@@ -1,0 +1,46 @@
+science_events_skeleton/
+├─ README.md                 # как запустить локально
+├─ STRUCTURE.md              # полная схема и пояснения
+├─ requirements.txt          # Django 5 + dotenv
+├─ .env.example              # пример env-переменных
+├─ .gitignore / .editorconfig / .pre-commit-config.yaml
+├─ .github/workflows/ci.yml  # минимальный CI
+├─ manage.py
+├─ config/
+│  ├─ urls.py, wsgi.py, asgi.py
+│  └─ settings/
+│     ├─ base.py             # i18n RU/EN, статика/медиа, SMTP Gmail
+│     ├─ dev.py
+│     └─ prod.py
+├─ events/                   # основная логика
+│  ├─ models.py              # Event, Registration, Payment, Question, AnswerOption, TestResult
+│  ├─ admin.py               # удобная админка (редактируем и опубликованные)
+│  ├─ forms.py               # анкета регистрации (ФИО, вуз, город, email, тел, согласие)
+│  ├─ urls.py / views.py     # Главная, списки, карточка, регистрация, мок-оплата, тест
+│  ├─ services/
+│  │  ├─ payments_mock.py    # имитация Robokassa (успех/ошибка)
+│  │  ├─ mailer.py           # отправка писем через SMTP
+│  │  └─ export_csv.py       # экспорт заявок и результатов в CSV
+│  ├─ management/commands/create_fixed_admin.py  # создаёт админа nadezhda8871s/1988naNA
+│  └─ templates/events/
+│     ├─ base.html           # общий лейаут, меню, футер со ссылками-заглушками
+│     ├─ home.html           # главная: вводный блок, поиск, плитки-кнопки, «Актуальные»
+│     ├─ list.html           # страницы Олимпиады/Конкурсы/Конференции + поисковая строка
+│     ├─ detail.html         # карточка мероприятия (описание + 2 кнопки)
+│     ├─ register.html       # анкета
+│     ├─ pay_choice.html     # выбор «Оплата успешна/неуспешна»
+│     ├─ pay_success.html    # для конкурсов/конференций — текст с инструкцией
+│     ├─ pay_fail.html       # неуспешная оплата
+│     ├─ test_start.html     # старт теста (после оплаты)
+│     └─ test_run.html       # сам тест (1 из 4, без таймера)
+├─ pages/
+│  ├─ urls.py / views.py
+│  └─ templates/pages/about.html   # «О нас» (контент будет редактироваться из админки)
+├─ events/static/events/css/style.css  # деловой стиль, палитра «павлин в пионах»
+├─ locale/
+│  ├─ ru/LC_MESSAGES/django.po
+│  └─ en/LC_MESSAGES/django.po     # заготовки для переводов
+├─ media/                           # загрузки (инф. письма, 2 файла в футере — через админку)
+└─ seed/footer_docs/                # ВАШИ файлы, чтобы импортировать через админку
+   ├─ Оферта.docx
+   └─ Политика конфиденциальности.docx
