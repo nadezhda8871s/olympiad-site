@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Олимпиады, Конкурсы, Конференции</title>
+  <link rel="stylesheet" href="{% static 'events/css/style.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">Олимпиады, Конкурсы, Конференции, Научные мероприятия высокого уровня</div>
+    <nav class="top-nav">
+      <a href="/">Главная</a>
+      <a href="/olympiads/">Олимпиады</a>
+      <a href="/contests/">Конкурсы</a>
+      <a href="/conferences/">Конференции</a>
+      <a href="https://vsem.site/" target="_blank" rel="noopener">Монографии</a>
+      <a href="https://vsem.site/" target="_blank" rel="noopener">Научные журналы</a>
+      <a href="/pages/about/">О нас</a>
+    </nav>
+  </header>
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <div>
+      <a href="/admin/" target="_blank">Войти в админку</a>
+    </div>
+    <div class="footer-docs">
+      <!-- Эти две ссылки будут подгружаться позже через админку;
+           пока просто заглушки для дизайна -->
+      <a href="#" download>Пользовательское соглашение (оферта)</a>
+      <a href="#" download>Политика конфиденциальности</a>
+    </div>
+    <div class="copy">© Все права защищены</div>
+  </footer>
+</body>
+</html>
