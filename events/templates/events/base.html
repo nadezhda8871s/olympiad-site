@@ -1,39 +1,50 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static i18n %}
+<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Олимпиады, Конкурсы, Конференции</title>
-  <link rel="stylesheet" href="{% static 'events/css/style.css' %}">
+  <title>{% block title %}Олимпиады, Конкурсы, Конференции — Научные мероприятия{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <link rel="icon" href="{% static 'img/favicon.ico' %}">
 </head>
 <body>
-  <header class="site-header">
-    <div class="brand">Олимпиады, Конкурсы, Конференции, Научные мероприятия высокого уровня</div>
-    <nav class="top-nav">
-      <a href="/">Главная</a>
-      <a href="/olympiads/">Олимпиады</a>
-      <a href="/contests/">Конкурсы</a>
-      <a href="/conferences/">Конференции</a>
-      <a href="https://vsem.site/" target="_blank" rel="noopener">Монографии</a>
-      <a href="https://vsem.site/" target="_blank" rel="noopener">Научные журналы</a>
-      <a href="/pages/about/">О нас</a>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="logo" href="/">
+      <img src="{% static 'img/peacock_outline.svg' %}" alt="logo" height="36">
+      <span class="brand">Олимпиады, Конкурсы, Конференции, Научные мероприятия высокого уровня</span>
+    </a>
+    <nav class="main-nav">
+      <a href="/olympiads">{% trans "Олимпиады" %}</a>
+      <a href="/contests">{% trans "Конкурсы" %}</a>
+      <a href="/conferences">{% trans "Конференции" %}</a>
+      <a href="https://vsem.site/" target="_blank" rel="noopener">{% trans "Монографии" %}</a>
+      <a href="https://vsem.site/" target="_blank" rel="noopener">{% trans "Наши журналы" %}</a>
+      <a href="/about">{% trans "О нас" %}</a>
     </nav>
-  </header>
-  <main class="content">
-    {% block content %}{% endblock %}
-  </main>
-  <footer class="site-footer">
-    <div>
-      <a href="/admin/" target="_blank">Войти в админку</a>
-    </div>
-    <div class="footer-docs">
-      <!-- Эти две ссылки будут подгружаться позже через админку;
-           пока просто заглушки для дизайна -->
-      <a href="#" download>Пользовательское соглашение (оферта)</a>
-      <a href="#" download>Политика конфиденциальности</a>
+    <form class="lang-switcher" action="/i18n/setlang/" method="post">
+      {% csrf_token %}
+      <select name="language" onchange="this.form.submit()">
+        <option value="ru">RU</option>
+        <option value="en">EN</option>
+      </select>
+    </form>
+  </div>
+</header>
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-links">
+      {# ссылки на оферту и политику подставятся из SiteSettings #}
     </div>
     <div class="copy">© Все права защищены</div>
-  </footer>
+  </div>
+</footer>
+<script src="{% static 'js/search.js' %}"></script>
 </body>
 </html>
