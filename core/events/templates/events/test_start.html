@@ -1,0 +1,13 @@
+{% extends "events/base.html" %}
+{% block content %}
+<div class="card">
+  {% if done %}
+    <h2>Тест завершён</h2>
+    <p>Ваш результат: {{ score }}.</p>
+    <p>Чеки пришлите на адрес <b>vsemnayka@gmail.com</b>.</p>
+  {% else %}
+    <h2>Олимпиадный тест</h2>
+    <a class="btn primary" href="/test/{{ reg.id }}/run/">Начать</a>
+  {% endif %}
+</div>
+{% endblock %}

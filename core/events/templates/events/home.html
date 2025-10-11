@@ -1,0 +1,37 @@
+{% extends "events/base.html" %}
+{% block content %}
+<div class="hero">
+  <p>Сайт для онлайн-научных мероприятий для школьников, учащихся СПО, студентов, аспирантов, ученых. Это очень важно в современном мире. <b>Наградные документы высылаются в течение 5 дней с даты регистрации.</b></p>
+  <div class="search">
+    <form method="get" action="/olympiads/">
+      <input type="text" name="q" placeholder="Начните вводить название мероприятия…">
+      <button class="btn primary" type="submit">Поиск</button>
+    </form>
+  </div>
+  <div class="kb-tiles">
+    <a href="/olympiads/">Олимпиады</a>
+    <a href="/contests/">Конкурсы статей, ВКР, научных работ</a>
+    <a href="/conferences/">Конференции с публикацией в РИНЦ сборниках</a>
+    <a href="https://vsem.site/" target="_blank" rel="noopener">Монографии</a>
+    <a href="https://vsem.site/" target="_blank" rel="noopener">Наши журналы</a>
+  </div>
+</div>
+
+<h2 class="section-title">Актуальные мероприятия</h2>
+<div class="grid">
+  {% for ev in featured %}
+  <div class="card">
+    <div class="title"><b>{{ ev.title }}</b></div>
+    <div class="desc">{{ ev.description|truncatechars:180 }}</div>
+    <div class="actions">
+      {% if ev.info_file %}
+      <a class="btn secondary" href="{{ ev.info_file.url }}" download>Информационное письмо</a>
+      {% endif %}
+      <a class="btn primary" href="/register/{{ ev.slug }}/">Регистрация</a>
+    </div>
+  </div>
+  {% empty %}
+  <div>Пока нет отмеченных «Актуальных» мероприятий.</div>
+  {% endfor %}
+</div>
+{% endblock %}

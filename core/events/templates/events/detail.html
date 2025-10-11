@@ -1,0 +1,13 @@
+{% extends "events/base.html" %}
+{% block content %}
+<div class="card">
+  <h2>{{ ev.title }}</h2>
+  <p>{{ ev.description }}</p>
+  <div class="actions">
+    {% if ev.info_file %}
+    <a class="btn secondary" href="{{ ev.info_file.url }}" download>Информационное письмо</a>
+    {% endif %}
+    <a class="btn primary" href="/register/{{ ev.slug }}/">Регистрация</a>
+  </div>
+</div>
+{% endblock %}
