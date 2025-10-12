@@ -1,49 +1,219 @@
 
-/* === Main minimal styles + hero background === */
+/* === Peacock & Peony Festive Theme (v1) ===
+   Place this file as: static/css/main.css
+   Fonts: system stack to keep it light; feel free to add Inter/Manrope later.
+*/
 :root{
-  --bg:#0b1220;
-  --ink:#e2e8f0;
-  --muted:#9fb3c8;
-  --pea:#2b6cb0;
-  --accent:#eab308;
+  --peacock-1:#003c8f;  /* deep royal blue */
+  --peacock-2:#005fa3;  /* vivid peacock blue */
+  --peacock-3:#00a3b9;  /* teal */
+  --peacock-4:#19c3a6;  /* emerald-teal */
+  --peony-1:#c2185b;    /* classic peony */
+  --peony-2:#e91e63;    /* bright peony */
+  --peony-3:#ff7aa2;    /* light peony */
+  --gold-1:#d9a441;     /* muted gold */
+  --ink:#0a0f1a;
+  --bg:#04070d;         /* near black for contrast behind gradients */
+  --card:#0d1423cc;     /* glass card */
+  --glass:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.18);
+  --ring: rgba(233,30,99,.45);
+  --radius-xl:22px;
+  --shadow-1:0 20px 40px rgba(0,0,0,.35);
+  --shadow-2:0 10px 24px rgba(0,0,0,.25);
+  --shadow-3:0 6px 16px rgba(25,195,166,.25);
 }
+
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color:#f7f8fb;
+  background:
+    radial-gradient(1200px 700px at 120% -20%, rgba(0,163,185,.25) 0%, transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(233,30,99,.18) 0%, transparent 60%),
+    linear-gradient(180deg, #0a0f1a 0%, #091225 100%);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  overflow-x:hidden;
 }
-.header-hero{
-  background: url('/static/img/peacock_peony_hero.svg') center/cover no-repeat;
-  min-height: 320px;
-  display: flex;
-  align-items: flex-end;
-  padding: 32px 16px;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+
+/* Watermark (subtle, bottom-right) */
+body::before{
+  content:"";
+  position:fixed; inset:0;
+  background-image:url("/static/img/peacock_peonies_watermark.jpg");
+  background-repeat:no-repeat;
+  background-size: 680px auto;
+  background-position: right -120px bottom -40px;
+  opacity:.07;
+  filter:saturate(120%) contrast(105%);
+  pointer-events:none;
+  z-index:0;
 }
-.container{max-width:1100px;margin:0 auto;padding:0 16px}
-h1{font-size:clamp(28px,4vw,42px);margin:0 0 8px}
-.lead{color:var(--muted);margin:0 0 16px}
+
+/* Top navigation (glass) */
+.navbar{
+  position:sticky; top:0; z-index:50;
+  backdrop-filter: blur(14px) saturate(120%);
+  background: linear-gradient(180deg, rgba(4,7,13,.75), rgba(4,7,13,.45));
+  border-bottom:1px solid var(--border);
+}
+.navbar-inner{
+  margin:0 auto; max-width:1200px; padding:14px 20px;
+  display:flex; align-items:center; gap:16px;
+}
+.brand{
+  display:flex; align-items:center; gap:10px; text-decoration:none;
+  color:#fff; font-weight:700; letter-spacing:.4px;
+}
+.brand-badge{
+  width:38px; height:38px; border-radius:50%;
+  background: conic-gradient(from 120deg, var(--peacock-3), var(--peacock-2), var(--peony-2), var(--gold-1), var(--peacock-3));
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.35), 0 6px 14px rgba(0,0,0,.35);
+}
+.nav-links{margin-left:auto; display:flex; gap:14px; flex-wrap:wrap}
+.nav-links a{
+  color:#e8edff; text-decoration:none; padding:10px 14px; border-radius:12px;
+  border:1px solid transparent;
+  transition:.25s ease;
+}
+.nav-links a:hover{border-color:var(--border); background:var(--glass)}
+
+/* Hero */
+.hero{
+  position:relative; z-index:1;
+  margin: 40px auto 28px; max-width:1200px; padding: 28px 22px 6px;
+}
+.hero-card{
+  border:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-1);
+  overflow:hidden;
+}
+.hero-inner{display:grid; grid-template-columns: 1.2fr .8fr; gap:18px; padding:26px}
+@media (max-width: 900px){
+  .hero-inner{grid-template-columns:1fr}
+}
+
+.hero h1{
+  margin:.2rem 0 .35rem;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height:1.1;
+  background: linear-gradient(90deg, var(--peony-3), var(--peony-2), var(--peacock-3));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
+}
+.hero p.lead{
+  color:#d9e3ff; max-width: 60ch; margin: 6px 0 14px;
+}
+
+/* Search with glow ring */
+.searchbar{
+  display:flex; gap:10px; margin-top:6px;
+}
+.searchbar input[type="search"]{
+  flex:1;
+  padding:14px 16px; border-radius:14px; border:1px solid var(--border);
+  background: rgba(12,18,32,.65); color:#fff; outline:none;
+  box-shadow: 0 0 0 0 var(--ring);
+  transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+.searchbar input[type="search"]::placeholder{color:#9eb2d7}
+.searchbar input[type="search"]:focus{
+  border-color: var(--peony-2);
+  box-shadow: 0 0 0 6px var(--ring);
+  background: rgba(12,18,32,.9);
+}
+
+/* Primary buttons with peacock-peony gradient, outline + luxe hover */
 .btn{
-  display:inline-block;
-  padding:12px 18px;
-  border:1px solid rgba(255,255,255,.2);
-  border-radius:14px;
-  text-decoration:none;
-  color:var(--ink);
-  backdrop-filter:saturate(140%) blur(2px);
-  transition:transform .12s ease, border-color .12s ease, background-color .12s ease;
+  --grad: linear-gradient(135deg, var(--peacock-2), var(--peacock-3) 35%, var(--peony-2) 85%);
+  position:relative; display:inline-flex; align-items:center; justify-content:center;
+  padding:12px 18px; gap:10px; border-radius:14px;
+  border:1px solid var(--gold-1);
+  color:#fff; text-decoration:none; font-weight:700; letter-spacing:.2px;
+  background: var(--grad);
+  box-shadow: 0 8px 18px rgba(0,163,185,.35), inset 0 0 0 1px rgba(255,255,255,.25);
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
 }
-.btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.05)}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin:18px 0}
+.btn:hover{transform: translateY(-2px); box-shadow:0 18px 38px rgba(0,163,185,.4), inset 0 0 0 1px rgba(255,255,255,.35)}
+.btn:active{transform: translateY(0)}
+.btn-outline{
+  background: transparent;
+  border-color: var(--border);
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+}
+.btn-outline:hover{background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border-color:var(--gold-1)}
+
+/* Category tiles (big buttons) */
+.tiles{
+  margin: 22px auto; max-width:1200px; padding: 0 22px;
+  display:grid; grid-template-columns: repeat(6, 1fr); gap:14px;
+}
+@media (max-width: 1200px){ .tiles{grid-template-columns: repeat(3, 1fr)} }
+@media (max-width: 700px){ .tiles{grid-template-columns: repeat(2, 1fr)} }
+
+.tile{
+  position:relative; overflow:hidden; border-radius: 18px;
+  border:1px solid var(--gold-1);
+  padding:18px 16px; min-height:88px;
+  background: radial-gradient(220px 160px at 20% 0%, rgba(25,195,166,.32), transparent 60%),
+             linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  box-shadow: var(--shadow-2);
+  color:#f6f8ff; text-decoration:none; font-weight:700;
+  transform: translateZ(0);
+  transition: .25s ease;
+}
+.tile:hover{ transform: translateY(-4px); box-shadow:0 18px 40px rgba(0,0,0,.35) }
+.tile .hint{opacity:.85; font-weight:500; font-size:13px; display:block; margin-top:6px; color:#d7e1ff}
+
+/* Card list of events */
+.section{margin: 8px auto 40px; max-width:1200px; padding:0 22px;}
+.section h2{
+  font-size: clamp(22px, 2.6vw, 30px);
+  margin: 8px 4px 14px;
+  background: linear-gradient(90deg, var(--gold-1), var(--peony-2), var(--peacock-3));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+
+.cards{display:grid; grid-template-columns: repeat(3, 1fr); gap:16px}
+@media (max-width: 1100px){ .cards{grid-template-columns: repeat(2, 1fr)} }
+@media (max-width: 680px){ .cards{grid-template-columns: 1fr} }
+
 .card{
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:16px;padding:14px;background:rgba(12,18,30,.55)
+  border:1px solid var(--border);
+  background: var(--card);
+  border-radius:18px; padding:16px;
+  box-shadow: var(--shadow-2);
+  transition: .25s ease;
 }
-.search{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:#0f172a;color:var(--ink)}
-.nav{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
-.nav a{color:var(--ink);text-decoration:none;padding:8px 10px;border-radius:10px}
-.nav a:hover{background:rgba(255,255,255,.06)}
-footer{margin-top:40px;padding:16px;color:var(--muted);border-top:1px solid rgba(255,255,255,.08)}
+.card:hover{ box-shadow: var(--shadow-1) }
+.card h3{ margin:.2rem 0 .3rem; font-size:20px }
+.card p{ color:#d3defa; margin:.2rem 0 .8rem }
+
+.card .actions{ display:flex; gap:10px; flex-wrap:wrap }
+.badge{
+  display:inline-block; padding:6px 10px; border-radius:999px;
+  font-size:12px; letter-spacing:.3px;
+  border:1px solid var(--gold-1);
+  background: linear-gradient(180deg, rgba(217,164,65,.18), rgba(217,164,65,.05));
+  color:#ffe7b1;
+}
+
+/* Footer */
+.footer{
+  margin-top:46px; border-top:1px solid var(--border);
+  background: rgba(4,7,13,.6); backdrop-filter: blur(10px);
+}
+.footer-inner{max-width:1200px; margin:0 auto; padding:20px 22px; color:#cdd9ff}
+.footer a{ color:#ffe7b1 }
+
+/* Micro animations */
+@keyframes shimmer{
+  0%{ background-position:0% 50% } 100%{ background-position:100% 50% }
+}
+.btn, .tile{
+  background-size:200% 200%;
+  animation: shimmer 9s linear infinite;
+}
