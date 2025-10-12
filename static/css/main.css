@@ -1,61 +1,7 @@
-:root {
-  --peacock-blue: #0057A4;
-  --emerald: #009974;
-  --teal: #00B7B0;
-  --peony-pink: #D43FA8;
-  --royal-purple: #6A1B9A;
-  --gold: #E6B800;
-  --bg: #FBFCFF;
-  --text: #0E1A2B;
-  --card: #ffffff;
-}
 
-* { box-sizing: border-box; }
-body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--text); background: var(--bg); }
-
-.container { width: min(1100px, 92%); margin: 0 auto; }
-
-.site-header { background: linear-gradient(90deg, var(--peacock-blue), var(--emerald)); color:#fff; }
-.header-inner { display:flex; align-items:center; gap: 16px; padding: 12px 0; }
-.logo { display:flex; align-items:center; gap: 10px; color:#fff; text-decoration:none; font-weight:800; letter-spacing: .2px; }
-.brand { max-width: 560px; display:inline-block; line-height:1.2; }
-.main-nav a { color:#fff; text-decoration:none; margin: 0 8px; font-weight:700; }
-.lang-switcher select { padding: 6px 8px; border-radius: 6px; border: none; }
-
-
-.hero {
-  padding: 36px 0 20px;
-  background: url("../img/peacock_peony_hero.svg") right -60px top -30px no-repeat;
-  background-size: 420px auto;
-}
-
-
-.tiles { display:grid; grid-template-columns: repeat(5,1fr); gap:12px; margin: 24px 0; }
-.tile { background: var(--card); border-radius: 12px; padding: 18px; text-align:center; text-decoration:none; color: var(--peacock-blue); border:2px solid #e6e8ef; font-weight:800; }
-.tile:hover { border-color: var(--emerald); box-shadow: 0 3px 10px rgba(0,0,0,.05); }
-
-.grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
-.card { background: var(--card); border:1px solid #e6e8ef; border-radius: 14px; padding: 16px; }
-.card h3 { margin-top:0; }
-.card-actions { display:flex; gap:10px; flex-wrap:wrap; }
-
-.btn { display:inline-block; padding: 10px 14px; border-radius: 10px; border:2px solid var(--peacock-blue); color: var(--peacock-blue); text-decoration:none; font-weight:700; }
-.btn.primary { background: linear-gradient(90deg, var(--peony-pink), var(--teal)); border-color: transparent; color: #fff; }
-.btn-row { display:flex; gap:12px; margin-top: 14px; }
-
-.search-block { margin: 16px 0 28px; position: relative; }
-#event-search { width:100%; padding: 12px 14px; border:2px solid #d4d7e1; border-radius: 10px; }
-.suggestions { position:absolute; top: 46px; left:0; right:0; background:#fff; border:2px solid #e6e8ef; border-radius: 10px; display:none; z-index: 10; max-height: 300px; overflow:auto; }
-.suggestions .item { padding: 8px 12px; cursor: pointer; border-bottom:1px solid #f0f1f6; }
-.suggestions .item:last-child { border-bottom:none; }
-.suggestions .item:hover { background:#f6f7fb; }
-mark { background: #FFF3B0; }
-
-.site-footer { margin-top:40px; background:#0c2034; color:#fff; }
-.footer-inner { padding: 18px 0; display:flex; align-items:center; justify-content:space-between; }
-.footer-links a { color:#fff; margin-right: 16px; text-decoration: none; border-bottom: 2px dashed rgba(255,255,255,.55); }
-.copy { opacity:.8; }
-
-form input, form select { padding: 10px 12px; border:2px solid #d4d7e1; border-radius: 10px; width:100%; max-width: 560px; margin: 6px 0 12px; }
-.filters { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
-.question { margin: 14px 0; }
+.hero { background: url('/static/img/peacock_peony_hero.svg') center/cover no-repeat; min-height: 280px; border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,.12); }
+:root{ --peacock-1:#004d7a; --peacock-2:#008793; --peacock-3:#00bf72; --peony-1:#7a1fa2; --peony-2:#c2185b; --peony-3:#ffb3c7; --gold:#ffd166; }
+.btn-primary{ background: linear-gradient(90deg,var(--peacock-1),var(--peacock-2)); color:#fff;border:0;border-radius:12px;padding:.75rem 1.2rem; }
+.btn-primary:hover{ filter:brightness(1.08) }
+.card{ border:1px solid rgba(0,0,0,.08); border-radius:16px; box-shadow: 0 8px 18px rgba(0,0,0,.08); }
+.header-accent{ background: linear-gradient(90deg,var(--peony-1),var(--peony-3)); -webkit-background-clip: text; color: transparent; font-weight: 800; }
