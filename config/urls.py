@@ -1,13 +1,13 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
+from django.http import HttpResponse
+
+def healthz(_request):
+    return HttpResponse("ok", content_type="text/plain")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("events.urls")),                 # главные разделы
-    path("", include("pages.urls")),                  # /about/
-    path("i18n/", include("django.conf.urls.i18n")),  # /i18n/setlang/
+    path("healthz", healthz),  # для Render Health Check
+    path("", include("events.urls")),   # ваша главная
+    path("", include("pages.urls")),    # если у вас есть pages
 ]
-
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
