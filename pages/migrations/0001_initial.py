@@ -1,12 +1,8 @@
 from django.db import migrations, models
 
-
 class Migration(migrations.Migration):
-
     initial = True
-
     dependencies = []
-
     operations = [
         migrations.CreateModel(
             name="AboutPage",
@@ -16,10 +12,7 @@ class Migration(migrations.Migration):
                 ("content_en", models.TextField(blank=True, verbose_name="Содержимое (EN)")),
                 ("updated_at", models.DateTimeField(auto_now=True)),
             ],
-            options={
-                "verbose_name": "Страница 'О нас'",
-                "verbose_name_plural": "Страница 'О нас'",
-            },
+            options={"verbose_name": "Страница 'О нас'", "verbose_name_plural": "Страница 'О нас'"},
         ),
         migrations.CreateModel(
             name="SiteSettings",
@@ -28,9 +21,6 @@ class Migration(migrations.Migration):
                 ("offer_doc", models.FileField(blank=True, null=True, upload_to="footer_docs/", verbose_name="Оферта/Пользовательское соглашение")),
                 ("privacy_doc", models.FileField(blank=True, null=True, upload_to="footer_docs/", verbose_name="Политика конфиденциальности")),
             ],
-            options={
-                "verbose_name": "Настройки сайта (файлы футера)",
-                "verbose_name_plural": "Настройки сайта (файлы футера)",
-            },
+            options={"verbose_name": "Настройки сайта (файлы футера)", "verbose_name_plural": "Настройки сайта (файлы футера)"},
         ),
     ]
