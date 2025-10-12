@@ -86,7 +86,7 @@ def payment_mock(request, reg_id):
             send_instructions_comp_conf(reg.email, reg.event.title)
             return render(request, "events/info_message.html", {
                 "title": "Оплата успешна",
-                "message": "Согласно информационному письму перешлите данные и чек на адрес vsemnayka@gmail.com."
+                "message": "Согласно информационному письму перешлите анкету, научную работу и чек на адрес vsemnayka@gmail.com."
             })
     elif status == "fail":
         reg.payment.status = Payment.Status.FAILED
