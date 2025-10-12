@@ -1,6 +1,6 @@
 import csv
 from django.http import HttpResponse
-from .models import Registration
+from events.models import Registration  # absolute import to avoid 'events.services.models' error
 
 def export_registrations_csv():
     response = HttpResponse(content_type="text/csv")
