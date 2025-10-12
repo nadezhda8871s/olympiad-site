@@ -1,35 +1,69 @@
 
-import os
 from pathlib import Path
+import os
+import re
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-def env_bool(key: str, default: bool=False):
-    val = os.getenv(key)
+def env(key, default=None):
+    return os.environ.get(key, default)
+
+def env_bool(key, default=False):
+    val = os.environ.get(key)
     if val is None:
         return default
-    return str(val).strip().lower() in {"1", "true", "yes", "on"}
+    return str(val).strip().lower() in {"1","true","yes","on"}
 
-def env_list(key: str, default=None):
-    if default is None:
-        default = []
-    raw = os.getenv(key)
-    if not raw:
-        return default
-    # split by comma and strip spaces
-    return [item.strip() for item in raw.split(",") if item.strip()]
+def env_list(key, default=None):
+    val = os.environ.get(key)
+    if not val:
+        return default or []
+    # split by comma or whitespace; strip each
+    parts = re.split(r'[,\s]+', val.strip())
+    return [p for p in (s.strip() for s in parts) if p]
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-secret-key")
+def ensure_https_origins(items):
+    out = []
+    for item in items:
+        if not item:
+            continue
+        if item.startswith("http://") or item.startswith("https://"):
+            out.append(item)
+        else:
+            out.append("https://" + item.lstrip("."))
+    return out
 
-DEBUG = env_bool("DEBUG", False) or env_bool("DJANGO_DEBUG", False)
+SECRET_KEY = env("DJANGO_SECRET_KEY", "change-me-unsafe")
 
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ["olympiad-site-1.onrender.com"])
+DEBUG = env_bool("DEBUG", env_bool("DJANGO_DEBUG", False))
 
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", [
-    "https://olympiad-site-1.onrender.com"
-])
+# Hosts
+_allowed_hosts = env_list("ALLOWED_HOSTS", [])
+if not _allowed_hosts:
+    _allowed_hosts = [".onrender.com", ".vsemnauka.ru", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = _allowed_hosts
 
-# Apps
+# CSRF trusted origins
+_csrf_env = env_list("CSRF_TRUSTED_ORIGINS", [])
+if not _csrf_env:
+    # derive from ALLOWED_HOSTS if not explicitly provided
+    _csrf_env = ensure_https_origins([h.lstrip(".") for h in _allowed_hosts if h and h != "*"])
+# Always include render subdomain origin
+_csrf_env.append("https://*.onrender.com")
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_csrf_env))  # dedupe, keep order
+
+# Security & proxy
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 60 * 60 * 24  # 1 day; increase after verifying
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+X_FRAME_OPTIONS = "DENY"
+SECURE_REFERRER_POLICY = "same-origin"
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -51,9 +85,11 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # Health check first to bypass heavy stack
-    "config.health_middleware.HealthCheckMiddleware",
 ]
+
+# Optional host debug middleware (enabled by ENV ENABLE_HOST_DEBUG=1)
+if env_bool("ENABLE_HOST_DEBUG", False):
+    MIDDLEWARE.insert(0, "config.host_debug_middleware.HostDebugMiddleware")
 
 ROOT_URLCONF = "config.urls"
 
@@ -61,6 +97,7 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [BASE_DIR / "templates"],
+        "APP_NAME": "django.contrib.admin",
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -75,12 +112,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Database from Render env or default (SQLite keeps existing behavior if any)
-# If DATABASE_URL is provided, dj_database_url will be used in your repo's code.
-import dj_database_url
+# Database
+# Use dj-database-url if available
 DATABASES = {
-    "default": dj_database_url.config(default=f"sqlite:///{BASE_DIR/'db.sqlite3'}", conn_max_age=600),
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
 }
+_db_url = os.environ.get("DATABASE_URL")
+if _db_url:
+    try:
+        import dj_database_url
+        DATABASES["default"] = dj_database_url.config(default=_db_url, conn_max_age=600, ssl_require=True)
+    except Exception:
+        pass
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -91,43 +137,18 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "ru"
-
 TIME_ZONE = "Europe/Moscow"
-
 USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATIC_ROOT = os.getenv("STATIC_ROOT", str(BASE_DIR / "staticfiles"))
-STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
-
-# WhiteNoise for static files
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [p for p in [BASE_DIR / "static"] if p.exists()]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# Security and proxy headers for Render
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
-SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
-
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SAMESITE = "Lax"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Optional: log DisallowedHost to help diagnose host issues
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {"class": "logging.StreamHandler"},
-    },
-    "loggers": {
-        "django.security.DisallowedHost": {
-            "handlers": ["console"],
-            "level": "ERROR",
-            "propagate": False,
-        },
-    },
-}
+# Health check toggle path (handled in urls)
+HEALTHZ_PATH = "/healthz"
+
+APPEND_SLASH = True

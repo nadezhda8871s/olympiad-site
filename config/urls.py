@@ -1,22 +1,23 @@
 
 from django.contrib import admin
-from django.urls import path, include
-from django.views.generic import TemplateView
+from django.http import HttpResponse
+from django.urls import include, path
+
+def healthz(_request):
+    return HttpResponse("ok", content_type="text/plain")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("i18n/", include("django.conf.urls.i18n")),
+    path("healthz", healthz, name="healthz"),
 ]
 
-# Attach app URLs with safe fallbacks to avoid ImportError and recursion mistakes.
-# pages at root
+# Include app URLs if they exist (prevents circular imports)
 try:
     urlpatterns += [path("", include("pages.urls"))]
 except Exception:
-    # Fallback: simple static template if pages.urls is absent during deploy
-    urlpatterns += [path("", TemplateView.as_view(template_name="pages/home.html"), name="home")]
-# events under /events/
+    pass
+
 try:
-    urlpatterns += [path("events/", include("events.urls"))]
+    urlpatterns += [path("", include("events.urls"))]
 except Exception:
     pass
