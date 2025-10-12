@@ -1,106 +1,144 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
+from django.db.utils import OperationalError, ProgrammingError
+from django.contrib.auth.decorators import user_passes_test
 from .models import Event, Registration, Payment, Question, AnswerOption, TestResult
 from .forms import RegistrationForm
-from .services.payments_mock import pay as mock_pay
-from .services.export_csv import export_registrations_csv
-from .services.mailer import notify
+from .services.emails import (
+    send_registration_confirmation, send_payment_success, send_payment_failed,
+    send_instructions_comp_conf, send_test_result
+)
+from .services.export import export_registrations_csv
 
-def home(request):
-    featured = Event.objects.filter(is_published=True, is_featured=True).order_by("sort_order","-created_at")[:12]
-    return render(request, "events/home.html", {"featured": featured})
+def _list_by_type(request, type_code, title):
+    try:
+        qs = Event.objects.filter(is_published=True, type=type_code)
+        q = request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(title__icontains=q)
+        date_from = request.GET.get("date_from")
+        date_to = request.GET.get("date_to")
+        if date_from:
+            qs = qs.filter(event_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(event_date__lte=date_to)
+    except (OperationalError, ProgrammingError):
+        qs = []
+        q = ""
+    return render(request, "events/list.html", {"events": qs, "page_title": title, "q": q})
 
-def _list_by_type(request, t):
-    qs = Event.objects.filter(is_published=True, type=t).order_by("sort_order","-created_at")
-    q = request.GET.get("q","").strip()
-    if q:
-        qs = qs.filter(title__icontains=q)
-    # фильтр по дате — простая заглушка: сортировка уже по дате создания
-    return render(request, "events/list.html", {"items": qs, "q": q, "type": t})
+def events_list_olymps(request):
+    return _list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады")
 
-def list_olympiads(request): return _list_by_type(request, "olympiad")
-def list_contests(request): return _list_by_type(request, "contest")
-def list_conferences(request): return _list_by_type(request, "conference")
+def events_list_contests(request):
+    return _list_by_type(request, Event.EventType.CONTEST, "Конкурсы")
+
+def events_list_conferences(request):
+    return _list_by_type(request, Event.EventType.CONFERENCE, "Конференции")
 
 def event_detail(request, slug):
-    ev = get_object_or_404(Event, slug=slug, is_published=True)
+    try:
+        ev = get_object_or_404(Event, slug=slug, is_published=True)
+    except (OperationalError, ProgrammingError):
+        ev = None
     return render(request, "events/detail.html", {"ev": ev})
 
-def register_event(request, slug):
-    ev = get_object_or_404(Event, slug=slug, is_published=True)
+def event_register(request, slug):
+    try:
+        ev = get_object_or_404(Event, slug=slug, is_published=True)
+    except (OperationalError, ProgrammingError):
+        ev = None
+    if ev is None:
+        return render(request, "events/info_message.html", {"title": "Ошибка", "message": "Мероприятие недоступно."})
     if request.method == "POST":
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            reg = Registration.objects.create(
-                event=ev,
-                fio=form.cleaned_data["fio"],
-                org=form.cleaned_data["org"],
-                city=form.cleaned_data["city"],
-                email=form.cleaned_data["email"],
-                phone=form.cleaned_data["phone"],
-                consent_pd=form.cleaned_data["consent_pd"],
-            )
-            pay = Payment.objects.create(registration=reg, status="pending")
-            notify(reg.email, "Регистрация получена", f"Вы зарегистрировались на мероприятие: {ev.title}")
-            return redirect("pay_choice", order_id=reg.id)
+            reg = form.save(commit=False)
+            reg.event = ev
+            reg.save()
+            Payment.objects.create(registration=reg, status=Payment.Status.PENDING)
+            send_registration_confirmation(reg.email, ev.title, reg.fio)
+            return redirect("payment_mock", reg_id=reg.id)
     else:
         form = RegistrationForm()
     return render(request, "events/register.html", {"ev": ev, "form": form})
 
-def pay_choice(request, order_id):
-    return render(request, "events/pay_choice.html", {"order_id": order_id})
+def payment_mock(request, reg_id):
+    try:
+        reg = Registration.objects.get(id=reg_id)
+    except (Registration.DoesNotExist, OperationalError, ProgrammingError):
+        reg = None
+    if reg is None:
+        return render(request, "events/info_message.html", {"title": "Оплата", "message": "Регистрация не найдена."})
 
-def pay_success(request, order_id):
-    reg = get_object_or_404(Registration, id=order_id)
-    pay_info = mock_pay(order_id, True)
-    p = Payment.objects.get(registration=reg)
-    p.status = "paid"
-    p.paid_at = timezone.now()
-    p.txn_id = "demo"
-    p.save()
-    if reg.event.type == "olympiad":
-        notify(reg.email, "Оплата успешна", "Оплата прошла успешно. Можете начать тест.")
-        return redirect("test_start", order_id=reg.id)
-    else:
-        msg = "Согласно информационному письму перешлите данные и чек на vsemnayka@gmail.com"
-        notify(reg.email, "Оплата успешна", msg)
-        return render(request, "events/pay_success.html", {"reg": reg, "message": msg})
+    status = request.GET.get("status")
+    if status == "success":
+        p = reg.payment
+        p.status = Payment.Status.PAID
+        p.paid_at = timezone.now()
+        p.txn_id = f"demo-{p.paid_at.timestamp()}"
+        p.save()
+        send_payment_success(reg.email, reg.event.title)
+        if reg.event.type == Event.EventType.OLYMPIAD:
+            return redirect("test_view", reg_id=reg.id)
+        else:
+            send_instructions_comp_conf(reg.email, reg.event.title)
+            return render(request, "events/info_message.html", {
+                "title": "Оплата успешна",
+                "message": "Согласно информационному письму перешлите данные и чек на адрес vsemnayka@gmail.com."
+            })
+    elif status == "fail":
+        reg.payment.status = Payment.Status.FAILED
+        reg.payment.save()
+        send_payment_failed(reg.email, reg.event.title)
+        return render(request, "events/payment_result.html", {"success": False, "reg": reg})
 
-def pay_fail(request, order_id):
-    reg = get_object_or_404(Registration, id=order_id)
-    p = Payment.objects.get(registration=reg)
-    p.status = "failed"
-    p.save()
-    notify(reg.email, "Оплата неуспешна", "Оплата не прошла. Попробуйте снова.")
-    return render(request, "events/pay_fail.html", {"reg": reg})
+    return render(request, "events/payment_mock.html", {"reg": reg})
 
-def test_start(request, order_id):
-    reg = get_object_or_404(Registration, id=order_id)
-    if reg.event.type != "olympiad": return redirect("home")
-    return render(request, "events/test_start.html", {"reg": reg})
+def test_view(request, reg_id):
+    try:
+        reg = Registration.objects.get(id=reg_id)
+        ev = reg.event
+    except (Registration.DoesNotExist, OperationalError, ProgrammingError):
+        return HttpResponseForbidden("Тест недоступен.")
+    if ev.type != Event.EventType.OLYMPIAD:
+        return HttpResponseForbidden("Тест доступен только для олимпиад.")
+    if reg.payment.status != Payment.Status.PAID:
+        return HttpResponseForbidden("Тест доступен только после успешной оплаты.")
+    if reg.results.exists():
+        return render(request, "events/test_done.html", {"reg": reg, "score": reg.results.latest("id").score})
 
-def test_run(request, order_id):
-    reg = get_object_or_404(Registration, id=order_id)
-    if reg.event.type != "olympiad": return redirect("home")
-    questions = Question.objects.filter(event=reg.event).order_by("order")
+    questions = list(ev.questions.prefetch_related("options").all())
     if request.method == "POST":
         score = 0
-        details = {}
+        answers = {}
         for q in questions:
-            ans = request.POST.get(f"q{q.id}")
-            details[str(q.id)] = ans
-            try:
-                correct = AnswerOption.objects.get(question=q, is_correct=True)
-                if ans == str(correct.id): score += 1
-            except AnswerOption.DoesNotExist:
-                pass
-        TestResult.objects.update_or_create(registration=reg, defaults={"score": score, "details": details})
-        notify(reg.email, "Результат теста", f"Ваш результат: {score}")
-        return render(request, "events/test_start.html", {"reg": reg, "done": True, "score": score})
-    return render(request, "events/test_run.html", {"reg": reg, "questions": questions})
+            chosen_id = request.POST.get(f"q_{q.id}")
+            answers[str(q.id)] = chosen_id
+            if chosen_id:
+                try:
+                    opt = q.options.get(id=int(chosen_id))
+                    if opt.is_correct:
+                        score += 1
+                except Exception:
+                    pass
+        TestResult.objects.create(registration=reg, score=score, answers=answers, finished_at=timezone.now())
+        send_test_result(reg.email, ev.title, score)
+        return render(request, "events/test_done.html", {"reg": reg, "score": score})
+    return render(request, "events/test.html", {"reg": reg, "questions": questions})
 
-def export_csv(request):
-    from .models import Registration
-    qs = Registration.objects.select_related("event").order_by("-created_at")
-    return export_registrations_csv(qs)
+def search_api(request):
+    q = request.GET.get("q", "").strip()
+    results = []
+    try:
+        if q:
+            for ev in Event.objects.filter(is_published=True, title__icontains=q).order_by("sort_order")[:10]:
+                results.append({"title": ev.title, "url": ev.get_absolute_url()})
+    except (OperationalError, ProgrammingError):
+        pass
+    return JsonResponse({"results": results})
+
+@user_passes_test(lambda u: u.is_staff)
+def export_csv_view(request):
+    return export_registrations_csv()
