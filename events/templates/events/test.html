@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Тест{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Тест</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% for q in questions %}
+      <div class="question">
+        <div class="q-title">{{ forloop.counter }}. {{ q.text }}</div>
+        <div class="options">
+          {% for opt in q.options.all %}
+            <label>
+              <input type="radio" name="q_{{ q.id }}" value="{{ opt.id }}">
+              {{ opt.text }}
+            </label><br>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+    <button class="btn primary">Завершить тест</button>
+  </form>
+</section>
+{% endblock %}

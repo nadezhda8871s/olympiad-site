@@ -1,13 +1,18 @@
-{% extends "events/base.html" %}
+{% extends "base.html" %}
+{% block title %}{{ ev.title|default:"Мероприятие" }}{% endblock %}
 {% block content %}
-<div class="card">
-  <h2>{{ ev.title }}</h2>
-  <p>{{ ev.description }}</p>
-  <div class="actions">
-    {% if ev.info_file %}
-    <a class="btn secondary" href="{{ ev.info_file.url }}" download>Информационное письмо</a>
-    {% endif %}
-    <a class="btn primary" href="/register/{{ ev.slug }}/">Регистрация</a>
+<section class="container">
+  {% if ev %}
+  <div class="card">
+    <h1>{{ ev.title }}</h1>
+    <p>{{ ev.description }}</p>
+    <div class="card-actions">
+      {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
+      <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
+    </div>
   </div>
-</div>
+  {% else %}
+  <p>Мероприятие недоступно.</p>
+  {% endif %}
+</section>
 {% endblock %}
