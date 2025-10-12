@@ -9,6 +9,6 @@ urlpatterns = [
     path("register/<slug:slug>/", views.event_register, name="event_register"),
     path("pay/<int:reg_id>/", views.payment_mock, name="payment_mock"),
     path("test/<int:reg_id>/", views.test_view, name="test_view"),
-    path("api/search", views.search_api, name="search_api"),  # без / по договорённости с JS
+    path("api/search", views.search_api, name="search_api"),
     path("admin/export/csv/", views.export_csv_view, name="export_csv"),
 ]
