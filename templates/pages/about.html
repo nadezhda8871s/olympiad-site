@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}О нас{% endblock %}
+{% block content %}
+<section class="about container">
+  <h1>О нас</h1>
+  {% if about %}
+    <div class="about-content">
+      <div class="lang-ru"><h3>RU</h3><p style="white-space:pre-wrap">{{ about.content_ru }}</p></div>
+      <div class="lang-en"><h3>EN</h3><p style="white-space:pre-wrap">{{ about.content_en }}</p></div>
+    </div>
+  {% else %}
+    <p>Раздел пока пуст. Заполните текст в админке.</p>
+  {% endif %}
+</section>
+{% endblock %}
