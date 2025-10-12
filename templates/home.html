@@ -1,56 +1,61 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static i18n %}
+
+{% block title %}{% trans "Онлайн научные мероприятия — Главная" %}{% endblock %}
 
 {% block content %}
 <section class="hero">
-  <h1 class="hero-title">{% trans 'Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных' %}</h1>
-  <p class="hero-sub">{% trans 'Участвуйте в олимпиадах, конкурсах и конференциях. Наградные документы — в течение 5 дней.' %}</p>
+  <h1 class="hero-title">{% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}</h1>
+  <p class="hero-sub">{% trans "Наградные документы высылаются в течение 5 дней с даты регистрации (вручную, только на vsemnayka@gmail.com)" %}</p>
 
-  <form method="get" action="{% url 'home' %}" class="search-wrap" role="search">
-    <input type="text" name="q" id="searchInput" placeholder="{% trans 'Начните вводить название мероприятия…' %}" autocomplete="off">
-    <button class="btn btn--gold" type="submit">{% trans 'Искать' %}</button>
+  <form class="search-form" action="" onsubmit="return false;">
+    <input id="globalSearch" type="search" placeholder="{% trans 'Начните вводить название мероприятия…' %}" aria-label="{% trans 'Поиск по заголовку мероприятия' %}">
+    <button type="button" class="cta" onclick="window.performGlobalSearch && window.performGlobalSearch()">{% trans "Искать" %}</button>
   </form>
 
-  <div class="category-row">
-    <a class="tile" href="{% url 'olympiads_list' %}">
-      <span class="tile-title">{% trans 'Олимпиады' %}</span>
+  <div class="tiles">
+    <a class="tile" href="/olympiads/">
+      <span class="tile-title">{% trans "Олимпиады" %}</span>
     </a>
-    <a class="tile" href="{% url 'contests_list' %}">
-      <span class="tile-title">{% trans 'Конкурсы статей, ВКР, научных работ' %}</span>
+    <a class="tile" href="/contests/">
+      <span class="tile-title">{% trans "Конкурсы статей, ВКР, научных работ" %}</span>
     </a>
-    <a class="tile" href="{% url 'conferences_list' %}">
-      <span class="tile-title">{% trans 'Конференции с публикацией в РИНЦ сборниках' %}</span>
+    <a class="tile" href="/conferences/">
+      <span class="tile-title">{% trans "Конференции с публикацией в РИНЦ сборниках" %}</span>
     </a>
-    <a class="tile" target="_blank" rel="noopener" href="https://vsem.site/">
-      <span class="tile-title">{% trans 'Монографии' %}</span>
+    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">
+      <span class="tile-title">{% trans "Монографии" %}</span>
     </a>
-    <a class="tile" target="_blank" rel="noopener" href="https://vsem.site/">
-      <span class="tile-title">{% trans 'Наши журналы' %}</span>
+    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">
+      <span class="tile-title">{% trans "Наши журналы" %}</span>
     </a>
   </div>
 </section>
 
 <section class="section">
-  <h2 class="section-title">{% trans 'Актуальные мероприятия' %}</h2>
-  <div class="cards">
+  <div class="section-head">
+    <h2 class="section-title">{% trans "Актуальные мероприятия" %}</h2>
+  </div>
+
+  <div id="actualEvents" class="cards">
     {% for ev in featured_events %}
       <article class="card">
         <h3 class="card-title">{{ ev.title }}</h3>
         <p class="card-desc">{{ ev.short_description }}</p>
+        <div class="card-meta">
+          <span class="badge">{{ ev.get_event_type_display }}</span>
+          {% if ev.price %}<span class="badge">{{ ev.price }} ₽</span>{% endif %}
+        </div>
         <div class="card-actions">
           {% if ev.info_letter %}
-            <a class="btn btn--peacock" href="{{ ev.info_letter.url }}" download>{% trans 'Информационное письмо' %}</a>
+            <a class="btn ghost" href="{{ ev.info_letter.url }}" download>{% trans "Информационное письмо" %}</a>
           {% endif %}
-          <a class="btn btn--peony" href="{{ ev.registration_url|default:ev.get_absolute_url }}">{% trans 'Регистрация' %}</a>
+          <a class="btn solid" href="{{ ev.get_registration_url }}">{% trans "Регистрация" %}</a>
         </div>
       </article>
     {% empty %}
-      <div class="muted">{% trans 'Нет отмеченных мероприятий' %}</div>
+      <div class="empty">{% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}</div>
     {% endfor %}
   </div>
 </section>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/search.js' %}?v=2" defer></script>
 {% endblock %}
