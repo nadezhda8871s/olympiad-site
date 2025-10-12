@@ -2,47 +2,67 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# --- Base ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-prod")
-DEBUG = os.getenv("DEBUG", "0") in ("1", "true", "True", "yes", "on")
+# --- helpers ---
+def split_csv(value: str):
+    if not value:
+        return []
+    # допускаем пробелы/точки с запятой
+    parts = [p.strip() for p in value.replace(";", ",").split(",")]
+    return [p for p in parts if p]
 
-# --- Hosts / CSRF ---
-def _split_csv(env_name, default_list=None):
-    raw = os.getenv(env_name, "")
-    if not raw and default_list is not None:
-        return default_list
-    return [x.strip() for x in raw.split(",") if x.strip()]
+def env_first(*names, default=None):
+    for n in names:
+        v = os.getenv(n)
+        if v not in (None, ""):
+            return v
+    return default
 
-# Базовый список хостов (на случай, если переменные окружения не заданы)
-_default_hosts = [
-    "localhost", "127.0.0.1",
-    "olympiad-site-1.onrender.com",
-    "www.vsemnauka.ru", "vsemnauka.ru",
-]
-ALLOWED_HOSTS = _split_csv("ALLOWED_HOSTS", _default_hosts)
+# --- core ---
+SECRET_KEY = env_first("SECRET_KEY", "DJANGO_SECRET_KEY", default="change-me")
+DEBUG = env_first("DEBUG", "DJANGO_DEBUG", default="0") in ("1","true","True","yes","on")
 
-# Render публикует внешний хост в переменной окружения
-_render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME")
-if _render_host and _render_host not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(_render_host)
+# ALLOWED_HOSTS
+raw_hosts = env_first("ALLOWED_HOSTS", "DJANGO_ALLOWED_HOSTS", default="")
+ALLOWED_HOSTS = split_csv(raw_hosts)
 
-# CSRF: обязательно указывать полные URL с протоколом
-_default_csrf = [
-    "https://olympiad-site-1.onrender.com",
-    "https://www.vsemnauka.ru",
-    "https://vsemnauka.ru",
-]
-CSRF_TRUSTED_ORIGINS = _split_csv("CSRF_TRUSTED_ORIGINS", _default_csrf)
+# Разрешаем '*' для быстрой диагностики (можно убрать после запуска)
+if len(ALLOWED_HOSTS) == 1 and ALLOWED_HOSTS[0] == "*":
+    ALLOWED_HOSTS = ["*"]
 
-# Proxy SSL (важно для корректного HTTPS за балансировщиком Render)
+# Базовые безопасные дефолты (если env не задан)
+if not ALLOWED_HOSTS or ALLOWED_HOSTS == [""]:
+    ALLOWED_HOSTS = [
+        "localhost", "127.0.0.1",
+        "olympiad-site-1.onrender.com",
+        "www.vsemnauka.ru", "vsemnauka.ru",
+        ".vsemnauka.ru",
+    ]
+
+# Render внешнее имя (подхватываем автоматически)
+render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if render_host and render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_host)
+
+# CSRF доверенные источники (полные URL)
+raw_csrf = env_first("CSRF_TRUSTED_ORIGINS", "DJANGO_CSRF_TRUSTED_ORIGINS", default="")
+CSRF_TRUSTED_ORIGINS = split_csv(raw_csrf)
+if not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = [
+        "https://olympiad-site-1.onrender.com",
+        "https://www.vsemnauka.ru",
+        "https://vsemnauka.ru",
+    ]
+
+# За прокси: доверяем хедеру протокола и хосту
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
-# --- Apps ---
+# --- apps ---
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -50,12 +70,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # ваши приложения:
     "events",
     "pages",
 ]
 
-# --- Middleware (WhiteNoise для статики) ---
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -70,7 +88,6 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 
-# --- Templates ---
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -87,8 +104,7 @@ TEMPLATES = [
     },
 ]
 
-# --- Database ---
-# Render/Prod: DATABASE_URL задаётся в Environments. Локально можно оставить sqlite.
+# DB: Render -> DATABASE_URL; локально sqlite
 DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL:
     import dj_database_url
@@ -101,7 +117,6 @@ else:
         }
     }
 
-# --- Password validation ---
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -109,26 +124,23 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# --- i18n ---
 LANGUAGE_CODE = "ru"
 TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
 USE_TZ = True
 
-# --- Static files ---
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
-# WhiteNoise: сжатие и манифест
+if (BASE_DIR / "static").exists():
+    STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# --- Media (если используется) ---
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# --- Security hardening (можно ослабить при локальной отладке) ---
 if not DEBUG:
-    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0"))
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS", "0") in ("1","true","True","yes","on")
-    SECURE_HSTS_PRELOAD = os.getenv("SECURE_HSTS_PRELOAD", "0") in ("1","true","True","yes","on")
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+    # HSTS можно включить после подтверждения корректной работы:
+    # SECURE_HSTS_SECONDS = 31536000
+    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # SECURE_HSTS_PRELOAD = True
