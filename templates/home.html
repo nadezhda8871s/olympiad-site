@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero-title">{% trans 'Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных' %}</h1>
+  <p class="hero-sub">{% trans 'Участвуйте в олимпиадах, конкурсах и конференциях. Наградные документы — в течение 5 дней.' %}</p>
+
+  <form method="get" action="{% url 'home' %}" class="search-wrap" role="search">
+    <input type="text" name="q" id="searchInput" placeholder="{% trans 'Начните вводить название мероприятия…' %}" autocomplete="off">
+    <button class="btn btn--gold" type="submit">{% trans 'Искать' %}</button>
+  </form>
+
+  <div class="category-row">
+    <a class="tile" href="{% url 'olympiads_list' %}">
+      <span class="tile-title">{% trans 'Олимпиады' %}</span>
+    </a>
+    <a class="tile" href="{% url 'contests_list' %}">
+      <span class="tile-title">{% trans 'Конкурсы статей, ВКР, научных работ' %}</span>
+    </a>
+    <a class="tile" href="{% url 'conferences_list' %}">
+      <span class="tile-title">{% trans 'Конференции с публикацией в РИНЦ сборниках' %}</span>
+    </a>
+    <a class="tile" target="_blank" rel="noopener" href="https://vsem.site/">
+      <span class="tile-title">{% trans 'Монографии' %}</span>
+    </a>
+    <a class="tile" target="_blank" rel="noopener" href="https://vsem.site/">
+      <span class="tile-title">{% trans 'Наши журналы' %}</span>
+    </a>
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">{% trans 'Актуальные мероприятия' %}</h2>
+  <div class="cards">
+    {% for ev in featured_events %}
+      <article class="card">
+        <h3 class="card-title">{{ ev.title }}</h3>
+        <p class="card-desc">{{ ev.short_description }}</p>
+        <div class="card-actions">
+          {% if ev.info_letter %}
+            <a class="btn btn--peacock" href="{{ ev.info_letter.url }}" download>{% trans 'Информационное письмо' %}</a>
+          {% endif %}
+          <a class="btn btn--peony" href="{{ ev.registration_url|default:ev.get_absolute_url }}">{% trans 'Регистрация' %}</a>
+        </div>
+      </article>
+    {% empty %}
+      <div class="muted">{% trans 'Нет отмеченных мероприятий' %}</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/search.js' %}?v=2" defer></script>
+{% endblock %}

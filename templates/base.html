@@ -1,55 +1,67 @@
 {% load static i18n %}
-<!doctype html>
-<html lang="ru">
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Олимпиады, Конкурсы, Конференции — Научные мероприятия{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <title>{% block title %}Олимпиады, Конкурсы, Конференции — Научные мероприятия высокого уровня{% endblock %}</title>
   <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}?v=5">
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
-<header class="site-header">
-  <div class="container header-inner">
-    <a class="logo" href="/">
-      <img src="{% static 'img/peacock_outline.svg' %}" alt="logo" height="40">
-      <span class="brand">Олимпиады, Конкурсы, Конференции, Научные мероприятия высокого уровня</span>
-    </a>
-    <nav class="main-nav">
-      <a href="/olympiads/">{% trans "Олимпиады" %}</a>
-      <a href="/contests/">{% trans "Конкурсы" %}</a>
-      <a href="/conferences/">{% trans "Конференции" %}</a>
-      <a href="https://vsem.site/" target="_blank" rel="noopener">{% trans "Монографии" %}</a>
-      <a href="https://vsem.site/" target="_blank" rel="noopener">{% trans "Наши журналы" %}</a>
-      <a href="/about/">{% trans "О нас" %}</a>
-    </nav>
-    <form class="lang-switcher" action="/i18n/setlang/" method="post">
-      {% csrf_token %}
-      <select name="language" onchange="this.form.submit()">
-        <option value="ru">RU</option>
-        <option value="en">EN</option>
-      </select>
-    </form>
-  </div>
-</header>
+  <div class="page-bg"></div>
 
-<main>
-  {% block content %}{% endblock %}
-</main>
-
-<footer class="site-footer">
-  <div class="container footer-inner">
-    <div class="footer-links">
-      {% if SITE_SETTINGS and SITE_SETTINGS.offer_doc %}
-        <a href="{{ SITE_SETTINGS.offer_doc.url }}" download>Пользовательское соглашение (оферта)</a>
-      {% endif %}
-      {% if SITE_SETTINGS and SITE_SETTINGS.privacy_doc %}
-        <a href="{{ SITE_SETTINGS.privacy_doc.url }}" download>Политика конфиденциальности</a>
-      {% endif %}
+  <header class="site-header container">
+    <div class="header-left">
+      <form method="post" action="{% url 'set_language' %}">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <select name="language" class="lang-select" onchange="this.form.submit()">
+          <option value="ru"{% if LANGUAGE_CODE == 'ru' %} selected{% endif %}>RU</option>
+          <option value="en"{% if LANGUAGE_CODE == 'en' %} selected{% endif %}>EN</option>
+        </select>
+      </form>
     </div>
-    <div class="copy">© Все права защищены</div>
-  </div>
-</footer>
-<script src="{% static 'js/search.js' %}"></script>
+    <nav class="header-right">
+      <a href="{% url 'home' %}" class="brand">
+        <span class="brand-top">Олимпиады, Конкурсы, Конференции</span>
+        <span class="brand-bottom">Научные мероприятия высокого уровня</span>
+      </a>
+      <div class="nav-buttons">
+        <a class="btn btn--nav" href="{% url 'olympiads_list' %}">{% trans 'Олимпиады' %}</a>
+        <a class="btn btn--nav" href="{% url 'contests_list' %}">{% trans 'Конкурсы' %}</a>
+        <a class="btn btn--nav" href="{% url 'conferences_list' %}">{% trans 'Конференции' %}</a>
+        <a class="btn btn--nav" target="_blank" rel="noopener" href="https://vsem.site/">{% trans 'Монографии' %}</a>
+        <a class="btn btn--nav" target="_blank" rel="noopener" href="https://vsem.site/">{% trans 'Наши журналы' %}</a>
+        <a class="btn btn--nav btn--outline" href="{% url 'about' %}">{% trans 'О нас' %}</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer container">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="foot-brand">© {{ now|date:"Y" }} VseM Nayka</div>
+        <div class="foot-note">{% trans 'Наградные документы высылаются вручную в течение 5 дней с даты регистрации' %}</div>
+        <div class="foot-email">Email: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a></div>
+      </div>
+      <div class="footer-col right">
+        {% if privacy_doc_url %}
+          <a class="doc-link" href="{{ privacy_doc_url }}" download>{% trans 'Политика конфиденциальности' %}</a>
+        {% endif %}
+        {% if terms_doc_url %}
+          <a class="doc-link" href="{{ terms_doc_url }}" download>{% trans 'Пользовательское соглашение' %}</a>
+        {% endif %}
+      </div>
+    </div>
+  </footer>
+
+  {% block extra_js %}{% endblock %}
 </body>
 </html>
