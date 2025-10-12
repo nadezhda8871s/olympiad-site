@@ -1,6 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36" fill="none">
-  <path d="M5 30 C40 10, 80 10, 115 30" stroke="#C9A227" stroke-width="2" fill="none" stroke-linecap="round"/>
-  <circle cx="5" cy="30" r="3" fill="#7A2F8F"/>
-  <circle cx="60" cy="20" r="2" fill="#1AA6B7"/>
-  <circle cx="115" cy="30" r="3" fill="#0B6B6F"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="210" height="48" viewBox="0 0 210 48" fill="none">
+  <!-- Схематичный «павлин» — жирные чёткие линии и пиктограммы-перья -->
+  <path d="M10 38 C60 10, 150 10, 200 38" stroke="#0057A4" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <circle cx="30" cy="28" r="4" fill="#E6B800"/>
+  <circle cx="80" cy="20" r="4" fill="#D43FA8"/>
+  <circle cx="130" cy="20" r="4" fill="#00B7B0"/>
+  <circle cx="180" cy="28" r="4" fill="#6A1B9A"/>
 </svg>
