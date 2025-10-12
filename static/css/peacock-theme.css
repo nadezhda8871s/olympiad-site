@@ -1,0 +1,18 @@
+
+/* Extra theme bits loaded by search.js */
+.searchbar-wrap{
+  display:flex; align-items:center; gap:.5rem;
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 14px; padding:.6rem .8rem; margin: .75rem 0 1rem 0;
+  box-shadow: 0 6px 20px rgba(0,0,0,.08);
+}
+.searchbar-input{ flex:1; font: 500 16px/22px system-ui, -apple-system, Segoe UI, Roboto, sans-serif; border: none; background: transparent; outline: none; }
+.searchbar-clear{
+  border:none; background: #1f2937; color:#fff; width:30px; height:30px; line-height:28px;
+  border-radius: 8px; cursor:pointer; transition: transform .12s ease;
+}
+.searchbar-clear:hover{ transform: scale(1.05); }
+mark.hl { background: linear-gradient(90deg, #ffe08a, #ffd14d); padding: 0 .15em; border-radius: .25em; }
+.no-results { margin-left:auto; margin-right:auto; padding: 10px 12px; border: 1px dashed rgba(0,0,0,.25); border-radius: 10px; }
