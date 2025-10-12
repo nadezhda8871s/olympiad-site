@@ -1,0 +1,55 @@
+{% load static i18n %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Олимпиады, Конкурсы, Конференции — Научные мероприятия{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="logo" href="/">
+      <img src="{% static 'img/peacock_outline.svg' %}" alt="logo" height="36">
+      <span class="brand">Олимпиады, Конкурсы, Конференции, Научные мероприятия высокого уровня</span>
+    </a>
+    <nav class="main-nav">
+      <a href="/olympiads">{% trans "Олимпиады" %}</a>
+      <a href="/contests">{% trans "Конкурсы" %}</a>
+      <a href="/conferences">{% trans "Конференции" %}</a>
+      <a href="https://vsem.site/" target="_blank" rel="noopener">{% trans "Монографии" %}</a>
+      <a href="https://vsem.site/" target="_blank" rel="noopener">{% trans "Наши журналы" %}</a>
+      <a href="/about">{% trans "О нас" %}</a>
+    </nav>
+    <form class="lang-switcher" action="/i18n/setlang/" method="post">
+      {% csrf_token %}
+      <select name="language" onchange="this.form.submit()">
+        <option value="ru">RU</option>
+        <option value="en">EN</option>
+      </select>
+    </form>
+  </div>
+</header>
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-links">
+      {% if SITE_SETTINGS and SITE_SETTINGS.offer_doc %}
+        <a href="{{ SITE_SETTINGS.offer_doc.url }}" download>Пользовательское соглашение (оферта)</a>
+      {% endif %}
+      {% if SITE_SETTINGS and SITE_SETTINGS.privacy_doc %}
+        <a href="{{ SITE_SETTINGS.privacy_doc.url }}" download>Политика конфиденциальности</a>
+      {% endif %}
+    </div>
+    <div class="copy">© Все права защищены</div>
+  </div>
+</footer>
+<script src="{% static 'js/search.js' %}"></script>
+</body>
+</html>
