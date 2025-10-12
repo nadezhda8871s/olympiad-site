@@ -1,5 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36" fill="none">
-  <!-- Схематичный «павлин»: лишь линия и точки-акценты -->
   <path d="M5 30 C40 10, 80 10, 115 30" stroke="#C9A227" stroke-width="2" fill="none" stroke-linecap="round"/>
   <circle cx="5" cy="30" r="3" fill="#7A2F8F"/>
   <circle cx="60" cy="20" r="2" fill="#1AA6B7"/>
