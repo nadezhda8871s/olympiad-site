@@ -1,13 +1,9 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
-
 class Migration(migrations.Migration):
-
     initial = True
-
     dependencies = []
-
     operations = [
         migrations.CreateModel(
             name="Event",
@@ -29,11 +25,7 @@ class Migration(migrations.Migration):
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
             ],
-            options={
-                "verbose_name": "Мероприятие",
-                "verbose_name_plural": "Мероприятия",
-                "ordering": ["sort_order", "-id"],
-            },
+            options={"verbose_name": "Мероприятие", "verbose_name_plural": "Мероприятия", "ordering": ["sort_order", "-id"]},
         ),
         migrations.CreateModel(
             name="Registration",
@@ -48,10 +40,7 @@ class Migration(migrations.Migration):
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("event", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="registrations", to="events.event")),
             ],
-            options={
-                "verbose_name": "Регистрация",
-                "verbose_name_plural": "Регистрации",
-            },
+            options={"verbose_name": "Регистрация", "verbose_name_plural": "Регистрации"},
         ),
         migrations.CreateModel(
             name="Question",
@@ -62,11 +51,7 @@ class Migration(migrations.Migration):
                 ("order", models.IntegerField(default=0)),
                 ("event", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="questions", to="events.event")),
             ],
-            options={
-                "verbose_name": "Вопрос",
-                "verbose_name_plural": "Вопросы",
-                "ordering": ["order", "id"],
-            },
+            options={"verbose_name": "Вопрос", "verbose_name_plural": "Вопросы", "ordering": ["order", "id"]},
         ),
         migrations.CreateModel(
             name="AnswerOption",
@@ -78,11 +63,7 @@ class Migration(migrations.Migration):
                 ("order", models.IntegerField(default=0)),
                 ("question", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="options", to="events.question")),
             ],
-            options={
-                "verbose_name": "Вариант ответа",
-                "verbose_name_plural": "Варианты ответа",
-                "ordering": ["order", "id"],
-            },
+            options={"verbose_name": "Вариант ответа", "verbose_name_plural": "Варианты ответа", "ordering": ["order", "id"]},
         ),
         migrations.CreateModel(
             name="Payment",
@@ -93,10 +74,7 @@ class Migration(migrations.Migration):
                 ("paid_at", models.DateTimeField(blank=True, null=True)),
                 ("registration", models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name="payment", to="events.registration")),
             ],
-            options={
-                "verbose_name": "Оплата",
-                "verbose_name_plural": "Оплаты",
-            },
+            options={"verbose_name": "Оплата", "verbose_name_plural": "Оплаты"},
         ),
         migrations.CreateModel(
             name="TestResult",
@@ -108,9 +86,6 @@ class Migration(migrations.Migration):
                 ("finished_at", models.DateTimeField(blank=True, null=True)),
                 ("registration", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="results", to="events.registration")),
             ],
-            options={
-                "verbose_name": "Результат теста",
-                "verbose_name_plural": "Результаты теста",
-            },
+            options={"verbose_name": "Результат теста", "verbose_name_plural": "Результаты теста"},
         ),
     ]
