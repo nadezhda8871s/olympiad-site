@@ -1,278 +1,217 @@
 
-/* === Peacock & Peony — LIGHT THEME (modern, festive) ===
-   Drop-in replacement for /static/css/main.css
-   Palette: airy whites + peacock blues/greens + classic peony pink + gold accents
-   Designed to feel bright, celebratory, and premium.
-*/
-
+/* Peacock & Peony — Light v2 (brighter) */
+/* Palette */
 :root{
-  --bg:           #ffffff;
-  --bg-soft:      #fbfcff;
-  --bg-contrast:  #f4f7fb;
+  --bg: #FAFCFF;                 /* почти белый с лёгкой голубизной */
+  --surface: #FFFFFF;            /* белый для карточек */
+  --ink: #0f2544;                /* глубокий «сапфировый» текст */
+  --muted: #38577a;              /* вторичный текст */
 
-  --ink:          #0f172a;  /* slate-900 */
-  --muted:        #475569;  /* slate-600 */
+  /* Павлиньи оттенки (ярче) */
+  --pea-emerald:#00a581;
+  --pea-teal:#00b7bd;
+  --pea-blue:#2a74ff;
+  --pea-indigo:#2a4bff;
 
-  --peacock-1:    #0ea5a6;  /* teal-500 */
-  --peacock-2:    #2563eb;  /* blue-600 */
-  --peacock-3:    #0ea5e9;  /* sky-500 */
+  /* Пионовые акценты (ярче, но благородные) */
+  --peony:#ff4fa3;
+  --peony-600:#e83b8e;
 
-  --peony:        #e11d48;  /* rose-600 */
-  --peony-soft:   #fda4af;  /* rose-300 */
+  /* «Золото» для дорогого акцента */
+  --gold:#d2a73b;
+  --gold-600:#b88c22;
 
-  --gold:         #caa54b;  /* warm gold */
-  --gold-soft:    #f1e4bf;
+  /* Карточки/тени */
+  --radius:18px;
+  --shadow: 0 10px 30px rgba(25, 61, 120, .12);
+  --shadow-strong: 0 14px 40px rgba(25, 61, 120, .18);
 
-  --ring:         #60a5fa;  /* ring highlight */
-
-  --radius:       16px;
-  --radius-sm:    12px;
-  --radius-lg:    20px;
-
-  --shadow-sm:    0 4px 12px rgba(2, 6, 23, .06);
-  --shadow-md:    0 8px 24px rgba(2, 6, 23, .08);
-  --shadow-lg:    0 16px 40px rgba(2, 6, 23, .10);
+  /* Водяной знак — деликатнее чем v1, но чуть заметнее */
+  --wm-opacity: 0.06;
+  --wm-size: 900px;
 }
 
-/* --- Global reset & base --- */
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;
-  font-family: Inter, ui-sans-serif, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
-  color: var(--ink);
+  font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+  color:var(--ink);
   background:
-    radial-gradient(60rem 60rem at 10% -5%, #e0f2fe 0%, transparent 60%),
-    radial-gradient(50rem 50rem at 110% 10%, #fce7f3 0%, transparent 60%),
-    linear-gradient(0deg, var(--bg), var(--bg));
-  position: relative;
-  overflow-x: hidden;
+    radial-gradient(1200px 1200px at 120% -20%, rgba(42,116,255,.08), transparent 50%),
+    radial-gradient(1000px 800px at -10% 120%, rgba(0,167,189,.08), transparent 55%),
+    var(--bg);
 }
 
-/* Watermark (very subtle) — provide file at /static/img/peacock_peonies_watermark.jpg */
-body::before{
+/* Водяной знак (фон страницы) */
+body::after{
   content:"";
-  position: fixed;
-  inset: 0;
-  background-image: url("/static/img/peacock_peonies_watermark.jpg");
-  background-repeat: no-repeat;
-  background-position: right -120px bottom -80px;
-  background-size: 700px;
-  opacity: .06;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Container helpers */
-.container{
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 18px;
-  position: relative;
-  z-index: 1; /* above watermark */
-}
-
-/* --- Header / Topbar --- */
-.site-header{
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: rgba(255,255,255,.7);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(2, 6, 23, .06);
-}
-
-.navbar{
-  display:flex; align-items:center; justify-content:space-between;
-  min-height:64px;
-}
-
-.brand{
-  display:flex; align-items:center; gap:12px;
-  font-weight:700; letter-spacing:.2px;
-  color: var(--peacock-2);
-}
-
-.brand .mark{
-  width:36px; height:36px; border-radius:12px;
-  background: conic-gradient(from 90deg, var(--peacock-2), var(--peacock-1), var(--peony), var(--peacock-3), var(--peacock-2));
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(0,0,0,.06);
-}
-
-.nav-links{display:flex; gap:8px; flex-wrap:wrap}
-.nav-links a{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:10px 14px;
-  border-radius: var(--radius-sm);
-  color: var(--muted);
-  text-decoration:none;
-  border:1px solid transparent;
-  transition: all .22s ease;
-}
-.nav-links a:hover{
-  color: var(--ink);
-  border-color: rgba(2,6,23,.08);
-  background: linear-gradient(180deg, #ffffff, #f6f9ff);
-  box-shadow: var(--shadow-sm);
-}
-
-/* --- Hero --- */
-.hero{
-  padding: 56px 0 28px;
-}
-.hero .title{
-  font-size: clamp(28px, 3.4vw, 42px);
-  line-height: 1.12;
-  margin: 0 0 10px;
-  font-weight: 800;
-  letter-spacing:.2px;
-}
-.hero .subtitle{
-  color: var(--muted);
-  font-size: clamp(16px, 2vw, 18px);
-  margin: 0 0 22px;
-}
-
-/* Search */
-.search-bar{
-  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-}
-.search-input{
-  flex:1 1 340px;
-  padding:14px 16px;
-  border-radius: 14px;
-  border:1px solid rgba(2,6,23,.10);
-  background:#fff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
-  outline:none;
-  transition: box-shadow .2s ease, border-color .2s ease;
-}
-.search-input:focus{
-  border-color: var(--ring);
-  box-shadow: 0 0 0 4px rgba(96,165,250,.25);
-}
-
-/* --- Tiles (big category buttons) --- */
-.tiles{
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap:14px;
-  margin: 26px 0 10px;
-}
-.tile{
-  position:relative;
-  border-radius: var(--radius);
-  padding:18px 16px;
-  text-decoration:none;
-  color: var(--ink);
-  background: linear-gradient(180deg, #ffffff, var(--bg-contrast));
-  border:1px solid rgba(2,6,23,.08);
-  box-shadow: var(--shadow-sm);
-  overflow:hidden;
-  transition: transform .2s ease, box-shadow .2s ease;
-}
-.tile:hover{
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-.tile::after{ /* gold outline glow */
-  content:"";
-  position:absolute; inset:0;
-  border-radius: inherit;
+  position:fixed;
+  inset:auto 0 0 auto;
+  width:var(--wm-size);
+  height:var(--wm-size);
+  right:-120px;
+  bottom:-120px;
+  background:url("/static/img/peacock_peonies_watermark.jpg") center/contain no-repeat;
+  opacity:var(--wm-opacity);
   pointer-events:none;
-  box-shadow: inset 0 0 0 1px rgba(202,165,75,.55), 0 8px 24px rgba(202,165,75,.18);
-  opacity:.0; transition:opacity .2s ease;
-}
-.tile:hover::after{opacity:1}
-.tile .tile-name{font-weight:700; font-size:18px}
-.tile .tile-note{color:var(--muted); font-size:13px; margin-top:6px}
-
-/* --- Section heading --- */
-.section-heading{
-  margin: 28px 0 12px;
-  font-weight: 800;
-  font-size: 22px;
+  filter: saturate(110%);
 }
 
-/* --- Cards (events) --- */
-.cards{
-  display:grid; gap:16px;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+/* Контейнеры */
+.container{
+  max-width:1180px;
+  margin-inline:auto;
+  padding:32px 24px;
 }
-.card{
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border:1px solid rgba(2,6,23,.08);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding:16px;
-}
-.card h3{
-  margin:0 0 6px; font-size:18px
-}
-.card p{margin: 0 0 12px; color: var(--muted)}
 
-/* Buttons */
+/* Хедер */
+.site-header{
+  position:sticky; top:0; z-index:40;
+  backdrop-filter:saturate(150%) blur(6px);
+  background: color-mix(in srgb, var(--bg) 86%, white 14%);
+  border-bottom: 1px solid rgba(13,49,92,.08);
+}
+.nav{
+  display:flex; gap:14px; align-items:center; justify-content:space-between;
+}
+.brand{
+  display:flex; align-items:center; gap:12px; text-decoration:none;
+}
+.brand__logo{
+  width:40px; height:40px; border-radius:50%;
+  background: radial-gradient(circle at 30% 30%, var(--pea-teal), var(--pea-blue));
+  box-shadow: 0 0 0 3px #fff, 0 6px 14px rgba(8,52,108,.25);
+  position:relative; overflow:hidden;
+}
+.brand__logo::after{
+  content:""; position:absolute; inset:0;
+  background: conic-gradient(from 120deg, transparent 0 65%, rgba(255,255,255,.22) 65% 85%, transparent 85%);
+}
+.brand__title{ font-weight:800; font-size:20px; color:var(--ink) }
+.menu{ display:flex; gap:6px; flex-wrap:wrap }
+.menu a{
+  text-decoration:none; color:var(--muted); font-weight:600; padding:10px 14px; border-radius:12px;
+  transition:.2s ease; border:1px solid transparent;
+}
+.menu a:hover{ color:var(--ink); border-color: rgba(13,49,92,.12); background:#fff; box-shadow: var(--shadow) }
+
+/* Герой-блок */
+.hero{
+  padding:48px 0 18px;
+}
+.hero__title{
+  font-size: clamp(28px, 3.8vw, 44px);
+  line-height:1.15;
+  font-weight:900;
+  letter-spacing:.2px;
+  background: linear-gradient(90deg, var(--pea-emerald), var(--pea-blue), var(--peony));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter: drop-shadow(0 2px 12px rgba(42,116,255,.12));
+}
+.hero__lead{ font-size:18px; color:var(--muted); max-width:900px; margin-top:10px }
+.hero__note{
+  margin-top:10px; padding:10px 14px; border-radius:12px;
+  border:1px dashed color-mix(in srgb, var(--gold) 55%, #000 0%);
+  background: linear-gradient(0deg, rgba(210,167,59,.08), rgba(210,167,59,.04));
+  color:#7a5a12; font-weight:600;
+}
+
+/* Кнопки */
 .btn{
-  display:inline-flex; align-items:center; justify-content:center;
-  gap:8px;
-  padding:12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(2,6,23,.08);
-  font-weight:700;
-  text-decoration:none;
-  background: linear-gradient(90deg, var(--peacock-2), var(--peacock-1));
-  color: #fff;
-  box-shadow: var(--shadow-sm);
-  transition: transform .15s ease, box-shadow .15s ease, filter .2s ease;
+  --btn-grad: linear-gradient(135deg, var(--pea-emerald), var(--pea-blue) 55%, var(--peony));
+  --btn-shadow: 0 12px 20px rgba(42,116,255,.22), 0 6px 12px rgba(0,165,129,.18);
+  display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  padding:14px 20px; font-weight:800; letter-spacing:.2px;
+  border-radius:14px; border:0; cursor:pointer; text-decoration:none;
+  color:#fff; background: var(--btn-grad);
+  box-shadow: var(--btn-shadow);
+  transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
 }
-.btn:hover{ transform: translateY(-1px); box-shadow: var(--shadow-md); filter: brightness(1.03); }
+.btn:hover{ transform: translateY(-1px); filter:saturate(115%); box-shadow: 0 14px 26px rgba(42,116,255,.28), 0 10px 18px rgba(0,165,129,.2) }
+.btn:active{ transform: translateY(0) scale(.98) }
+.btn--ghost{
+  color:var(--pea-blue);
+  background:linear-gradient(180deg, rgba(42,116,255,.08), rgba(42,116,255,.03));
+  border:1px solid rgba(42,116,255,.25);
+  box-shadow: 0 6px 14px rgba(42,116,255,.12);
+}
+.btn--gold{ background:linear-gradient(135deg, var(--gold), var(--gold-600)); box-shadow: 0 10px 22px rgba(210,167,59,.30) }
 
-.btn-outline{
-  background: #fff;
-  color: var(--peony);
-  border: 1.5px solid var(--peony);
+/* Плитки категорий */
+.tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; margin-top:18px }
+.tile{
+  position:relative; padding:20px; border-radius:var(--radius);
+  background:linear-gradient(180deg, #fff, #f8fbff);
+  border:1px solid rgba(13,49,92,.08);
+  box-shadow: var(--shadow);
+  overflow:hidden; min-height:116px;
+  transition:transform .15s ease, box-shadow .2s ease, border-color .2s ease;
 }
-.btn-outline:hover{
-  background: linear-gradient(180deg, #fff0f3, #ffffff);
-  box-shadow: 0 8px 18px rgba(225,29,72,.15);
+.tile:hover{ transform: translateY(-4px); box-shadow: var(--shadow-strong); border-color: rgba(13,49,92,.16) }
+.tile__title{ font-weight:900; font-size:18px; color:var(--ink) }
+.tile__icon{
+  position:absolute; right:-10px; bottom:-10px; width:120px; height:120px; opacity:.12;
+  background: radial-gradient(circle at 20% 20%, var(--pea-teal), transparent 60%), radial-gradient(circle at 80% 60%, var(--peony), transparent 60%);
+  filter: blur(1px) saturate(130%);
 }
 
-/* Footer */
+/* Поиск */
+.search{
+  margin-top:18px; display:flex; align-items:center; gap:12px;
+}
+.search input{
+  flex:1; padding:14px 16px; border-radius:14px; border:1px solid rgba(13,49,92,.18);
+  background:#fff; color:var(--ink); outline:none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 6px 16px rgba(13,49,92,.06);
+  transition:.2s ease;
+}
+.search input::placeholder{ color:color-mix(in srgb, var(--muted) 70%, #000 0%) }
+.search input:focus{ border-color: var(--pea-blue); box-shadow: 0 0 0 4px rgba(42,116,255,.18), var(--shadow) }
+
+/* Карточки мероприятий */
+.grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; margin-top:22px }
+.card{
+  background:linear-gradient(180deg, #fff, #f7fbff);
+  border:1px solid rgba(13,49,92,.10);
+  border-radius:var(--radius);
+  padding:18px;
+  box-shadow: var(--shadow);
+  transition:.2s ease;
+}
+.card:hover{ transform:translateY(-4px); box-shadow: var(--shadow-strong); border-color: rgba(13,49,92,.16) }
+.card h3{ margin:0 0 8px 0; font-size:20px; font-weight:900; color:var(--ink) }
+.card p{ margin:0 0 12px 0; color:var(--muted) }
+.card .actions{ display:flex; gap:10px; flex-wrap:wrap }
+
+/* Таблицы, формы, инпуты */
+table{ width:100%; border-collapse:separate; border-spacing:0; background:#fff; border-radius:14px; box-shadow: var(--shadow); overflow:hidden }
+th, td{ padding:12px 14px; border-bottom:1px solid rgba(13,49,92,.08) }
+th{ text-align:left; background:linear-gradient(180deg, #fff, #f0f7ff); color:var(--muted) }
+tr:last-child td{ border-bottom:none }
+
+label{ font-weight:700; color:var(--muted) }
+input[type="text"], input[type="email"], input[type="tel"], select, textarea{
+  width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(13,49,92,.18);
+  background:#fff; color:var(--ink); outline:none; transition:.2s ease; box-shadow: inset 0 1px 0 rgba(255,255,255,.6)
+}
+input:focus, select:focus, textarea:focus{ border-color: var(--peony); box-shadow: 0 0 0 4px rgba(255,79,163,.18) }
+
+/* Футер */
 .site-footer{
-  margin-top: 40px;
-  padding: 26px 0 40px;
-  background: linear-gradient(180deg, var(--bg-soft), #ffffff);
-  border-top:1px solid rgba(2,6,23,.06);
-  color: var(--muted);
+  margin-top:34px; padding:26px 0 40px;
+  border-top:1px solid rgba(13,49,92,.08);
+  background:linear-gradient(180deg, #fff, #f5f9ff);
+  color:var(--muted);
 }
-.footer-links a{
-  color: var(--peacock-2); text-decoration:none;
-}
-.footer-links a:hover{text-decoration:underline}
+.site-footer a{ color:var(--pea-blue); text-decoration:none; font-weight:700 }
+.site-footer a:hover{ text-decoration:underline }
 
-/* Forms (registration modal) */
-.form-control{
-  width:100%;
-  padding:12px 14px;
-  border-radius:12px;
-  border:1px solid rgba(2,6,23,.10);
-  background:#fff;
-  outline:none;
-  transition: box-shadow .2s ease, border-color .2s ease;
+/* Утилиты */
+.badge{
+  display:inline-block; padding:6px 10px; border-radius:999px; font-weight:800; font-size:12px;
+  color:#0d2a3f; background:linear-gradient(180deg, #e7f7ff, #dff3ff); border:1px solid rgba(13,49,92,.12)
 }
-.form-control:focus{
-  border-color: var(--ring);
-  box-shadow: 0 0 0 4px rgba(96,165,250,.24);
-}
-
-/* Alerts (payment notices) */
-.alert{
-  border-radius:12px;
-  padding:14px 16px;
-  border:1px solid rgba(2,6,23,.08);
-  background: #fff;
-  box-shadow: var(--shadow-sm);
-}
-.alert-success{ border-color: rgba(14,165,104,.25); background: #ecfdf5 }
-.alert-error{   border-color: rgba(239,68,68,.25);  background: #fef2f2 }
+.text-gold{ color:var(--gold-600) }
+.text-peony{ color:var(--peony-600) }
+.text-pea{ color:var(--pea-emerald) }
