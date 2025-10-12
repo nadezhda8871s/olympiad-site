@@ -3,7 +3,7 @@ import os
 import sys
 
 def main():
-    # Если на Render задан DJANGO_SETTINGS_MODULE — он приоритетнее
+    # На Render желательно использовать prod-настройки. Если в окружении задано иначе — они приоритетнее.
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.prod")
     from django.core.management import execute_from_command_line
     execute_from_command_line(sys.argv)
