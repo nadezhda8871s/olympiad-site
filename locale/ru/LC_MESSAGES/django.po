@@ -1,1 +1,3 @@
-# Russian translations placeholder
+msgid ""
+msgstr ""
+"Language: ru\n"
