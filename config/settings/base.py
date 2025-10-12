@@ -95,3 +95,14 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@example.com")
+
+
+# --- Internal health & host debug helpers ---
+# Health check at /healthz (cheap and early)
+if "config.health_middleware.HealthCheckMiddleware" not in MIDDLEWARE:
+    MIDDLEWARE = ["config.health_middleware.HealthCheckMiddleware"] + list(MIDDLEWARE)
+
+# Optional: show details instead of blank 400 for DisallowedHost while you set up domains.
+if str(os.getenv("ENABLE_HOST_DEBUG", "")).lower() in {"1", "true", "yes", "on"}:
+    if "config.host_debug_middleware.HostDebugMiddleware" not in MIDDLEWARE:
+        MIDDLEWARE = ["config.host_debug_middleware.HostDebugMiddleware"] + list(MIDDLEWARE)
