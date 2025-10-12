@@ -1,83 +1,35 @@
 
-# -*- coding: utf-8 -*-
-
-Django settings — hardened for Render + custom domain (vsemnauka.ru).
-This file **replaces your existing config/settings.py**.
-Key fixes:
-- Correct parsing of ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS from env (comma-separated).
-- Proper proxy/SSL headers for Render.
-- Health check middleware for /healthz without touching urls.py.
-- Optional Host header debug (enable via ENABLE_HOST_DEBUG=1).
-
-Compatible with Django 5.x.
-
-
-Copyright: you
-
-
-
 import os
 from pathlib import Path
-from typing import List
 
-# -----------------------
-# Base paths
-# -----------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# -----------------------
-# Helpers
-# -----------------------
-def env_bool(key: str, default: bool=False) -> bool:
-    v = os.getenv(key)
-    if v is None:
+def env_bool(key: str, default: bool=False):
+    val = os.getenv(key)
+    if val is None:
         return default
-    return str(v).strip().lower() in {"1", "true", "yes", "on"}
+    return str(val).strip().lower() in {"1", "true", "yes", "on"}
 
-def env_list(key: str, default: List[str] | None = None) -> List[str]:
+def env_list(key: str, default=None):
+    if default is None:
+        default = []
     raw = os.getenv(key)
     if not raw:
-        return list(default or [])
+        return default
+    # split by comma and strip spaces
     return [item.strip() for item in raw.split(",") if item.strip()]
 
-def env_str(key: str, default: str="") -> str:
-    v = os.getenv(key)
-    return v if v is not None else default
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure-secret-key")
 
-# -----------------------
-# Core
-# -----------------------
-SECRET_KEY = env_str("DJANGO_SECRET_KEY", "unsafe-secret-key-change-in-env")
-DEBUG = env_bool("DEBUG", env_bool("DJANGO_DEBUG", False))
+DEBUG = env_bool("DEBUG", False) or env_bool("DJANGO_DEBUG", False)
 
-# IMPORTANT: we **split** comma-separated ALLOWED_HOSTS correctly
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", [".onrender.com", "www.vsemnauka.ru", "vsemnauka.ru", "localhost", "127.0.0.1"])
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ["olympiad-site-1.onrender.com"])
 
-# CSRF trusted origins must include scheme
-CSRF_TRUSTED_ORIGINS = env_list(
-    "CSRF_TRUSTED_ORIGINS",
-    ["https://olympiad-site-1.onrender.com", "https://www.vsemnauka.ru", "https://vsemnauka.ru"]
-)
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", [
+    "https://olympiad-site-1.onrender.com"
+])
 
-# Recognize HTTPS behind Render proxy
-# https://docs.render.com/web-services#django
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
-
-# Time/locale
-LANGUAGE_CODE = "ru"
-TIME_ZONE = "Europe/Moscow"
-USE_I18N = True
-USE_TZ = True
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# -----------------------
-# Installed apps
-# -----------------------
+# Apps
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -90,9 +42,6 @@ INSTALLED_APPS = [
     "events",
 ]
 
-# -----------------------
-# Middleware
-# -----------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -102,20 +51,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # Health check without touching urls.py
+    # Health check first to bypass heavy stack
     "config.health_middleware.HealthCheckMiddleware",
 ]
 
-# Optional host debug (add only if ENABLE_HOST_DEBUG=1)
-if env_bool("ENABLE_HOST_DEBUG", False):
-    MIDDLEWARE.insert(0, "config.host_debug_middleware.HostHeaderDebugMiddleware")
-
 ROOT_URLCONF = "config.urls"
-WSGI_APPLICATION = "config.wsgi.application"
 
-# -----------------------
-# Templates
-# -----------------------
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -132,60 +73,60 @@ TEMPLATES = [
     },
 ]
 
-# -----------------------
-# Database (Render Postgres via DATABASE_URL if provided, else sqlite for dev)
-# -----------------------
-import dj_database_url
+WSGI_APPLICATION = "config.wsgi.application"
 
+# Database from Render env or default (SQLite keeps existing behavior if any)
+# If DATABASE_URL is provided, dj_database_url will be used in your repo's code.
+import dj_database_url
 DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-    )
+    "default": dj_database_url.config(default=f"sqlite:///{BASE_DIR/'db.sqlite3'}", conn_max_age=600),
 }
 
-# -----------------------
-# Static files (WhiteNoise)
-# -----------------------
+# Password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+LANGUAGE_CODE = "ru"
+
+TIME_ZONE = "Europe/Moscow"
+
+USE_I18N = True
+USE_TZ = True
+
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = os.getenv("STATIC_ROOT", str(BASE_DIR / "staticfiles"))
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
-# Enable WhiteNoise compression & caching
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    }
-}
+# WhiteNoise for static files
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# -----------------------
-# Email
-# -----------------------
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env_str("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(env_str("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
-EMAIL_HOST_USER = env_str("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = env_str("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = env_str("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@vsemnauka.ru")
+# Security and proxy headers for Render
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
 
-# -----------------------
-# Logging - include warnings in Render logs
-# -----------------------
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "Lax"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Optional: log DisallowedHost to help diagnose host issues
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {
         "console": {"class": "logging.StreamHandler"},
     },
-    "root": {
-        "handlers": ["console"],
-        "level": "INFO" if not DEBUG else "DEBUG",
-    },
     "loggers": {
         "django.security.DisallowedHost": {
             "handlers": ["console"],
-            "level": "WARNING",
+            "level": "ERROR",
             "propagate": False,
         },
     },
