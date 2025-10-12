@@ -3,31 +3,37 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-def _env_bool(name: str, default: bool = False) -> bool:
-    val = os.getenv(name)
-    if val is None:
-        return default
-    return str(val).strip().lower() in {"1", "true", "yes", "on"}
+# --- Core ---
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key-for-dev")
+DEBUG = str(os.environ.get("DEBUG", os.environ.get("DJANGO_DEBUG", "0"))).lower() in {"1","true","yes","on"}
 
-def _env_list(name: str) -> list[str]:
-    raw = os.getenv(name, "")
-    parts = [p.strip() for p in raw.split(",")]
-    return [p for p in parts if p]
+def _split_env_list(val):
+    if not val:
+        return []
+    return [x.strip() for x in str(val).replace(";", ",").split(",") if x.strip()]
 
-DEBUG = _env_bool("DEBUG", False) or _env_bool("DJANGO_DEBUG", False)
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-me-in-env")
+# Allowed hosts
+ALLOWED_HOSTS = _split_env_list(os.environ.get("ALLOWED_HOSTS")) or [
+    "localhost", "127.0.0.1", ".onrender.com", ".vsemnauka.ru"
+]
 
-ALLOWED_HOSTS = _env_list("ALLOWED_HOSTS")
-if not ALLOWED_HOSTS:
-    ALLOWED_HOSTS = [".onrender.com", "localhost", "127.0.0.1"]
+# CSRF trusted origins
+_csrf = _split_env_list(os.environ.get("CSRF_TRUSTED_ORIGINS"))
+_default_csrf = ["https://localhost", "https://127.0.0.1", "https://*.onrender.com", "https://www.vsemnauka.ru", "https://vsemnauka.ru"]
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_csrf or _default_csrf))
 
-CSRF_TRUSTED_ORIGINS = _env_list("CSRF_TRUSTED_ORIGINS")
-
-# Render / прокси / HTTPS
+# Proper behavior behind Render proxy
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = _env_bool("SECURE_SSL_REDIRECT", False)
+SECURE_SSL_REDIRECT = str(os.environ.get("SECURE_SSL_REDIRECT", "1")).lower() in {"1","true","yes","on"}
 
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 0  # set >0 later if you want HSTS
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+
+# Apps (minimal; keep existing apps in your project additively)
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -35,9 +41,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # "main",  # ваше приложение при наличии
 ]
 
+# Middleware
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -49,14 +55,14 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# Включаем диагностическое мидлвар по желанию
-if _env_bool("ENABLE_HOST_DEBUG", False):
+# Optional debug of 400 host issues
+if str(os.environ.get("ENABLE_HOST_DEBUG", "0")).lower() in {"1","true","yes","on"}:
     MIDDLEWARE.insert(0, "config.host_debug_middleware.HostDebugMiddleware")
 
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 
-# БД — оставьте свою конфигурацию; это безопасный дефолт
+# Database (leave your existing DATABASES if present)
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -64,15 +70,27 @@ DATABASES = {
     }
 }
 
-# Статика через WhiteNoise
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Templates (works with your current templates directory)
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
 
-LANGUAGE_CODE = "ru-ru"
-TIME_ZONE = "Europe/Moscow"
-USE_I18N = True
-USE_TZ = True
+# Static files via WhiteNoise
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")] if os.path.isdir(os.path.join(BASE_DIR, "static")) else []
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
