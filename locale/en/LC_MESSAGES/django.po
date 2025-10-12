@@ -1,1 +1,3 @@
-# English translations placeholder
+msgid ""
+msgstr ""
+"Language: en\n"
