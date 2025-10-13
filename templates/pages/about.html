@@ -1,22 +1,100 @@
 {% extends "base.html" %}
 {% load static i18n %}
 
-{% block title %}{% if page and page.title %}{{ page.title }}{% else %}{% trans "О нас" %}{% endif %}{% endblock %}
+{% block title %}{% trans "О нас" %}{% endblock %}
 
 {% block content %}
-<section class="page">
-  <h1>{% if page and page.title %}{{ page.title }}{% else %}{% trans "О нас" %}{% endif %}</h1>
+<section class="page" style="max-width: 960px; margin: 0 auto;">
+  <h1 class="page-title" style="margin-bottom: 1.2rem;">{% trans "О нас" %}</h1>
 
-  {# Основной текст из модели, если есть. Безопасно: не падаем, если поля нет. #}
-  {% if page %}
-    {% if page.body %}{{ page.body|safe }}{% elif page.content %}{{ page.content|safe }}{% else %}
-      <p>{% trans "Информация о проекте будет размещена здесь." %}</p>
+  {# Переключатели языка #}
+  <div class="lang-switch" style="display:flex; gap:.5rem; margin-bottom:1rem;">
+    <button type="button" class="lang-btn" data-lang="ru" style="padding:.5rem 1rem; border-radius:8px; border:1px solid #ddd;">RU</button>
+    <button type="button" class="lang-btn" data-lang="en" style="padding:.5rem 1rem; border-radius:8px; border:1px solid #ddd;">EN</button>
+  </div>
+
+  <div id="content-ru" style="line-height:1.7; font-size:1.05rem;">
+    {% if page and page.content_ru %}
+      {{ page.content_ru|safe }}
+    {% else %}
+      <p>{% trans "Здесь вы сможете разместить текст о проекте на русском языке через админку." %}</p>
     {% endif %}
-  {% else %}
-    <p>{% trans "Информация о проекте будет размещена здесь." %}</p>
-  {% endif %}
+  </div>
 
-  {# Раздел «Документы» — остаётся, но не меняет ваше оформление: без новых классов/стилей. #}
-  
+  <div id="content-en" style="display:none; line-height:1.7; font-size:1.05rem;">
+    {% if page and page.content_en %}
+      {{ page.content_en|safe }}
+    {% else %}
+      <p>{% trans "Here you can add the About text in English via the admin panel." %}</p>
+    {% endif %}
+  </div>
+
+  <hr style="margin: 2rem 0;">
+
+  <h2 style="margin-bottom: .8rem;">{% trans "Документы" %}</h2>
+  <div class="docs" style="display:grid; grid-template-columns:1fr; gap:1.5rem;">
+
+    {# Helper для построения абсолютного URL #}
+    {% with privacy_url=None oferta_url=None %}
+      {% if page and page.privacy_doc %}
+        {% with request.build_absolute_uri as abs %}
+          {% with abs(page.privacy_doc.url) as privacy_url %}{% endwith %}
+        {% endwith %}
+      {% endif %}
+      {% if page and page.oferta_doc %}
+        {% with request.build_absolute_uri as abs %}
+          {% with abs(page.oferta_doc.url) as oferta_url %}{% endwith %}
+        {% endwith %}
+      {% endif %}
+
+      {# Фолбэк на статические файлы, если в админке ещё не загружено #}
+      {% if not privacy_url %}
+        {% with request.build_absolute_uri as abs %}
+          {% with abs(static('docs/privacy_policy.docx')) as privacy_url %}{% endwith %}
+        {% endwith %}
+      {% endif %}
+      {% if not oferta_url %}
+        {% with request.build_absolute_uri as abs %}
+          {% with abs(static('docs/oferta.docx')) as oferta_url %}{% endwith %}
+        {% endwith %}
+      {% endif %}
+
+      <div>
+        <h3 style="margin-bottom:.5rem;">{% trans "Политика конфиденциальности" %}</h3>
+        <div style="border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
+          <iframe src="https://view.officeapps.live.com/op/embed.aspx?src={{ privacy_url|urlencode }}"
+                  width="100%" height="600" frameborder="0"></iframe>
+        </div>
+        <p style="margin-top:.5rem;"><a href="{{ privacy_url }}" target="_blank" rel="noopener">{% trans "Скачать" %}</a></p>
+      </div>
+
+      <div>
+        <h3 style="margin-bottom:.5rem;">{% trans "Публичная оферта" %}</h3>
+        <div style="border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
+          <iframe src="https://view.officeapps.live.com/op/embed.aspx?src={{ oferta_url|urlencode }}"
+                  width="100%" height="600" frameborder="0"></iframe>
+        </div>
+        <p style="margin-top:.5rem;"><a href="{{ oferta_url }}" target="_blank" rel="noopener">{% trans "Скачать" %}</a></p>
+      </div>
+    {% endwith %}
+  </div>
+
 </section>
+
+<script>
+  (function() {
+    var ru = document.getElementById('content-ru');
+    var en = document.getElementById('content-en');
+    var buttons = document.querySelectorAll('.lang-btn');
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var lang = this.getAttribute('data-lang');
+        if(lang==='ru'){ ru.style.display='block'; en.style.display='none'; }
+        else { ru.style.display='none'; en.style.display='block'; }
+        buttons.forEach(function(b){ b.style.background=''; });
+        this.style.background = '#f3f4f6';
+      });
+    });
+  })();
+</script>
 {% endblock %}
