@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Олимпиады{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ static 'events/cards.css' }}">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'events/cards.css' %}">{% endblock %}
 {% block content %}
 <style>
 .cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}

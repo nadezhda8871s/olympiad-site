@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Конкурсы{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ static 'events/cards.css' }}">{% endblock %}
+{% block title %}Конкурсы статей, ВКР, научных работ{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'events/cards.css' %}">{% endblock %}
 {% block content %}
 <style>
 .cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
@@ -13,7 +13,7 @@
 .card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:10px}
 </style>
 <section class="container">
-  <h1>Конкурсы</h1>
+  <h1>Конкурсы статей, ВКР, научных работ</h1>
   <div class="cards-grid">
     {% for ev in events %}
       {% include "events/card.html" with ev=ev %}
