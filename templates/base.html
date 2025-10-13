@@ -1,35 +1,67 @@
 {% load static i18n %}
-<!doctype html>
-<html lang="ru">
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
-  <title>{% block title %}VsemNauka{% endblock %}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Олимпиады, Конкурсы, Конференции — Научные мероприятия высокого уровня{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
   {% block extra_head %}{% endblock %}
-  <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
-<body>
-  <header>
-    <div class="container">
-      <a href="/" class="logo">VsemNauka</a>
-      <!-- твое меню/навигация -->
+<body class="theme-peacock">
+  <!-- Global watermark -->
+  <div class="page-watermark" aria-hidden="true"></div>
+
+  <!-- Top utility strip with language switch -->
+  <div class="top-strip">
+    <form action="{% url 'set_language' %}" method="post">{% csrf_token %}
+      <input name="next" type="hidden" value="{{ request.path }}">
+      <select name="language" class="lang-select" onchange="this.form.submit()">
+        <option value="ru" {% if LANGUAGE_CODE == 'ru' %}selected{% endif %}>RU</option>
+        <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>EN</option>
+      </select>
+    </form>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header class="site-header">
+    <div class="brand">
+      <a href="/" class="brand-title">
+        Олимпиады, Конкурсы, Конференции<br><span class="brand-sub">Научные мероприятия высокого уровня</span>
+      </a>
     </div>
+    <nav class="main-nav">
+      <a class="nav-btn" href="/">Главная</a>
+      <a class="nav-btn" href="/olympiads/">Олимпиады</a>
+      <a class="nav-btn" href="/contests/">Конкурсы статей, ВКР, научных работ</a>
+      <a class="nav-btn" href="/conferences/">Конференции с публикацией в РИНЦ сборниках</a>
+      <a class="nav-btn" href="https://vsem.site/" target="_blank" rel="noopener">Монографии</a>
+      <a class="nav-btn" href="https://vsem.site/" target="_blank" rel="noopener">Наши журналы</a>
+      <a class="nav-btn" href="/about/">О нас</a>
+    </nav>
   </header>
 
-  <main>
+  <!-- Content -->
+  <main id="content">
     {% block content %}{% endblock %}
   </main>
 
-  <footer>
-    <div class="container">
-      <div class="copyright">© {{ now|date:"Y" }} VsemNauka</div>
-      <div class="legal-links" style="margin-top:12px;">
-        <a href="/about/#docs">{% trans "Оферта и Политика конфиденциальности" %}</a>
-      </div>
+  <!-- Footer -->
+  \1
+<div class="legal-links" style="margin-top:12px;"><a href="/about/#docs">Оферта и Политика конфиденциальности</a></div>
+    <div class="footer-links">
+      {% if site_policy_docx_url %}
+        <a class="doc-link" href="{{ site_policy_docx_url }}">Политика конфиденциальности (DOCX)</a>
+      {% endif %}
+      {% if site_terms_docx_url %}
+        <a class="doc-link" href="{{ site_terms_docx_url }}">Пользовательское соглашение (DOCX)</a>
+      {% endif %}
     </div>
+    <div class="copyright">© {{ now|date:"Y" }} Все права защищены</div>
   </footer>
 
   <script src="{% static 'js/search.js' %}"></script>
-  {% block extra_scripts %}{% endblock %}
+  {% block extra_js %}{% endblock %}
 </body>
 </html>
