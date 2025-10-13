@@ -1,144 +1,100 @@
+# events/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.db.utils import OperationalError, ProgrammingError
-from django.contrib.auth.decorators import user_passes_test
+
 from .models import Event, Registration, Payment, Question, AnswerOption, TestResult
 from .forms import RegistrationForm
-from .services.emails import (
-    send_registration_confirmation, send_payment_success, send_payment_failed,
-    send_instructions_comp_conf, send_test_result
-)
-from .services.export import export_registrations_csv
 
-def _list_by_type(request, type_code, title):
-    try:
-        qs = Event.objects.filter(is_published=True, type=type_code)
-        q = request.GET.get("q", "").strip()
-        if q:
-            qs = qs.filter(title__icontains=q)
-        date_from = request.GET.get("date_from")
-        date_to = request.GET.get("date_to")
-        if date_from:
-            qs = qs.filter(event_date__gte=date_from)
-        if date_to:
-            qs = qs.filter(event_date__lte=date_to)
-    except (OperationalError, ProgrammingError):
-        qs = []
-        q = ""
-    return render(request, "events/list.html", {"events": qs, "page_title": title, "q": q})
 
-def events_list_olymps(request):
-    return _list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады")
+# ===== ВСПОМОГАТЕЛЬНЫЕ БЕЗОПАСНЫЕ ОБЁРТКИ =====
 
-def events_list_contests(request):
-    return _list_by_type(request, Event.EventType.CONTEST, "Конкурсы")
+class _SafeFileProxy:
+    """
+    Обёртка над FieldFile:
+      - bool(proxy) == bool(реального файла)
+      - proxy.url   -> реальный url, а если его нет/ошибка — '#'
+      - остальные атрибуты делегируются безопасно
+    """
+    __slots__ = ("_f",)
 
-def events_list_conferences(request):
-    return _list_by_type(request, Event.EventType.CONFERENCE, "Конференции")
+    def __init__(self, fieldfile):
+        self._f = fieldfile
 
-def event_detail(request, slug):
-    try:
-        ev = get_object_or_404(Event, slug=slug, is_published=True)
-    except (OperationalError, ProgrammingError):
-        ev = None
-    return render(request, "events/detail.html", {"ev": ev})
+    def __bool__(self):
+        try:
+            return bool(self._f and getattr(self._f, "name", None))
+        except Exception:
+            return False
 
-def event_register(request, slug):
-    try:
-        ev = get_object_or_404(Event, slug=slug, is_published=True)
-    except (OperationalError, ProgrammingError):
-        ev = None
-    if ev is None:
-        return render(request, "events/info_message.html", {"title": "Ошибка", "message": "Мероприятие недоступно."})
-    if request.method == "POST":
-        form = RegistrationForm(request.POST)
-        if form.is_valid():
-            reg = form.save(commit=False)
-            reg.event = ev
-            reg.save()
-            Payment.objects.create(registration=reg, status=Payment.Status.PENDING)
-            send_registration_confirmation(reg.email, ev.title, reg.fio)
-            return redirect("payment_mock", reg_id=reg.id)
-    else:
-        form = RegistrationForm()
-    return render(request, "events/register.html", {"ev": ev, "form": form})
+    def __len__(self):
+        return 1 if bool(self) else 0
 
-def payment_mock(request, reg_id):
-    try:
-        reg = Registration.objects.get(id=reg_id)
-    except (Registration.DoesNotExist, OperationalError, ProgrammingError):
-        reg = None
-    if reg is None:
-        return render(request, "events/info_message.html", {"title": "Оплата", "message": "Регистрация не найдена."})
+    @property
+    def url(self):
+        try:
+            if self._f and hasattr(self._f, "url"):
+                return self._f.url
+        except Exception:
+            pass
+        return "#"
 
-    status = request.GET.get("status")
-    if status == "success":
-        p = reg.payment
-        p.status = Payment.Status.PAID
-        p.paid_at = timezone.now()
-        p.txn_id = f"demo-{p.paid_at.timestamp()}"
-        p.save()
-        send_payment_success(reg.email, reg.event.title)
-        if reg.event.type == Event.EventType.OLYMPIAD:
-            return redirect("test_view", reg_id=reg.id)
-        else:
-            send_instructions_comp_conf(reg.email, reg.event.title)
-            return render(request, "events/info_message.html", {
-                "title": "Оплата успешна",
-                "message": "Согласно информационному письму перешлите анкету, научную работу и чек на адрес vsemnayka@gmail.com."
-            })
-    elif status == "fail":
-        reg.payment.status = Payment.Status.FAILED
-        reg.payment.save()
-        send_payment_failed(reg.email, reg.event.title)
-        return render(request, "events/payment_result.html", {"success": False, "reg": reg})
+    def __getattr__(self, item):
+        try:
+            return getattr(self._f, item)
+        except Exception:
+            if item in ("name", "path"):
+                return ""
+            raise AttributeError(item)
 
-    return render(request, "events/payment_mock.html", {"reg": reg})
 
-def test_view(request, reg_id):
-    try:
-        reg = Registration.objects.get(id=reg_id)
-        ev = reg.event
-    except (Registration.DoesNotExist, OperationalError, ProgrammingError):
-        return HttpResponseForbidden("Тест недоступен.")
-    if ev.type != Event.EventType.OLYMPIAD:
-        return HttpResponseForbidden("Тест доступен только для олимпиад.")
-    if reg.payment.status != Payment.Status.PAID:
-        return HttpResponseForbidden("Тест доступен только после успешной оплаты.")
-    if reg.results.exists():
-        return render(request, "events/test_done.html", {"reg": reg, "score": reg.results.latest("id").score})
+class _SafeEvent:
+    """
+    Прокси мероприятия для шаблонов:
+      - ev.info_letter.url безопасен (даже если файла нет)
+      - ev.get_registration_url() доступен как МЕТОД, возвращает корректный путь или '#'
+      - остальные атрибуты делегируются к исходной модели.
+    """
+    __slots__ = ("_ev", "info_letter")
 
-    questions = list(ev.questions.prefetch_related("options").all())
-    if request.method == "POST":
-        score = 0
-        answers = {}
-        for q in questions:
-            chosen_id = request.POST.get(f"q_{q.id}")
-            answers[str(q.id)] = chosen_id
-            if chosen_id:
+    def __init__(self, ev: Event):
+        self._ev = ev
+        # старое имя поля — через безопасный прокси
+        self.info_letter = _SafeFileProxy(getattr(ev, "info_file", None))
+
+    # ---- делегирование базовых полей/свойств ----
+    def __getattr__(self, item):
+        return getattr(self._ev, item)
+
+    # ---- совместимость со старыми шаблонами: метод, а не property ----
+    def get_registration_url(self):
+        # если есть современный метод — используем
+        if hasattr(self._ev, "get_register_url"):
+            try:
+                url = self._ev.get_register_url()
+                if url:
+                    return url
+            except Exception:
+                pass
+
+        # пробуем распространённые имена urlpattern
+        try:
+            from django.urls import reverse
+            slug = getattr(self._ev, "slug", "")
+            for name in ("event_register", "events:register", "register"):
                 try:
-                    opt = q.options.get(id=int(chosen_id))
-                    if opt.is_correct:
-                        score += 1
+                    return reverse(name, kwargs={"slug": slug})
                 except Exception:
-                    pass
-        TestResult.objects.create(registration=reg, score=score, answers=answers, finished_at=timezone.now())
-        send_test_result(reg.email, ev.title, score)
-        return render(request, "events/test_done.html", {"reg": reg, "score": score})
-    return render(request, "events/test.html", {"reg": reg, "questions": questions})
+                    continue
+        except Exception:
+            pass
+        return "#"
 
-def search_api(request):
-    q = request.GET.get("q", "").strip()
-    results = []
-    try:
-        if q:
-            for ev in Event.objects.filter(is_published=True, title__icontains=q).order_by("sort_order")[:10]:
-                results.append({"title": ev.title, "url": ev.get_absolute_url()})
-    except (OperationalError, ProgrammingError):
-        pass
-    return JsonResponse({"results": results})
 
-@user_passes_test(lambda u: u.is_staff)
-def export_csv_view(request):
-    return export_registrations_csv()
+# ===== ОБЩИЙ РЕНДЕР СПИСКА =====
+
+def _safe_list_by_type(request, type_code, title):
+    """
+    Строит список мероприятий нужного типа и оборачивает каждый объект
+    в _SafeEven_
