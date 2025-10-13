@@ -1,8 +1,7 @@
-
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path, include
-# Важно: правильный импорт set_language (иначе ImportError и 502)
+# Важно: правильный импорт set_language
 from django.views.i18n import set_language
 
 def healthz(_request):
@@ -16,20 +15,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("healthz", healthz),
     path("favicon.ico", favicon),
-    # для {% url 'set_language' %} из шаблонов
+    # Для {% url 'set_language' %} из templates/base.html
     path("i18n/setlang/", set_language, name="set_language"),
+    # Ваши приложения
+    path("", include("pages.urls")),   # главная, о нас и пр.
+    path("", include("events.urls")),  # олимпиады/конкурсы/конференции
 ]
-
-# Подключаем приложения. Если модуль недоступен, не валим весь сайт.
-try:
-    urlpatterns += [path("", include("pages.urls"))]
-except Exception:
-    def _home(_request):
-        return HttpResponse("home ok", content_type="text/plain")
-    urlpatterns.append(path("", _home))
-
-try:
-    urlpatterns += [path("", include("events.urls"))]
-except Exception:
-    # просто пропускаем events, чтобы сайт не падал при импорте
-    pass
