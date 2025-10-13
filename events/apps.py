@@ -8,46 +8,77 @@ class EventsConfig(AppConfig):
 
     def ready(self):
         """
-        Бесшовная совместимость со старыми шаблонами/кодом БЕЗ правок моделей и миграций.
+        Совместимость со старыми шаблонами/кодом без правок моделей и миграций.
         Делает два безопасных алиаса:
-        - ev.info_letter  -> ev.info_file (или None, если пусто)
-        - ev.get_registration_url() -> даёт рабочую ссылку регистрации, либо '#' если route не найден
+          - ev.info_letter        -> безопасный прокси ev.info_file, у которого есть .url даже если файла нет
+          - ev.get_registration_url() -> корректная ссылка регистрации (или '#' если роут не найден)
         """
+
+        # Локальный импорт, чтобы не ломать старт при миграциях
         try:
-            from .models import Event  # импорт после инициализации приложений
+            from .models import Event
         except Exception:
-            # Если модели ещё недоступны (миграции / старт) — тихо выходим.
             return
 
-        # --- 1) Алиас поля: info_letter -> info_file ---
+        # ---------- Безопасный прокси для файлового поля ----------
+        class _SafeFileProxy:
+            """
+            Обёртка над FieldFile:
+              - bool(proxy) == bool(фактического файла)
+              - proxy.url    -> реальный url, а если его нет/ошибка — '#'
+              - любые другие атрибуты аккуратно делегируются, не роняя шаблон
+            """
+            __slots__ = ("_f",)
+
+            def __init__(self, fieldfile):
+                self._f = fieldfile
+
+            def __bool__(self):
+                try:
+                    return bool(self._f and getattr(self._f, "name", None))
+                except Exception:
+                    return False
+
+            # Для Django шаблонов тоже важно truthiness через __len__
+            def __len__(self):
+                return 1 if bool(self) else 0
+
+            @property
+            def url(self):
+                try:
+                    if self._f and hasattr(self._f, "url"):
+                        return self._f.url
+                except Exception:
+                    pass
+                return "#"
+
+            def __getattr__(self, item):
+                # Делегируем остальные атрибуты безопасно
+                try:
+                    return getattr(self._f, item)
+                except Exception:
+                    # Возвращаем «пустые» значения, чтобы не падать в шаблонах
+                    if item in ("name", "path"):
+                        return ""
+                    raise AttributeError(item)
+
+        # ---------- Алиас поля: info_letter -> info_file (через безопасный прокси) ----------
         if not hasattr(Event, "info_letter"):
             @property
             def info_letter(self):
-                """
-                Совместимость со старыми шаблонами: ev.info_letter.
-                Возвращает FieldFile либо None, чтобы в шаблоне {% if ev.info_letter %} было безопасно.
-                """
                 try:
                     f = getattr(self, "info_file", None)
-                    # Если поле не задано или пустое — None
-                    if not f:
-                        return None
-                    # Для корректной работы в шаблонах (доступ к .url) оставляем сам FieldFile
-                    return f
                 except Exception:
-                    return None
+                    f = None
+                return _SafeFileProxy(f)
 
             Event.info_letter = info_letter
 
-        # --- 2) Алиас метода: get_registration_url() -> рабочая ссылка/фолбэк ---
-        # Важно: именно МЕТОД, не @property (админка ожидает callable).
+        # ---------- Алиас метода: get_registration_url() ----------
+        # Важно: именно МЕТОД (callable), чтобы не ломать админку и сторонний код.
         if not hasattr(Event, "get_registration_url"):
             def get_registration_url(self):
-                """
-                Совместимость: старые шаблоны дергают ev.get_registration_url.
-                Пробуем несколько имён urlpattern; если ни одно не найдено — возвращаем '#', чтобы не уронить страницу.
-                """
-                # Если в модели уже есть современный метод — используем его.
+                # Если есть современный метод — используем его
                 if hasattr(self, "get_register_url"):
                     try:
                         url = self.get_register_url()
@@ -56,7 +87,7 @@ class EventsConfig(AppConfig):
                     except Exception:
                         pass
 
-                # Пробуем разные имена маршрутов, которые могли быть в проекте
+                # Пробуем распространённые имена urlpattern
                 try:
                     from django.urls import reverse
                 except Exception:
