@@ -1,42 +1,90 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Главная" %}{% endblock %}
+
 {% block content %}
-<section class="hero">
+<section class="hero hero-centered">
   <div class="container">
     <h1>Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных</h1>
     <p>Наградные документы высылаются в течение 5 дней с даты регистрации.</p>
 
-    <div class="tiles">
-      <a class="tile" href="/olympiads/">Олимпиады</a>
-      <a class="tile" href="/contests/">Конкурсы</a>
-      <a class="tile" href="/conferences/">Конференции</a>
+    <!-- Три «дорогие» кнопки по центру -->
+    <div class="tiles tiles-center">
+      <a class="tile" href="/olympiads/">
+        <span class="tile-title">Олимпиады</span>
+        <span class="tile-sub">Олимпиады для школьников, учащихся СПО, студентов, аспирантов</span>
+      </a>
+      <a class="tile" href="/contests/">
+        <span class="tile-title">Конкурсы</span>
+        <span class="tile-sub">Конкурсы СТАТЕЙ, научных работ, ВКР</span>
+      </a>
+      <a class="tile" href="/conferences/">
+        <span class="tile-title">Конференции</span>
+        <span class="tile-sub">Конференции для студентов, ППС и ученых</span>
+      </a>
     </div>
 
     <h2>Актуальные мероприятия</h2>
+
+    <!-- Сетка карточек (без переопределения ваших кнопок) -->
     <style>
-    .cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
-    @media(max-width:1100px){.cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:700px){.cards-grid{grid-template-columns:1fr}}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;display:flex;flex-direction:column}
-    .card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:10px}
-    .btn{display:inline-block;text-decoration:none;border:1px solid #d1d5db;border-radius:6px;padding:8px 12px}
-    .btn.primary{border-color:#2563eb}
+      /* Только лэйаут сетки карточек, никаких .btn здесь */
+      .cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+      @media(max-width:1100px){.cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media(max-width:700px){.cards-grid{grid-template-columns:1fr}}
+      .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;display:flex;flex-direction:column}
+      .card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:10px}
+
+      /* Центровка и «дорогой» стиль только для трёх верхних кнопок */
+      .hero-centered{min-height:min(70vh,820px);display:grid;align-items:center}
+      .tiles{display:grid;gap:16px;justify-items:center;margin:28px auto 8px;max-width:980px}
+      .tile{
+        --bg: var(--surface, #fff);
+        --fg: var(--text-color, #0f172a);
+        /* можно подхватить ваши бренд‑цвета, либо оставить по умолчанию */
+        --g1:#60a5fa; --g2:#a78bfa; --g3:#34d399; /* синий → фиолетовый → изумруд */
+        position:relative;
+        display:grid; gap:6px; place-items:center;
+        width:min(920px,100%); min-height:88px; padding:18px 22px;
+        border-radius:16px;
+        color:var(--fg); text-align:center; text-decoration:none;
+        /* «дорожающий» анимированный градиент на рамке */
+        background:
+          linear-gradient(var(--bg),var(--bg)) padding-box,
+          linear-gradient(120deg,var(--g1),var(--g2),var(--g3)) border-box;
+        border:2px solid transparent;
+        background-size:auto,200% 200%;
+        animation: tileBorderShift 9s linear infinite;
+        box-shadow:0 8px 30px rgba(2,6,23,.08);
+        transition:transform .2s ease, box-shadow .2s ease;
+      }
+      .tile:hover{ transform:translateY(-2px); box-shadow:0 14px 40px rgba(2,6,23,.12) }
+      .tile:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(99,102,241,.25), 0 10px 30px rgba(2,6,23,.16) }
+      @keyframes tileBorderShift { to { background-position:left top, 200% 50% } }
+
+      .tile-title{ font-weight:700; font-size:clamp(1.05rem,1.2vw + .9rem,1.35rem); line-height:1.2 }
+      .tile-sub{ opacity:.82; font-size:.95rem; line-height:1.35 }
+
+      @media (prefers-reduced-motion: reduce){
+        .tile{ animation:none }
+      }
     </style>
+
     <div class="cards-grid">
       {% for ev in featured_events %}
         <div class="card">
           <h3>{{ ev.title }}</h3>
-          <p>{{ ev.description|truncatechars:160 }}</p>
+          <p>{{ ev.description|default:ev.short_description|truncatechars:160 }}</p>
           <div class="card-actions">
-            {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
-            <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
+            {% if ev.info_file %}<a href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
+            <a href="{{ ev.get_register_url }}">Регистрация</a>
           </div>
         </div>
       {% empty %}
         <p>Пока нет актуальных мероприятий.</p>
       {% endfor %}
     </div>
+
   </div>
 </section>
 {% endblock %}
