@@ -33,10 +33,10 @@ body{
   background-image:url("/static/img/peacock_peonies_watermark.jpg");
   background-size:cover;
   background-position:center;
-  opacity:.08;              /* make it visible but subtle */
+  opacity:.12;               /* было .08 — сделали заметнее */
   pointer-events:none;
   z-index:0;
-  filter:contrast(110%) saturate(115%);
+  filter:brightness(1.18) contrast(1.08) saturate(1.12);
 }
 
 /* Top tiny strip (language) */
