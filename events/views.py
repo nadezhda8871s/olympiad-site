@@ -11,6 +11,22 @@ from .services.emails import (
 )
 from .services.export import export_registrations_csv
 
+# --- patched helper for robust list rendering ---
+def _robust_list_by_type(request, type_code, title, template_name):
+    """Robust list renderer with safe DB fallbacks and stable ordering.
+    Added in patch _ROBUST_LIST_BY_TYPE_PATCH.
+    """
+    try:
+        qs = Event.objects.filter(is_published=True, type=type_code).order_by("sort_order", "-id")
+        q = request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(title__icontains=q)
+    except (OperationalError, ProgrammingError):
+        qs = []
+        q = ""
+    return render(request, template_name, {"events": qs, "page_title": title, "q": q})
+# _ROBUST_LIST_BY_TYPE_PATCH
+
 def _list_by_type(request, type_code, title):
     try:
         qs = Event.objects.filter(is_published=True, type=type_code)
@@ -29,13 +45,13 @@ def _list_by_type(request, type_code, title):
     return render(request, "events/list.html", {"events": qs, "page_title": title, "q": q})
 
 def events_list_olymps(request):
-    return _list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады")
+    return _robust_list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады", "events/olympiads_list.html")
 
 def events_list_contests(request):
-    return _list_by_type(request, Event.EventType.CONTEST, "Конкурсы")
+    return _robust_list_by_type(request, Event.EventType.CONTEST, "Конкурсы статей, ВКР, научных работ", "events/contests_list.html")
 
 def events_list_conferences(request):
-    return _list_by_type(request, Event.EventType.CONFERENCE, "Конференции")
+    return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборниках", "events/conferences_list.html")
 
 def event_detail(request, slug):
     try:
