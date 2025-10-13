@@ -41,3 +41,10 @@ gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
 - **Disk**: Name `media`, Mount `/opt/render/project/src/media`.
 
 Можно также задеплоить через `render.yaml` (см. корень).
+
+
+## About Page Admin & DOCX Embeds
+- Добавлены поля `content_ru`, `content_en`, `privacy_doc`, `oferta_doc` в админку `AboutPage`.
+- Отображение DOC/DOCX встроено через Office Online Viewer.
+- Файлы по умолчанию лежат в `static/docs/` и показываются, если в админке ничего не загружено.
+- Не забудьте выполнить миграции: `python manage.py migrate`.
