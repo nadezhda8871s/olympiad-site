@@ -1,148 +1,42 @@
-
 {% extends "base.html" %}
-{% load static %}
-{% block title %}Главная{% endblock %}
-
-{% block extra_head %}
-<style>
-/* ⚠️ Только лэйаут. Никаких переопределений ваших кнопок/темы. */
-:root { --gap: 24px; }
-.home-hero { padding: 16px 0 24px; }
-
-/* 3 колонки для разделов на главной */
-.home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
-@media(max-width:1100px){.home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){.home-grid{grid-template-columns:1fr}}
-
-.home-cat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:8px}
-.home-cat-card h3{margin:0;font-size:1.25rem;line-height:1.4}
-.home-cat-card p{margin:0;color:#374151}
-.home-cat-card a.cta{margin-top:auto;align-self:flex-start}
-
-/* Сетка карточек мероприятий (3 в ряд) */
-.cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
-@media(max-width:1100px){.cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){.cards-grid{grid-template-columns:1fr}}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
-.card h4{margin:0 0 4px;font-size:1.1rem}
-.card .card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:12px}
-</style>
-{% endblock %}
-
+{% load i18n %}
+{% block title %}{% trans "Главная" %}{% endblock %}
 {% block content %}
+<section class="hero">
+  <div class="container">
+    <h1>Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных</h1>
+    <p>Наградные документы высылаются в течение 5 дней с даты регистрации.</p>
 
-<!-- Разделы сайта -->
-<section class="container home-hero">
-  <div class="home-grid">
-    <div class="home-cat-card">
-      <h3><a href="/olympiads/">Олимпиады</a></h3>
-      <p>Олимпиады для школьников, учащихся СПО, студентов, аспирантов</p>
-      <a class="cta" href="/olympiads/">Перейти к олимпиадам →</a>
+    <div class="tiles">
+      <a class="tile" href="/olympiads/">Олимпиады для школьников, учащихся СПО, студентов, аспирантов</a>
+      <a class="tile" href="/contests/">Конкурсы СТАТЕЙ, научных работ, ВКР Конференции для студентов, ППС и ученых</a>
+      <a class="tile" href="/conferences/">Конференции</a>
     </div>
-    <div class="home-cat-card">
-      <h3><a href="/contests/">Конкурсы</a></h3>
-      <p>Конкурсы СТАТЕЙ, научных работ, ВКР</p>
-      <a class="cta" href="/contests/">Перейти к конкурсам →</a>
-    </div>
-    <div class="home-cat-card">
-      <h3><a href="/conferences/">Конференции</a></h3>
-      <p>Конференции для студентов, ППС и ученых</p>
-      <a class="cta" href="/conferences/">Перейти к конференциям →</a>
+
+    <h2>Актуальные мероприятия</h2>
+    <style>
+    .cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+    @media(max-width:1100px){.cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:700px){.cards-grid{grid-template-columns:1fr}}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;display:flex;flex-direction:column}
+    .card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:10px}
+    .btn{display:inline-block;text-decoration:none;border:1px solid #d1d5db;border-radius:6px;padding:8px 12px}
+    .btn.primary{border-color:#2563eb}
+    </style>
+    <div class="cards-grid">
+      {% for ev in featured_events %}
+        <div class="card">
+          <h3>{{ ev.title }}</h3>
+          <p>{{ ev.description|truncatechars:160 }}</p>
+          <div class="card-actions">
+            {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
+            <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
+          </div>
+        </div>
+      {% empty %}
+        <p>Пока нет актуальных мероприятий.</p>
+      {% endfor %}
     </div>
   </div>
 </section>
-
-<!-- Актуальные мероприятия -->
-<section class="container" style="margin-top:24px">
-  <h2>Актуальные мероприятия</h2>
-
-  {% if featured_events %}
-    {% with feats=featured_events %}
-      <div class="cards-grid">
-        {% for ev in feats %}
-          <div class="card">
-            <h4><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h4>
-            {% if ev.short_description %}
-              <p>{{ ev.short_description|truncatechars:180 }}</p>
-            {% elif ev.description %}
-              <p>{{ ev.description|truncatechars:180 }}</p>
-            {% endif %}
-            <div class="card-actions">
-              {% if ev.info_file %}<a href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
-              <a href="{{ ev.get_register_url }}">Регистрация</a>
-            </div>
-          </div>
-        {% empty %}
-          <p>Пока нет опубликованных актуальных мероприятий.</p>
-        {% endfor %}
-      </div>
-    {% endwith %}
-  {% elif actual_events %}
-    {% with feats=actual_events %}
-      <div class="cards-grid">
-        {% for ev in feats %}
-          <div class="card">
-            <h4><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h4>
-            {% if ev.short_description %}
-              <p>{{ ev.short_description|truncatechars:180 }}</p>
-            {% elif ev.description %}
-              <p>{{ ev.description|truncatechars:180 }}</p>
-            {% endif %}
-            <div class="card-actions">
-              {% if ev.info_file %}<a href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
-              <a href="{{ ev.get_register_url }}">Регистрация</a>
-            </div>
-          </div>
-        {% empty %}
-          <p>Пока нет опубликованных актуальных мероприятий.</p>
-        {% endfor %}
-      </div>
-    {% endwith %}
-  {% elif events_featured %}
-    {% with feats=events_featured %}
-      <div class="cards-grid">
-        {% for ev in feats %}
-          <div class="card">
-            <h4><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h4>
-            {% if ev.short_description %}
-              <p>{{ ev.short_description|truncatechars:180 }}</p>
-            {% elif ev.description %}
-              <p>{{ ev.description|truncatechars:180 }}</p>
-            {% endif %}
-            <div class="card-actions">
-              {% if ev.info_file %}<a href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
-              <a href="{{ ev.get_register_url }}">Регистрация</a>
-            </div>
-          </div>
-        {% empty %}
-          <p>Пока нет опубликованных актуальных мероприятий.</p>
-        {% endfor %}
-      </div>
-    {% endwith %}
-  {% elif events %}
-    {% with feats=events %}
-      <div class="cards-grid">
-        {% for ev in feats %}
-          <div class="card">
-            <h4><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h4>
-            {% if ev.short_description %}
-              <p>{{ ev.short_description|truncatechars:180 }}</p>
-            {% elif ev.description %}
-              <p>{{ ev.description|truncatechars:180 }}</p>
-            {% endif %}
-            <div class="card-actions">
-              {% if ev.info_file %}<a href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
-              <a href="{{ ev.get_register_url }}">Регистрация</a>
-            </div>
-          </div>
-        {% empty %}
-          <p>Пока нет опубликованных актуальных мероприятий.</p>
-        {% endfor %}
-      </div>
-    {% endwith %}
-  {% else %}
-    <p>Пока нет опубликованных актуальных мероприятий.</p>
-  {% endif %}
-</section>
-
 {% endblock %}
