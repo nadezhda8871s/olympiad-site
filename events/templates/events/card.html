@@ -1,15 +1,13 @@
 {% comment %}Единая карточка мероприятия{% endcomment %}
 <div class="card">
   <h3 class="card-title"><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h3>
-
   {% if ev.short_description %}
     <p class="card-desc">{{ ev.short_description|truncatechars:180 }}</p>
   {% elif ev.description %}
     <p class="card-desc">{{ ev.description|truncatechars:180 }}</p>
   {% endif %}
-
   <div class="card-actions">
-    {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>{% trans "Информационное письмо" %}</a>{% endif %}
-    <a class="btn primary" href="{{ ev.get_register_url }}">{% trans "Регистрация" %}</a>
+    {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
+    <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
   </div>
 </div>
