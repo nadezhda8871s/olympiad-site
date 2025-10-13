@@ -1,4 +1,3 @@
-
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -6,15 +5,13 @@ ADMIN_EMAIL = "vsemnayka@gmail.com"
 
 def _safe_send(subject, body, to):
     try:
-        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [to], fail_silently=True)
+        send_mail(subject, body, getattr(settings, "DEFAULT_FROM_EMAIL", ADMIN_EMAIL), [to], fail_silently=True)
     except Exception:
-        # Даже если SMTP недоступен, не ломаем пользовательский поток
+        # Никогда не валим пользовательский поток из-за почты
         pass
 
 def send_registration_confirmation(to_email, event_title, fio):
-    subject = "Заявка получена"
-    body = f"Уважаемый(ая) {fio}, ваша заявка на мероприятие '{event_title}' получена."
-    _safe_send(subject, body, to_email)
+    _safe_send("Заявка получена", f"Уважаемый(ая) {fio}, ваша заявка на мероприятие '{event_title}' получена.", to_email)
 
 def send_payment_success(to_email, event_title):
     _safe_send("Оплата успешна", f"Оплата за '{event_title}' прошла успешно.", to_email)
