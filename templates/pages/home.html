@@ -5,36 +5,36 @@
 <section class="hero">
   <div class="container">
     <h1>Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных</h1>
-    <p>Это очень важно в современном мире. Наградные документы высылаются в течение 5 дней с даты регистрации.</p>
-
-    <div class="search-block">
-      <input id="event-search" type="text" placeholder="Поиск по мероприятиям (введите заголовок)..." autocomplete="off">
-      <div id="search-suggestions" class="suggestions"></div>
-    </div>
+    <p>Наградные документы высылаются в течение 5 дней с даты регистрации.</p>
 
     <div class="tiles">
       <a class="tile" href="/olympiads/">Олимпиады</a>
-      <a class="tile" href="/contests/">Конкурсы статей, ВКР, научных работ</a>
-      <a class="tile" href="/conferences/">Конференции с публикацией в РИНЦ сборниках</a>
-      <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">Монографии</a>
-      <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">Наши журналы</a>
+      <a class="tile" href="/contests/">Конкурсы</a>
+      <a class="tile" href="/conferences/">Конференции</a>
     </div>
 
     <h2>Актуальные мероприятия</h2>
-    <div class="grid">
+    <style>
+    .cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+    @media(max-width:1100px){.cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:700px){.cards-grid{grid-template-columns:1fr}}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;display:flex;flex-direction:column}
+    .card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:10px}
+    .btn{display:inline-block;text-decoration:none;border:1px solid #d1d5db;border-radius:6px;padding:8px 12px}
+    .btn.primary{border-color:#2563eb}
+    </style>
+    <div class="cards-grid">
       {% for ev in featured_events %}
         <div class="card">
           <h3>{{ ev.title }}</h3>
           <p>{{ ev.description|truncatechars:160 }}</p>
           <div class="card-actions">
-            {% if ev.info_file %}
-              <a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>
-            {% endif %}
+            {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
             <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
           </div>
         </div>
       {% empty %}
-        <p>Пока нет отмеченных как актуальные.</p>
+        <p>Пока нет актуальных мероприятий.</p>
       {% endfor %}
     </div>
   </div>
