@@ -1,7 +1,9 @@
+# events/models.py
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+
 
 class Event(models.Model):
     class EventType(models.TextChoices):
@@ -52,14 +54,27 @@ class Event(models.Model):
     def get_register_url(self):
         return reverse("event_register", args=[self.slug])
 
+    # >>> ДОБАВЛЕНО: алиасы для совместимости со старыми шаблонами <<<
+    @property
+    def get_registration_url(self):
+        # старое имя — используется в templates/home.html
+        return self.get_register_url
+
+    @property
+    def info_letter(self):
+        # старое имя поля — используется в templates/home.html
+        return self.info_file
+    # <<< КОНЕЦ ДОБАВЛЕНИЙ >>>
+
+
 class Registration(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="registrations")
     fio = models.CharField(max_length=255)
     org = models.CharField(max_length=255, verbose_name=_("Учебное заведение"))
-    city = models.CharField(max_length=120)
-    email = models.EmailField()
-    phone = models.CharField(max_length=64)
-    consent_pd = models.BooleanField(default=False, verbose_name=_("Согласие на обработку ПДн"))
+    city = models.CharField(max_length=255, verbose_name=_("Город"))
+    email = models.EmailField(verbose_name=_("E-mail"))
+    phone = models.CharField(max_length=50, verbose_name=_("Телефон"))
+    consent_pd = models.BooleanField(default=False, verbose_name=_("Согласие на обработку ПД"))
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -69,49 +84,55 @@ class Registration(models.Model):
     def __str__(self):
         return f"{self.fio} — {self.event.title}"
 
+
 class Payment(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", _("Ожидает")
-        PAID = "paid", _("Оплачено")
+        PAID = "success", _("Оплачен")
         FAILED = "failed", _("Ошибка")
 
     registration = models.OneToOneField(Registration, on_delete=models.CASCADE, related_name="payment")
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
-    txn_id = models.CharField(max_length=64, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    txn_id = models.CharField(max_length=100, blank=True, default="")
     paid_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        verbose_name = _("Оплата")
-        verbose_name_plural = _("Оплаты")
+        verbose_name = _("Платёж")
+        verbose_name_plural = _("Платежи")
+
+    def __str__(self):
+        return f"{self.registration} — {self.get_status_display()}"
+
 
 class Question(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="questions")
     text = models.TextField(verbose_name=_("Вопрос"))
     text_en = models.TextField(blank=True, verbose_name=_("Вопрос (EN)"))
-    order = models.IntegerField(default=0)
+    order = models.PositiveIntegerField(default=0, verbose_name=_("Порядок"))
 
     class Meta:
+        ordering = ("order", "id")
         verbose_name = _("Вопрос")
         verbose_name_plural = _("Вопросы")
-        ordering = ["order", "id"]
 
     def __str__(self):
-        return f"{self.event.title}: {self.text[:50]}"
+        return self.text[:50]
+
 
 class AnswerOption(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="options")
     text = models.CharField(max_length=500, verbose_name=_("Вариант"))
-    text_en = models.CharField(max_length=500, blank=True, verbose_name=_("Вариант (EN)"))
-    is_correct = models.BooleanField(default=False)
-    order = models.IntegerField(default=0)
+    order = models.PositiveIntegerField(default=0, verbose_name=_("Порядок"))
+    is_correct = models.BooleanField(default=False, verbose_name=_("Правильный"))
 
     class Meta:
+        ordering = ("order", "id")
         verbose_name = _("Вариант ответа")
         verbose_name_plural = _("Варианты ответа")
-        ordering = ["order", "id"]
 
     def __str__(self):
         return self.text[:50]
+
 
 class TestResult(models.Model):
     registration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name="results")
