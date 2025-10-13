@@ -14,7 +14,6 @@ def home(request):
         featured = []
     return render(request, "pages/home.html", {"featured_events": featured})
 
-def about(request):
     page = None
     # Сохраняем функционал: если в проекте есть модель AboutPage — используем её.
     try:
@@ -30,3 +29,28 @@ def about(request):
     # Никаких внешних зависимостей; если page нет — просто отрисуем шаблон как статическую страницу.
     ctx = {"page": page}
     return render(request, "pages/about.html", ctx)
+
+
+from django.apps import apps
+from django.db.utils import OperationalError, ProgrammingError
+
+def about(request):
+    page = None
+    Model = None
+    try:
+        Model = apps.get_model("pages", "AboutPage")
+    except Exception:
+        Model = None
+    if Model:
+        try:
+            qs = Model.objects.all()
+            for flag in ("is_published", "published", "active", "is_active"):
+                if hasattr(Model, flag):
+                    qs = qs.filter(**{flag: True})
+                    break
+            if hasattr(Model, "updated_at"):
+                qs = qs.order_by("-updated_at")
+            page = qs.first()
+        except (OperationalError, ProgrammingError, Exception):
+            page = None
+    return render(request, "pages/about.html", {"page": page})
