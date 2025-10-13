@@ -1,3 +1,5 @@
+
+/* Grid for event cards: 3 per row */
 .cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
 @media(max-width:1100px){.cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.cards-grid{grid-template-columns:1fr}}
@@ -6,7 +8,5 @@
 .card-title{margin:0 0 8px;font-size:1.125rem;line-height:1.4}
 .card-desc{margin:0 0 12px;color:#374151}
 .card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:10px}
-
-.btn{display:inline-block;padding:8px 12px;border-radius:6px;border:1px solid #D1D5DB;text-decoration:none}
-.btn.primary{background:#111;color:#fff;border-color:#111}
-.btn.ghost{background:#fff;color:#111}
+.btn{display:inline-block;text-decoration:none;border:1px solid #d1d5db;border-radius:6px;padding:8px 12px}
+.btn.primary{border-color:#2563eb}
