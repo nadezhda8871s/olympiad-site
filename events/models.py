@@ -111,8 +111,6 @@ class AnswerOption(models.Model):
         ordering = ["order", "id"]
 
     def __str__(self):
-        # Раньше было `return self.title or f"Событие #{self.pk}"` — поля `title` у этой модели нет.
-        # Возвращаем текст варианта (или укороченную форму), чтобы рендер не ломался.
         return (self.text or "").strip()[:100] or f"Вариант #{self.pk}"
 
 class TestResult(models.Model):
