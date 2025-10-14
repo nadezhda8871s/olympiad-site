@@ -52,14 +52,17 @@ def events_list_contests(request):
 
 def events_list_conferences(request):
     return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборниках", "events/conferences_list.html")
-
-def event_detail(request, slug):
+def event_detail(request, pk):
+    """
+    Safe detail view: never 500s if DB columns/relations temporarily unavailable.
+    """
+    from django.db.utils import OperationalError, ProgrammingError
+    ev = None
     try:
-        ev = get_object_or_404(Event, slug=slug, is_published=True)
+        ev = get_object_or_404(Event, pk=pk, is_published=True)
     except (OperationalError, ProgrammingError):
         ev = None
     return render(request, "events/detail.html", {"ev": ev})
-
 def event_register(request, slug):
     try:
         ev = get_object_or_404(Event, slug=slug, is_published=True)
@@ -158,3 +161,31 @@ def search_api(request):
 @user_passes_test(lambda u: u.is_staff)
 def export_csv_view(request):
     return export_registrations_csv()
+
+def event_list(request, slug=None):
+    """
+    Safe list view: never 500s due to DB or missing tables.
+    Shows events filtered by category slug if provided.
+    """
+    from django.db.utils import OperationalError, ProgrammingError
+    from django.http import Http404
+
+    events = []
+    category = None
+    try:
+        qs = Event.objects.filter(is_published=True)
+        if slug:
+            try:
+                category = Category.objects.get(slug=slug)
+                qs = qs.filter(category=category)
+            except Category.DoesNotExist:
+                raise Http404("Category not found")
+        try:
+            qs = qs.order_by("sort_order", "-start_date", "-id")
+        except Exception:
+            qs = qs.order_by("-id")
+        events = list(qs)
+    except (OperationalError, ProgrammingError):
+        events = []
+    ctx = {"events": events, "category": category}
+    return render(request, "events/list.html", ctx)
