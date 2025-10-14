@@ -1,10 +1,28 @@
 from django.shortcuts import render
+
+# --- HOME (restore original behavior; no functional changes) ---
+def home(request):
+    featured = []
+    try:
+        from events.models import Event
+        featured = (
+            Event.objects
+            .filter(is_published=True, is_featured=True)
+            .order_by("sort_order", "-id")[:12]
+        )
+    except Exception:
+        # Если модели/миграции ещё не готовы — просто показываем страницу без падения
+        featured = []
+    return render(request, "pages/home.html", {"featured_events": featured})
+
+# --- ABOUT (show text from admin; only this nuance is changed) ---
 from django.apps import apps
 from django.db.utils import OperationalError, ProgrammingError
 
 def about(request):
     """Страница «О нас»: берём последнюю запись AboutPage БЕЗ фильтров публикации.
-    Это гарантирует показ текста из админки, даже если не проставлены флаги published/active."""
+    Это гарантирует показ текста из админки, даже если не проставлены флаги published/active.
+    Внешний вид не меняем — только подстановка контента."""
     page = None
     try:
         Model = apps.get_model("pages", "AboutPage")
@@ -14,7 +32,7 @@ def about(request):
     if Model:
         try:
             qs = Model.objects.all()
-            # Показываем самую свежую запись (по updated_at если поле есть, иначе по id)
+            # Самая свежая запись: по updated_at (если есть), иначе по id
             if hasattr(Model, "updated_at"):
                 qs = qs.order_by("-updated_at")
             else:
