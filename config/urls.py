@@ -9,6 +9,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path("admin/", admin.site.urls),
 
+    # i18n endpoints (обеспечивает именованный маршрут 'set_language', который используется в шаблонах)
+    path("i18n/", include("django.conf.urls.i18n")),
+
     # Страницы сайта
     path("", include("pages.urls")),
 
