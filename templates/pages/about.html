@@ -1,22 +1,26 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load i18n %}
 
-{% block title %}{% if page and page.title %}{{ page.title }}{% else %}{% trans "О нас" %}{% endif %}{% endblock %}
+{% block title %}
+  {% if page and page.title %}{{ page.title }}{% else %}{% trans "О нас" %}{% endif %}
+{% endblock %}
 
 {% block content %}
 <section class="page">
   <h1>{% if page and page.title %}{{ page.title }}{% else %}{% trans "О нас" %}{% endif %}</h1>
 
-  {# Основной текст из модели, если есть. Безопасно: не падаем, если поля нет. #}
+  {# Выводим HTML-текст из админки, поддерживая популярные имена полей. #}
   {% if page %}
-    {% if page.body %}{{ page.body|safe }}{% elif page.content %}{{ page.content|safe }}{% else %}
+    {% if page.body %}{{ page.body|safe }}
+    {% elif page.content %}{{ page.content|safe }}
+    {% elif page.text %}{{ page.text|safe }}
+    {% elif page.description %}{{ page.description|safe }}
+    {% elif page.rich_text %}{{ page.rich_text|safe }}
+    {% else %}
       <p>{% trans "Информация о проекте будет размещена здесь." %}</p>
     {% endif %}
   {% else %}
     <p>{% trans "Информация о проекте будет размещена здесь." %}</p>
   {% endif %}
-
-  {# Раздел «Документы» — остаётся, но не меняет ваше оформление: без новых классов/стилей. #}
-  
 </section>
 {% endblock %}
