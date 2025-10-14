@@ -1,44 +1,74 @@
 from django.shortcuts import render
-
-# --- HOME (restore original behavior; no functional changes) ---
-def home(request):
-    featured = []
-    try:
-        from events.models import Event
-        featured = (
-            Event.objects
-            .filter(is_published=True, is_featured=True)
-            .order_by("sort_order", "-id")[:12]
-        )
-    except Exception:
-        # Если модели/миграции ещё не готовы — просто показываем страницу без падения
-        featured = []
-    return render(request, "pages/home.html", {"featured_events": featured})
-
-# --- ABOUT (show text from admin; only this nuance is changed) ---
 from django.apps import apps
-from django.db.utils import OperationalError, ProgrammingError
+
+def _get_about_record():
+    AboutPage = apps.get_model('pages', 'AboutPage')
+    try:
+        return AboutPage.objects.order_by('-id').first()
+    except Exception:
+        return None
+
+def _extract_about_fields(obj):
+    if obj is None:
+        return {"title": "", "body_html": ""}
+    text_bits = []
+    title_val = ""
+    best_text = ""
+    try:
+        fields = obj._meta.get_fields()
+    except Exception:
+        fields = []
+    for f in fields:
+        name = getattr(f, 'name', '')
+        attname = getattr(f, 'attname', name)
+        try:
+            val = getattr(obj, attname, None)
+        except Exception:
+            val = None
+
+        # guess title
+        if not title_val and name.lower() in ("title", "name", "heading", "headline"):
+            if isinstance(val, str) and val.strip():
+                title_val = val.strip()
+
+        # detect text fields by type name
+        it = getattr(f, 'get_internal_type', lambda: "")()
+        if it in ("TextField", "CharField"):
+            if isinstance(val, str) and val.strip():
+                text_bits.append((name.lower(), val.strip()))
+
+    preferred_order = ["body", "content", "text", "description", "rich_text", "about", "html"]
+    for pref in preferred_order:
+        for name, val in text_bits:
+            if name == pref and len(val) > len(best_text):
+                best_text = val
+    if not best_text and text_bits:
+        best_text = max(text_bits, key=lambda x: len(x[1]))[1]
+
+    return {"title": title_val, "body_html": best_text}
 
 def about(request):
-    """Страница «О нас»: берём последнюю запись AboutPage БЕЗ фильтров публикации.
-    Это гарантирует показ текста из админки, даже если не проставлены флаги published/active.
-    Внешний вид не меняем — только подстановка контента."""
-    page = None
+    rec = _get_about_record()
+    ctx = {"about": rec, "title": "", "body_html": ""}
+    ctx.update(_extract_about_fields(rec))
+    return render(request, "pages/about.html", ctx)
+
+def home(request):
+    # keep original behavior safe
     try:
-        Model = apps.get_model("pages", "AboutPage")
+        Event = apps.get_model('events', 'Event')
     except Exception:
-        Model = None
+        Event = None
 
-    if Model:
+    events = []
+    if Event is not None:
         try:
-            qs = Model.objects.all()
-            # Самая свежая запись: по updated_at (если есть), иначе по id
-            if hasattr(Model, "updated_at"):
-                qs = qs.order_by("-updated_at")
-            else:
-                qs = qs.order_by("-id")
-            page = qs.first()
-        except (OperationalError, ProgrammingError, Exception):
-            page = None
-
-    return render(request, "pages/about.html", {"page": page})
+            qs = Event.objects.all()
+            if hasattr(Event, 'is_published'):
+                qs = qs.filter(is_published=True)
+            if hasattr(Event, 'is_featured'):
+                qs = qs.filter(is_featured=True)
+            events = list(qs.order_by("-id")[:12])
+        except Exception:
+            events = []
+    return render(request, "pages/home.html", {"events": events})
