@@ -2,6 +2,12 @@
 {% load i18n %}
 {% block title %}{{ event.title|default:_("Мероприятие") }}{% endblock %}
 {% block content %}
+<style>
+.nav-btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1.1rem;border:1.5px solid rgba(255,255,255,.7);border-radius:999px;color:#fff;text-decoration:none;font-weight:700;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.02));transition:transform .18s ease,box-shadow .18s ease,background .2s ease,color .2s ease;box-shadow:0 6px 18px rgba(0,0,0,.15),inset 0 -8px 12px rgba(0,0,0,.12)}
+.nav-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.2),inset 0 -12px 14px rgba(0,0,0,.18);background:linear-gradient(90deg,#f6c453,#ff4fa3);color:#101114}
+.nav-btn--primary{background:linear-gradient(90deg,#f6c453,#ff4fa3);color:#101114;border-color:rgba(255,79,163,.5)}
+.nav-btn--primary:hover{background:linear-gradient(90deg,#ffd470,#ff6bb8);box-shadow:0 12px 28px rgba(216,27,96,.3),inset 0 -12px 14px rgba(0,0,0,.15)}
+</style>
 <section class="container" style="max-width:900px;margin:0 auto;padding:1rem 0;">
   <h1>{{ event.title|default:_("Мероприятие") }}</h1>
   {% if event.image %}
@@ -13,11 +19,11 @@
   <dl class="event-meta">
     {% if event.start_date %}<dt>{% trans "Дата начала" %}:</dt><dd>{{ event.start_date|date:"d.m.Y" }}</dd>{% endif %}
     {% if event.end_date %}<dt>{% trans "Дата окончания" %}:</dt><dd>{{ event.end_date|date:"d.m.Y" }}</dd>{% endif %}
-    {% if event.price %}<dt>{% trans "Стоимость" %}:</dt><dd>{{ event.price }} ₽</dd>{% endif %}
+    {% if event.price_rub %}<dt>{% trans "Стоимость" %}:</dt><dd>{{ event.price_rub }} ₽</dd>{% elif event.price %}<dt>{% trans "Стоимость" %}:</dt><dd>{{ event.price }} ₽</dd>{% endif %}
   </dl>
   <div class="event-files" style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
-    {% if event.info_letter %}<a class="btn" href="{{ event.info_letter.url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% endif %}
-    {% if event.registration_form %}<a class="btn" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">{% trans "Заявка" %}</a>{% endif %}
+    {% if event.info_file %}<a class="nav-btn" href="{{ event.info_file.url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% elif event.info_letter %}<a class="nav-btn" href="{{ event.info_letter.url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% endif %}
+    {% if event.registration_form %}<a class="nav-btn nav-btn--primary" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">{% trans "Заявка" %}</a>{% endif %}
   </div>
 </section>
 {% endblock %}
