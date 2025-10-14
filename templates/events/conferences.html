@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="page" style="max-width:1200px;margin:0 auto;padding:16px;">
+  <h1 style="margin-bottom:16px;">{{ title }}</h1>
+  {% if events %}
+    <div class="cards">
+      {% for event in events %}
+        <article class="card">
+          <h2 class="card-title">{{ event.title }}</h2>
+          {% if event.short_description %}
+          <p class="card-text">{{ event.short_description }}</p>
+          {% endif %}
+          <div class="card-actions">
+            {% if event.info_letter %}
+              <a href="{{ event.info_letter.url }}" class="btn" download>{% trans "Информационное письмо" %}</a>
+            {% endif %}
+            {% if event.registration_url %}
+              <a href="{{ event.registration_url }}" class="btn">{% trans "Зарегистрироваться" %}</a>
+            {% endif %}
+            {% if event.test_url %}
+              <a href="{{ event.test_url }}" class="btn">{% trans "Пройти тест" %}</a>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>{% trans "Список пуст." %}</p>
+  {% endif %}
+</section>
+{% endblock %}
