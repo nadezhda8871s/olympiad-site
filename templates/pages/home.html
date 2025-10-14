@@ -38,42 +38,36 @@
   </div>
 </section>
 
+{# Статический информблок вместо "Актуальные мероприятия" #}
 <section class="section">
-  <div class="section-head">
-    <h2 class="section-title">{% trans "Актуальные мероприятия" %}</h2>
-  </div>
+  <div class="container" style="max-width: 980px">
+    <article class="prose" style="line-height:1.7">
+      <h2 style="margin:0 0 .6rem 0; font-size:1.75rem;">{% trans "Стоимость участия" %}</h2>
+      <ul style="margin:0 0 1.2rem 0; padding-left:1.2em;">
+        <li><strong>{% trans "Олимпиады" %}:</strong> 110 рублей.</li>
+        <li><strong>{% trans "Конкурсы" %}:</strong> 350 рублей.</li>
+        <li><strong>{% trans "Конференции" %}:</strong> от 350 рублей; {% trans "публикация работ в изданиях РИНЦ — от 500 рублей" %}.</li>
+      </ul>
 
-  <div id="actualEvents" class="cards">
-    {% for ev in featured_events %}
-      <article class="card">
-        <h3 class="card-title">
-          <a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a>
-        </h3>
-        {% if ev.short_description %}
-          <p class="card-desc">{{ ev.short_description }}</p>
-        {% endif %}
-        <div class="card-meta">
-          {% if ev.get_event_type_display %}
-            <span class="badge">{{ ev.get_event_type_display }}</span>
-          {% endif %}
-          {% if ev.price %}
-            <span class="badge">{{ ev.price }} ₽</span>
-          {% endif %}
-        </div>
-        <div class="card-actions">
-          {% if ev.info_letter %}
-            <a class="btn ghost" href="{{ ev.info_letter.url }}" download>
-              {% trans "Информационное письмо" %}
-            </a>
-          {% endif %}
-          {# кнопка регистрации убрана #}
-        </div>
-      </article>
-    {% empty %}
-      <div class="empty">
-        {% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}
-      </div>
-    {% endfor %}
+      <h2 style="margin:1.6rem 0 .6rem; font-size:1.75rem;">
+        {% trans "Порядок регистрации и правила подачи заявки" %}
+      </h2>
+      <ol style="margin:0 0 1.2rem 0; padding-left:1.2em;">
+        <li>{% trans "Выбрать подходящее мероприятие." %}</li>
+        <li>{% trans "Заполнить регистрационную форму, включив необходимые личные данные." %}</li>
+        <li>{% trans "Произвести оплату через платёжную систему Robokassa." %}</li>
+        <li>
+          {% trans "Приложить квитанцию об оплате и заполнить заявку из информационного письма, отправив её на адрес электронной почты:" %}
+          <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a>.
+        </li>
+        <li>{% trans "Скачать информационное письмо на странице конкретного мероприятия." %}</li>
+        <li>{% trans "По вопросам сотрудничества или уточнения деталей обращаться по указанным контактам." %}</li>
+      </ol>
+
+      <p style="margin-top:.6rem; font-style:italic;">
+        {% trans "Обратите внимание, что вся приведённая информация актуальна на сегодняшний день. Для дополнительной консультации обратитесь к администраторам ресурса." %}
+      </p>
+    </article>
   </div>
 </section>
 {% endblock %}
