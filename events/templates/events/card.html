@@ -6,8 +6,18 @@
   {% elif ev.description %}
     <p class="card-desc">{{ ev.description|truncatechars:180 }}</p>
   {% endif %}
+  <style>
+    .nav-btn{display:inline-block;text-decoration:none;border:1px solid #d1d5db;border-radius:6px;padding:8px 12px;background:#fff;color:#111}
+    .nav-btn:hover{opacity:0.95}
+    .nav-btn--primary{background:#2563eb;border-color:#2563eb;color:#fff}
+    .card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:10px}
+  </style>
   <div class="card-actions">
-    {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
-    <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
+    {% if ev.info_letter %}
+      <a class="nav-btn" href="{{ ev.info_letter.url }}" target="_blank" rel="noopener">Информационное письмо</a>
+    {% elif ev.info_file %}
+      <a class="nav-btn" href="{{ ev.info_file.url }}" target="_blank" rel="noopener">Информационное письмо</a>
+    {% endif %}
+    <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
   </div>
 </div>

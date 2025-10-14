@@ -1,3 +1,4 @@
+{# Safe event card used on lists. Uses fallback attributes if present. #}
 <article class="event-card">
   <a href="{{ event.get_absolute_url|default:'#' }}" class="event-card__link">
     <div class="event-card__body">

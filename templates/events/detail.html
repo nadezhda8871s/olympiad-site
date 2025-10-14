@@ -13,11 +13,11 @@
   <dl class="event-meta">
     {% if event.start_date %}<dt>{% trans "Дата начала" %}:</dt><dd>{{ event.start_date|date:"d.m.Y" }}</dd>{% endif %}
     {% if event.end_date %}<dt>{% trans "Дата окончания" %}:</dt><dd>{{ event.end_date|date:"d.m.Y" }}</dd>{% endif %}
-    {% if event.price %}<dt>{% trans "Стоимость" %}:</dt><dd>{{ event.price }} ₽</dd>{% endif %}
+    {% if event.price %}<dt>{% trans "Стоимость" %}:</dt><dd>{{ event.price }} ₽</dd>{% elif event.price_rub %}<dt>{% trans "Стоимость" %}:</dt><dd>{{ event.price_rub }} ₽</dd>{% endif %}
   </dl>
   <div class="event-files" style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
-    {% if event.info_letter %}<a class="btn" href="{{ event.info_letter.url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% endif %}
-    {% if event.registration_form %}<a class="btn" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">{% trans "Заявка" %}</a>{% endif %}
+    {% if event.info_letter %}<a class="nav-btn" href="{{ event.info_letter.url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% elif event.info_file %}<a class="nav-btn" href="{{ event.info_file.url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% endif %}
+    {% if event.registration_form %}<a class="nav-btn" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">{% trans "Заявка" %}</a>{% endif %}
   </div>
 </section>
 {% endblock %}
