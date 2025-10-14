@@ -5,19 +5,38 @@
 
 {% block content %}
 <section class="hero">
-  <h1 class="hero-title">{% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}</h1>
+  <h1 class="hero-title">
+    {% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}
+  </h1>
 
   <form class="search-form" action="" onsubmit="return false;">
-    <input id="globalSearch" type="search" placeholder="{% trans 'Начните вводить название мероприятия…' %}" aria-label="{% trans 'Поиск по заголовку мероприятия' %}">
-    <button type="button" class="cta" onclick="window.performGlobalSearch && window.performGlobalSearch()">{% trans "Искать" %}</button>
+    <input
+      id="globalSearch"
+      type="search"
+      placeholder="{% trans 'Начните вводить название мероприятия…' %}"
+      aria-label="{% trans 'Поиск по заголовку мероприятия' %}"
+    >
+    <button type="button" class="cta" onclick="window.performGlobalSearch && window.performGlobalSearch()">
+      {% trans "Искать" %}
+    </button>
   </form>
 
   <div class="tiles">
-    <a class="tile" href="/olympiads/"><span class="tile-title">{% trans "Олимпиады" %}</span></a>
-    <a class="tile" href="/contests/"><span class="tile-title">{% trans "Конкурсы статей, ВКР, научных работ" %}</span></a>
-    <a class="tile" href="/conferences/"><span class="tile-title">{% trans "Конференции с публикацией в РИНЦ сборниках" %}</span></a>
-    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener"><span class="tile-title">{% trans "Монографии" %}</span></a>
-    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener"><span class="tile-title">{% trans "Наши журналы" %}</span></a>
+    <a class="tile" href="/olympiads/">
+      <span class="tile-title">{% trans "Олимпиады" %}</span>
+    </a>
+    <a class="tile" href="/contests/">
+      <span class="tile-title">{% trans "Конкурсы статей, ВКР, научных работ" %}</span>
+    </a>
+    <a class="tile" href="/conferences/">
+      <span class="tile-title">{% trans "Конференции с публикацией в РИНЦ сборниках" %}</span>
+    </a>
+    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">
+      <span class="tile-title">{% trans "Монографии" %}</span>
+    </a>
+    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">
+      <span class="tile-title">{% trans "Наши журналы" %}</span>
+    </a>
   </div>
 </section>
 
@@ -30,22 +49,26 @@
     {% for ev in featured_events %}
       <article class="card">
         <h3 class="card-title">
-          {% if ev.get_absolute_url %}
-            <a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a>
-          {% elif ev.slug %}
-            <a href="{% url 'events:detail' ev.slug %}">{{ ev.title }}</a>
-          {% else %}
-            {{ ev.title }}
-          {% endif %}
+          {{ ev.title }}
         </h3>
-        {% if ev.short_description %}<p class="card-desc">{{ ev.short_description }}</p>{% endif %}
+
+        {% if ev.short_description %}
+          <p class="card-desc">{{ ev.short_description }}</p>
+        {% endif %}
+
         <div class="card-meta">
-          {% if ev.get_event_type_display %}<span class="badge">{{ ev.get_event_type_display }}</span>{% endif %}
-          {% if ev.price %}<span class="badge">{{ ev.price }} ₽</span>{% endif %}
+          {% if ev.get_event_type_display %}
+            <span class="badge">{{ ev.get_event_type_display }}</span>
+          {% endif %}
+          {% if ev.price %}
+            <span class="badge">{{ ev.price }} ₽</span>
+          {% endif %}
         </div>
       </article>
     {% empty %}
-      <div class="empty">{% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}</div>
+      <div class="empty">
+        {% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}
+      </div>
     {% endfor %}
   </div>
 </section>
