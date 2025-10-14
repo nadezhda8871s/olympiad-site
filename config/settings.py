@@ -94,3 +94,9 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")] if os.path.isdir(os.path.j
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# MEDIA (для Информационных писем и других загружаемых файлов)
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
