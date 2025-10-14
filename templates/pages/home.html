@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 {% load static i18n %}
 
+{% block body_class %}home{% endblock %}
 {% block title %}{% trans "Онлайн научные мероприятия — Главная" %}{% endblock %}
 
+{% block extra_head %}<link rel="stylesheet" href="{% static 'events/cards.css' %}">{% endblock %}
 {% block content %}
 <section class="hero">
   <h1 class="hero-title">{% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}</h1>
-  <p class="hero-sub">{% trans "Наградные документы высылаются в течение 5 дней с даты регистрации (вручную, только на vsemnayka@gmail.com)" %}</p>
+  <p class="hero-sub">{% trans "Наградные документы высылаются в течение 5 дней с даты регистрации" %}</p>
 
   <form class="search-form" action="" onsubmit="return false;">
     <input id="globalSearch" type="search" placeholder="{% trans 'Начните вводить название мероприятия…' %}" aria-label="{% trans 'Поиск по заголовку мероприятия' %}">
@@ -39,20 +41,7 @@
 
   <div id="actualEvents" class="cards">
     {% for ev in featured_events %}
-      <article class="card">
-        <h3 class="card-title">{{ ev.title }}</h3>
-        <p class="card-desc">{{ ev.short_description }}</p>
-        <div class="card-meta">
-          <span class="badge">{{ ev.get_event_type_display }}</span>
-          {% if ev.price %}<span class="badge">{{ ev.price }} ₽</span>{% endif %}
-        </div>
-        <div class="card-actions">
-          {% if ev.info_letter %}
-            <a class="btn ghost" href="{{ ev.info_letter.url }}" download>{% trans "Информационное письмо" %}</a>
-          {% endif %}
-          <a class="btn solid" href="{{ ev.get_registration_url }}">{% trans "Регистрация" %}</a>
-        </div>
-      </article>
+      {% include 'events/card.html' with ev=ev %}
     {% empty %}
       <div class="empty">{% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}</div>
     {% endfor %}
