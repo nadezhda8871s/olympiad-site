@@ -1,17 +1,48 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load static i18n %}
+
 {% block title %}{% trans "Главная" %}{% endblock %}
+
 {% block content %}
-<section class="container" style="max-width:1100px;margin:0 auto;padding:1rem 0;">
-  <h1 style="margin-bottom:.8rem;">{% trans "Актуальные мероприятия" %}</h1>
-  {% if featured_events %}
-    <div class="events-grid">
-      {% for event in featured_events %}
-        {% include "events/_card.html" %}
+<section class="hero container" style="padding:24px 0;">
+  <h1 class="hero-title">{% trans "Добро пожаловать в Центр науки и инноваций" %}</h1>
+  <p class="hero-subtitle">{% trans "Олимпиады, конкурсы, конференции — участвуйте и публикуйтесь." %}</p>
+
+  <form class="search" action="/search/" method="get" style="margin-top:12px;">
+    <input id="q" name="q" type="text" placeholder="{% trans 'Поиск мероприятий…' %}" aria-label="{% trans 'Поиск' %}" />
+    <button type="submit">{% trans "Найти" %}</button>
+  </form>
+
+  <div class="cta-grid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px;">
+    <a class="btn-cta" href="/olympiads/">{% trans "Олимпиады" %}</a>
+    <a class="btn-cta" href="/competitions/">{% trans "Конкурсы" %}</a>
+    <a class="btn-cta" href="/conferences/">{% trans "Конференции" %}</a>
+  </div>
+</section>
+
+<section class="container" style="padding:12px 0 36px;">
+  <h2 style="margin:12px 0;">{% trans "Актуальные мероприятия" %}</h2>
+  <div class="cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+    {% if featured_events %}
+      {% for e in featured_events %}
+        <article class="event-card">
+          <a href="{{ e.get_absolute_url|default:'#' }}">
+            <div class="event-card__title">{{ e.title }}</div>
+            {% if e.short_description %}
+              <div class="event-card__desc">{{ e.short_description }}</div>
+            {% endif %}
+            {% if e.start_date or e.end_date %}
+              <div class="event-card__dates">
+                {% if e.start_date %}{{ e.start_date }}{% endif %}
+                {% if e.end_date %}– {{ e.end_date }}{% endif %}
+              </div>
+            {% endif %}
+          </a>
+        </article>
       {% endfor %}
-    </div>
-  {% else %}
-    <p>{% trans "Скоро здесь появятся мероприятия." %}</p>
-  {% endif %}
+    {% else %}
+      <p>{% trans "Пока нет отмеченных «избранных» мероприятий." %}</p>
+    {% endif %}
+  </div>
 </section>
 {% endblock %}
