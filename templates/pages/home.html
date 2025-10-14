@@ -1,49 +1,17 @@
 {% extends "base.html" %}
-{% load static i18n %}
-
-{% block title %}{% trans "Онлайн научные мероприятия — Главная" %}{% endblock %}
-
-{% block extra_head %}<link rel="stylesheet" href="{% static 'events/cards.css' %}">{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Главная" %}{% endblock %}
 {% block content %}
-<section class="hero">
-  <h1 class="hero-title">{% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}</h1>
-  <p class="hero-sub">{% trans "Наградные документы высылаются в течение 5 дней с даты регистрации" %}</p>
-
-  <form class="search-form" action="" onsubmit="return false;">
-    <input id="globalSearch" type="search" placeholder="{% trans 'Начните вводить название мероприятия…' %}" aria-label="{% trans 'Поиск по заголовку мероприятия' %}">
-    <button type="button" class="cta" onclick="window.performGlobalSearch && window.performGlobalSearch()">{% trans "Искать" %}</button>
-  </form>
-
-  <div class="tiles">
-    <a class="tile" href="/olympiads/">
-      <span class="tile-title">{% trans "Олимпиады" %}</span>
-    </a>
-    <a class="tile" href="/contests/">
-      <span class="tile-title">{% trans "Конкурсы статей, ВКР, научных работ" %}</span>
-    </a>
-    <a class="tile" href="/conferences/">
-      <span class="tile-title">{% trans "Конференции с публикацией в РИНЦ сборниках" %}</span>
-    </a>
-    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">
-      <span class="tile-title">{% trans "Монографии" %}</span>
-    </a>
-    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">
-      <span class="tile-title">{% trans "Наши журналы" %}</span>
-    </a>
-  </div>
-</section>
-
-<section class="section">
-  <div class="section-head">
-    <h2 class="section-title">{% trans "Актуальные мероприятия" %}</h2>
-  </div>
-
-  <div id="actualEvents" class="cards">
-    {% for ev in featured_events %}
-      {% include 'events/card.html' with ev=ev %}
-    {% empty %}
-      <div class="empty">{% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}</div>
-    {% endfor %}
-  </div>
+<section class="container" style="max-width:1100px;margin:0 auto;padding:1rem 0;">
+  <h1 style="margin-bottom:.8rem;">{% trans "Актуальные мероприятия" %}</h1>
+  {% if featured_events %}
+    <div class="events-grid">
+      {% for event in featured_events %}
+        {% include "events/_card.html" %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>{% trans "Скоро здесь появятся мероприятия." %}</p>
+  {% endif %}
 </section>
 {% endblock %}
