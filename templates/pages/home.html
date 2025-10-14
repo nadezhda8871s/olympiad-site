@@ -1,61 +1,91 @@
 {% extends "base.html" %}
 {% load static i18n %}
 
-{% block title %}{% trans "Онлайн научные мероприятия — Главная" %}{% endblock %}
+{% block title %}{% trans "Главная" %}{% endblock %}
 
 {% block content %}
-<section class="hero">
-  <h1 class="hero-title">{% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}</h1>
-  <p class="hero-sub">{% trans "Наградные документы высылаются в течение 5 дней с даты регистрации</p>
+<section class="hero container">
+  <h1>{% trans "Всероссийский центр науки и инноваций" %}</h1>
 
-  <form class="search-form" action="" onsubmit="return false;">
-    <input id="globalSearch" type="search" placeholder="{% trans 'Начните вводить название мероприятия…' %}" aria-label="{% trans 'Поиск по заголовку мероприятия' %}">
-    <button type="button" class="cta" onclick="window.performGlobalSearch && window.performGlobalSearch()">{% trans "Искать" %}</button>
+  {# ── Строка поиска на главной ─────────────────────────────────────────────── #}
+  <form class="search-form" action="{% url 'home' %}" method="get" style="margin-top:1rem;">
+    <div class="search">
+      <input
+        type="text"
+        name="q"
+        value="{{ request.GET.q|default_if_none:'' }}"
+        placeholder="{% trans 'Поиск мероприятий…' %}"
+        aria-label="{% trans 'Поиск' %}">
+      <button type="submit">{% trans "Найти" %}</button>
+    </div>
   </form>
 
-  <div class="tiles">
-    <a class="tile" href="/olympiads/">
-      <span class="tile-title">{% trans "Олимпиады" %}</span>
-    </a>
-    <a class="tile" href="/contests/">
-      <span class="tile-title">{% trans "Конкурсы статей, ВКР, научных работ" %}</span>
-    </a>
-    <a class="tile" href="/conferences/">
-      <span class="tile-title">{% trans "Конференции с публикацией в РИНЦ сборниках" %}</span>
-    </a>
-    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">
-      <span class="tile-title">{% trans "Монографии" %}</span>
-    </a>
-    <a class="tile" href="https://vsem.site/" target="_blank" rel="noopener">
-      <span class="tile-title">{% trans "Наши журналы" %}</span>
-    </a>
-  </div>
+  {# ВАЖНО: здесь РАНЬШЕ была фраза про «Наградные документы…». Мы её УДАЛИЛИ по вашему запросу. #}
 </section>
 
-<section class="section">
-  <div class="section-head">
-    <h2 class="section-title">{% trans "Актуальные мероприятия" %}</h2>
-  </div>
+{# ── Сетка актуальных/избранных мероприятий ─────────────────────────────────── #}
+<section class="container" style="margin-top:2rem;">
+  <h2 style="margin-bottom:1rem;">{% trans "Актуальные мероприятия" %}</h2>
 
-  <div id="actualEvents" class="cards">
-    {% for ev in featured_events %}
-      <article class="card">
-        <h3 class="card-title">{{ ev.title }}</h3>
-        <p class="card-desc">{{ ev.short_description }}</p>
-        <div class="card-meta">
-          <span class="badge">{{ ev.get_event_type_display }}</span>
-          {% if ev.price %}<span class="badge">{{ ev.price }} ₽</span>{% endif %}
-        </div>
-        <div class="card-actions">
-          {% if ev.info_letter %}
-            <a class="btn ghost" href="{{ ev.info_letter.url }}" download>{% trans "Информационное письмо" %}</a>
-          {% endif %}
-          <a class="btn solid" href="{{ ev.get_registration_url }}">{% trans "Регистрация" %}</a>
-        </div>
-      </article>
-    {% empty %}
-      <div class="empty">{% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}</div>
-    {% endfor %}
-  </div>
+  {% if featured_events %}
+    <div class="cards events-grid">
+      {% for event in featured_events %}
+        <article class="card event-card">
+          <div class="card-body">
+            <h3 class="card-title">
+              <a href="{% if event.get_absolute_url %}{{ event.get_absolute_url }}{% elif event.slug %}{% url 'events:detail' event.slug %}{% else %}#{% endif %}">
+                {{ event.title|default:"Без названия" }}
+              </a>
+            </h3>
+
+            {% if event.short_description %}
+              <p class="card-text">{{ event.short_description }}</p>
+            {% elif event.description %}
+              <p class="card-text">{{ event.description|truncatechars:160 }}</p>
+            {% endif %}
+
+            <div class="card-meta" style="font-size:.9rem;opacity:.9;">
+              {% if event.start_date %}<span>🗓 {{ event.start_date }}</span>{% endif %}
+              {% if event.category %}<span>• {{ event.category }}</span>{% endif %}
+              {% if event.is_online %}<span>• {% trans "онлайн" %}</span>{% endif %}
+            </div>
+
+            <div class="card-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem;">
+              {# КНОПКА РЕГИСТРАЦИИ — выбираем существующее поле/метод, ничего в бэкенде не меняем #}
+              {% if event.registration_url %}
+                <a class="btn" href="{{ event.registration_url }}" rel="noopener" target="_blank">{% trans "Регистрация" %}</a>
+              {% elif event.get_register_url %}
+                <a class="btn" href="{{ event.get_register_url }}">{{ _("Регистрация") }}</a>
+              {% elif event.slug %}
+                {# стандартный fallback на именованный роут вида events:register <slug> #}
+                <a class="btn" href="{% url 'events:register' event.slug %}">{% trans "Регистрация" %}</a>
+              {% else %}
+                {# если нет URL регистрации — прячем кнопку, ничего не ломаем #}
+              {% endif %}
+
+              {# КНОПКА «ИНФОРМАЦИОННОЕ ПИСЬМО» — используем filefield/URL, если присутствует #}
+              {% if event.info_letter %}
+                <a class="btn btn-secondary" href="{{ event.info_letter.url }}" download>
+                  {% trans "Информационное письмо" %}
+                </a>
+              {% elif event.info_letter_url %}
+                <a class="btn btn-secondary" href="{{ event.info_letter_url }}" rel="noopener" target="_blank">
+                  {% trans "Информационное письмо" %}
+                </a>
+              {% endif %}
+
+              {# Ссылка «Подробнее» #}
+              <a class="btn-outline" href="{% if event.get_absolute_url %}{{ event.get_absolute_url }}{% elif event.slug %}{% url 'events:detail' event.slug %}{% else %}#{% endif %}">
+                {% trans "Подробнее" %}
+              </a>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="opacity:.8;">{% trans "Сейчас нет опубликованных мероприятий." %}</p>
+  {% endif %}
 </section>
+
 {% endblock %}
