@@ -5,12 +5,18 @@
 
 {% block content %}
 <section class="hero">
-  <h1 class="hero-title">{% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}</h1>
-  <p class="hero-sub">{% trans "Наградные документы высылаются в течение 5 дней с даты регистрации</p>
+  <h1 class="hero-title">
+    {% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}
+  </h1>
 
   <form class="search-form" action="" onsubmit="return false;">
-    <input id="globalSearch" type="search" placeholder="{% trans 'Начните вводить название мероприятия…' %}" aria-label="{% trans 'Поиск по заголовку мероприятия' %}">
-    <button type="button" class="cta" onclick="window.performGlobalSearch && window.performGlobalSearch()">{% trans "Искать" %}</button>
+    <input id="globalSearch" type="search"
+           placeholder="{% trans 'Начните вводить название мероприятия…' %}"
+           aria-label="{% trans 'Поиск по заголовку мероприятия' %}">
+    <button type="button" class="cta"
+            onclick="window.performGlobalSearch && window.performGlobalSearch()">
+      {% trans "Искать" %}
+    </button>
   </form>
 
   <div class="tiles">
@@ -40,21 +46,33 @@
   <div id="actualEvents" class="cards">
     {% for ev in featured_events %}
       <article class="card">
-        <h3 class="card-title">{{ ev.title }}</h3>
-        <p class="card-desc">{{ ev.short_description }}</p>
+        <h3 class="card-title">
+          <a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a>
+        </h3>
+        {% if ev.short_description %}
+          <p class="card-desc">{{ ev.short_description }}</p>
+        {% endif %}
         <div class="card-meta">
-          <span class="badge">{{ ev.get_event_type_display }}</span>
-          {% if ev.price %}<span class="badge">{{ ev.price }} ₽</span>{% endif %}
+          {% if ev.get_event_type_display %}
+            <span class="badge">{{ ev.get_event_type_display }}</span>
+          {% endif %}
+          {% if ev.price %}
+            <span class="badge">{{ ev.price }} ₽</span>
+          {% endif %}
         </div>
         <div class="card-actions">
           {% if ev.info_letter %}
-            <a class="btn ghost" href="{{ ev.info_letter.url }}" download>{% trans "Информационное письмо" %}</a>
+            <a class="btn ghost" href="{{ ev.info_letter.url }}" download>
+              {% trans "Информационное письмо" %}
+            </a>
           {% endif %}
-          <a class="btn solid" href="{{ ev.get_registration_url }}">{% trans "Регистрация" %}</a>
+          {# кнопка регистрации убрана #}
         </div>
       </article>
     {% empty %}
-      <div class="empty">{% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}</div>
+      <div class="empty">
+        {% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}
+      </div>
     {% endfor %}
   </div>
 </section>
