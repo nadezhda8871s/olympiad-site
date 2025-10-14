@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ event.title|default:_("Мероприятие") }}{% endblock %}
+{% block content %}
+<section class="container" style="max-width:900px;margin:0 auto;padding:1rem 0;">
+  <h1>{{ event.title|default:_("Мероприятие") }}</h1>
+  {% if event.image %}
+    <p><img src="{{ event.image.url }}" alt="{{ event.title }}" style="max-width:100%;height:auto"></p>
+  {% endif %}
+  {% if event.description %}
+    <div class="event-body">{{ event.description|safe }}</div>
+  {% endif %}
+  <dl class="event-meta">
+    {% if event.start_date %}<dt>{% trans "Дата начала" %}:</dt><dd>{{ event.start_date|date:"d.m.Y" }}</dd>{% endif %}
+    {% if event.end_date %}<dt>{% trans "Дата окончания" %}:</dt><dd>{{ event.end_date|date:"d.m.Y" }}</dd>{% endif %}
+    {% if event.price %}<dt>{% trans "Стоимость" %}:</dt><dd>{{ event.price }} ₽</dd>{% endif %}
+  </dl>
+  <div class="event-files" style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
+    {% if event.info_letter %}<a class="btn" href="{{ event.info_letter.url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% endif %}
+    {% if event.registration_form %}<a class="btn" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">{% trans "Заявка" %}</a>{% endif %}
+  </div>
+</section>
+{% endblock %}
