@@ -216,3 +216,20 @@ body{
   .tiles{ grid-template-columns:1fr }
   .search-form input[type="search"]{ min-width:96vw }
 }
+
+
+/* === Site-wide typography (excluded on home) === */
+body:not(.home){font-size:16px;line-height:1.7;color:#0f172a}
+body:not(.home) h1,body:not(.home) h2,body:not(.home) h3{line-height:1.25;margin:0.6em 0 0.4em}
+body:not(.home) p{margin:0 0 1em}
+body:not(.home) .page, body:not(.home) .content, body:not(.home) .container{max-width:1100px;margin-left:auto;margin-right:auto}
+body:not(.home) .page{padding:24px 16px}
+body:not(.home) ul, body:not(.home) ol{padding-left:1.4em;margin:0 0 1em}
+body:not(.home) a{color:#0b53b8;text-decoration:underline;text-underline-offset:2px}
+body:not(.home) a:hover{text-decoration-thickness:2px}
+body:not(.home) img{max-width:100%;height:auto;display:block;margin:12px 0}
+body:not(.home) table{width:100%;border-collapse:collapse;margin:12px 0;overflow:auto;display:block}
+body:not(.home) th, body:not(.home) td{border:1px solid #e5e7eb;padding:8px;text-align:left;vertical-align:top}
+body:not(.home) code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;background:#f8fafc;border:1px solid #e5e7eb;border-radius:4px;padding:2px 4px}
+body:not(.home) pre{background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;padding:12px;overflow:auto}
+
