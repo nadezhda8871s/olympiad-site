@@ -1,14 +1,20 @@
 {% extends "base.html" %}
 {% block title %}{{ ev.title|default:"Мероприятие" }}{% endblock %}
 {% block content %}
+<style>
+.nav-btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1.1rem;border:1.5px solid rgba(255,255,255,.7);border-radius:999px;color:#fff;text-decoration:none;font-weight:700;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.02));transition:transform .18s ease,box-shadow .18s ease,background .2s ease,color .2s ease;box-shadow:0 6px 18px rgba(0,0,0,.15),inset 0 -8px 12px rgba(0,0,0,.12)}
+.nav-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.2),inset 0 -12px 14px rgba(0,0,0,.18);background:linear-gradient(90deg,#f6c453,#ff4fa3);color:#101114}
+.nav-btn--primary{background:linear-gradient(90deg,#f6c453,#ff4fa3);color:#101114;border-color:rgba(255,79,163,.5)}
+.nav-btn--primary:hover{background:linear-gradient(90deg,#ffd470,#ff6bb8);box-shadow:0 12px 28px rgba(216,27,96,.3),inset 0 -12px 14px rgba(0,0,0,.15)}
+</style>
 <section class="container">
   {% if ev %}
   <div class="card">
     <h1>{{ ev.title }}</h1>
     <p>{{ ev.description }}</p>
     <div class="card-actions">
-      {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
-      <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
+      {% if ev.info_file %}<a class="nav-btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
+      <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
     </div>
   </div>
   {% else %}
