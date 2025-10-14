@@ -1,26 +1,24 @@
 {% extends "base.html" %}
-{% load i18n %}
-
-{% block title %}
-  {% if page and page.title %}{{ page.title }}{% else %}{% trans "О нас" %}{% endif %}
-{% endblock %}
-
+{% block title %}О нас{% endblock %}
 {% block content %}
-<section class="page">
-  <h1>{% if page and page.title %}{{ page.title }}{% else %}{% trans "О нас" %}{% endif %}</h1>
+<div class="container" style="max-width: 900px; margin: 0 auto; padding: 24px 16px;">
+  <h1 style="margin: 0 0 16px 0;">О нас{% if title %}: {{ title }}{% endif %}</h1>
 
-  {# Выводим HTML-текст из админки, поддерживая популярные имена полей. #}
-  {% if page %}
-    {% if page.body %}{{ page.body|safe }}
-    {% elif page.content %}{{ page.content|safe }}
-    {% elif page.text %}{{ page.text|safe }}
-    {% elif page.description %}{{ page.description|safe }}
-    {% elif page.rich_text %}{{ page.rich_text|safe }}
-    {% else %}
-      <p>{% trans "Информация о проекте будет размещена здесь." %}</p>
+  {% if body_html %}
+    <div class="prose" style="line-height: 1.6; font-size: 1.05rem;">
+      {{ body_html|safe }}
+    </div>
+  {% elif about %}
+    {% if about.body %}<div class="prose">{{ about.body|safe }}</div>{% endif %}
+    {% if about.content %}<div class="prose">{{ about.content|safe }}</div>{% endif %}
+    {% if about.text %}<div class="prose">{{ about.text|linebreaks }}</div>{% endif %}
+    {% if about.description %}<div class="prose">{{ about.description|linebreaks }}</div>{% endif %}
+    {% if about.rich_text %}<div class="prose">{{ about.rich_text|safe }}</div>{% endif %}
+    {% if not about.body and not about.content and not about.text and not about.description and not about.rich_text %}
+      <p>Текст страницы «О нас» ещё не добавлен в админке.</p>
     {% endif %}
   {% else %}
-    <p>{% trans "Информация о проекте будет размещена здесь." %}</p>
+    <p>Текст страницы «О нас» ещё не добавлен в админке.</p>
   {% endif %}
-</section>
+</div>
 {% endblock %}
