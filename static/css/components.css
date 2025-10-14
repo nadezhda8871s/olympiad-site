@@ -1,0 +1,21 @@
+/* Shared UI components for events */
+.nav-btn{
+  display:inline-block;
+  text-decoration:none;
+  border:1px solid #d1d5db;
+  border-radius:6px;
+  padding:8px 12px;
+  background:#fff;
+  color:#111;
+  transition:opacity .12s ease,box-shadow .12s ease,transform .08s ease;
+}
+.nav-btn:hover{opacity:0.95}
+.nav-btn--primary{
+  background:#2563eb;
+  border-color:#2563eb;
+  color:#fff;
+  box-shadow:0 2px 8px rgba(37,99,235,.12);
+}
+.event-card__actions{margin-top:10px;display:flex;gap:8px}
+.card-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:10px}
+.event-card__price, .event-card__date{font-weight:500}
