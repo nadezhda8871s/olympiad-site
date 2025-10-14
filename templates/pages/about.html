@@ -1,6 +1,13 @@
 {% extends "base.html" %}
-{% block title %}О нас{% endblock %}
+{% block title %}О нас
+<div class="legal-links" style="margin-top:20px;">
+  {% if offer_file %}<a href="{{ offer_file.url }}" target="_blank" rel="noopener">Оферта</a>{% endif %}
+  {% if privacy_file %} &nbsp;|&nbsp; <a href="{{ privacy_file.url }}" target="_blank" rel="noopener">Политика конфиденциальности</a>{% endif %}
+</div>
+{% endblock %}
+
 {% block content %}
+<section class=\"container\" style=\"padding:24px 16px;\">
 <section class="about container">
   <h1>О нас</h1>
   {% if about %}
@@ -12,4 +19,10 @@
     <p>Раздел пока пуст. Заполните текст в админке.</p>
   {% endif %}
 </section>
+
+<div class="legal-links" style="margin-top:20px;">
+  {% if offer_file %}<a href="{{ offer_file.url }}" target="_blank" rel="noopener">Оферта</a>{% endif %}
+  {% if privacy_file %} &nbsp;|&nbsp; <a href="{{ privacy_file.url }}" target="_blank" rel="noopener">Политика конфиденциальности</a>{% endif %}
+</div>
 {% endblock %}
+
