@@ -1,19 +1,21 @@
+# config/urls.py
 from django.contrib import admin
-from django.http import HttpResponse
 from django.urls import path, include
-from django.views.i18n import set_language
 
-def healthz(_request):
-    return HttpResponse("ok", content_type="text/plain")
-
-def favicon(_request):
-    return HttpResponse(b"", content_type="image/x-icon", status=200)
+# Важно для раздачи медиа-файлов (Информационные письма)
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("healthz", healthz),
-    path("favicon.ico", favicon),
-    path("i18n/setlang/", set_language, name="set_language"),
+
+    # Страницы сайта
     path("", include("pages.urls")),
+
+    # Мероприятия (олимпиады/конкурсы/конференции)
     path("", include("events.urls")),
 ]
+
+# Раздача MEDIA: нужна, чтобы скачивались файлы Информационных писем
+# Работает и при DEBUG=False (для небольших проектов допустимо).
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
