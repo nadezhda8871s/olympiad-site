@@ -38,47 +38,11 @@
             {{ ev.title }}
           {% endif %}
         </h3>
-
         {% if ev.short_description %}<p class="card-desc">{{ ev.short_description }}</p>{% endif %}
-
         <div class="card-meta">
           {% if ev.get_event_type_display %}<span class="badge">{{ ev.get_event_type_display }}</span>{% endif %}
           {% if ev.price %}<span class="badge">{{ ev.price }} ₽</span>{% endif %}
         </div>
-
-        {# показываем кнопки, только если URL реально есть #}
-        {% with
-          reg_url=ev.registration_url|default:ev.get_register_url|default:ev.get_registration_url
-        %}
-        {% if not reg_url and ev.slug %}
-          {% url 'events:register' ev.slug as reg_fallback %}
-          {% if reg_fallback %}{% firstof reg_url reg_fallback as reg_url %}{% endif %}
-        {% endif %}
-
-        {% if ev.info_letter %}
-          {% with info_url=ev.info_letter.url %}
-            {% if info_url or reg_url %}
-              <div class="card-actions">
-                {% if info_url %}
-                  <a class="btn ghost" href="{{ info_url }}" download>{% trans "Информационное письмо" %}</a>
-                {% endif %}
-                {% if reg_url %}
-                  <a class="btn solid" href="{{ reg_url }}" {% if 'http' in reg_url %}target="_blank" rel="noopener"{% endif %}>{% trans "Регистрация" %}</a>
-                {% endif %}
-              </div>
-            {% endif %}
-          {% endwith %}
-        {% elif ev.info_letter_url or reg_url %}
-          <div class="card-actions">
-            {% if ev.info_letter_url %}
-              <a class="btn ghost" href="{{ ev.info_letter_url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>
-            {% endif %}
-            {% if reg_url %}
-              <a class="btn solid" href="{{ reg_url }}" {% if 'http' in reg_url %}target="_blank" rel="noopener"{% endif %}>{% trans "Регистрация" %}</a>
-            {% endif %}
-          </div>
-        {% endif %}
-        {% endwith %}
       </article>
     {% empty %}
       <div class="empty">{% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}</div>
