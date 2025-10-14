@@ -5,20 +5,12 @@
 
 {% block content %}
 <section class="hero">
-  <h1 class="hero-title">
-    {% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}
-  </h1>
+  <h1 class="hero-title">{% trans "Онлайн научные мероприятия для школьников, учащихся СПО, студентов, аспирантов, учёных" %}</h1>
+  <p class="hero-sub">{% trans "Наградные документы высылаются в течение 5 дней с даты регистрации</p>
 
   <form class="search-form" action="" onsubmit="return false;">
-    <input
-      id="globalSearch"
-      type="search"
-      placeholder="{% trans 'Начните вводить название мероприятия…' %}"
-      aria-label="{% trans 'Поиск по заголовку мероприятия' %}"
-    >
-    <button type="button" class="cta" onclick="window.performGlobalSearch && window.performGlobalSearch()">
-      {% trans "Искать" %}
-    </button>
+    <input id="globalSearch" type="search" placeholder="{% trans 'Начните вводить название мероприятия…' %}" aria-label="{% trans 'Поиск по заголовку мероприятия' %}">
+    <button type="button" class="cta" onclick="window.performGlobalSearch && window.performGlobalSearch()">{% trans "Искать" %}</button>
   </form>
 
   <div class="tiles">
@@ -48,44 +40,21 @@
   <div id="actualEvents" class="cards">
     {% for ev in featured_events %}
       <article class="card">
-        {# Название без ссылки, по вашему требованию #}
         <h3 class="card-title">{{ ev.title }}</h3>
-
-        {% if ev.short_description %}
-          <p class="card-desc">{{ ev.short_description }}</p>
-        {% endif %}
-
+        <p class="card-desc">{{ ev.short_description }}</p>
         <div class="card-meta">
-          {% if ev.get_event_type_display %}<span class="badge">{{ ev.get_event_type_display }}</span>{% endif %}
+          <span class="badge">{{ ev.get_event_type_display }}</span>
           {% if ev.price %}<span class="badge">{{ ev.price }} ₽</span>{% endif %}
-          {% if ev.date_start %}<span class="badge">{{ ev.date_start }}</span>{% endif %}
         </div>
-
         <div class="card-actions">
-          {# Информационное письмо (если загружено файловое поле info_letter) #}
           {% if ev.info_letter %}
-            <a class="btn ghost" href="{{ ev.info_letter.url }}" download>
-              {% trans "Информационное письмо" %}
-            </a>
+            <a class="btn ghost" href="{{ ev.info_letter.url }}" download>{% trans "Информационное письмо" %}</a>
           {% endif %}
-
-          {# Регистрация — поддерживаем несколько вариантов, чтобы точно работало #}
-          {% with reg1=ev.get_registration_url|default_if_none:"" reg2=ev.registration_url|default_if_none:"" reg3=ev.registration_link|default_if_none:"" %}
-            {% if reg1 %}{% setvar reg_url %}{{ reg1 }}{% endsetvar %}
-            {% elif reg2 %}{% setvar reg_url %}{{ reg2 }}{% endsetvar %}
-            {% elif reg3 %}{% setvar reg_url %}{{ reg3 }}{% endsetvar %}
-            {% else %}{% setvar reg_url %}#{% endsetvar %}
-            {% endif %}
-            <a class="btn solid" href="{{ reg_url }}">
-              {% trans "Регистрация" %}
-            </a>
-          {% endwith %}
+          <a class="btn solid" href="{{ ev.get_registration_url }}">{% trans "Регистрация" %}</a>
         </div>
       </article>
     {% empty %}
-      <div class="empty">
-        {% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}
-      </div>
+      <div class="empty">{% trans "Пока нет выбранных мероприятий. Добавьте их в админке." %}</div>
     {% endfor %}
   </div>
 </section>
