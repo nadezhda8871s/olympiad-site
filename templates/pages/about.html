@@ -1,47 +1,28 @@
 {% extends "base.html" %}
-{% block title %}О нас{% endblock %}
+{% block title %}О нас
+<div class="legal-links" style="margin-top:20px;">
+  {% if offer_file %}<a href="{{ offer_file.url }}" target="_blank" rel="noopener">Оферта</a>{% endif %}
+  {% if privacy_file %} &nbsp;|&nbsp; <a href="{{ privacy_file.url }}" target="_blank" rel="noopener">Политика конфиденциальности</a>{% endif %}
+</div>
+{% endblock %}
 
 {% block content %}
+<section class=\"container\" style=\"padding:24px 16px;\">
 <section class="about container">
   <h1>О нас</h1>
-
   {% if about %}
     <div class="about-content">
-      {% if about.content_ru %}
-        <div class="lang lang-ru">
-          <h2>RU</h2>
-          <div class="prose">{{ about.content_ru|linebreaksbr }}</div>
-        </div>
-      {% endif %}
-
-      {% if about.content_en %}
-        <div class="lang lang-en">
-          <h2>EN</h2>
-          <div class="prose">{{ about.content_en|linebreaksbr }}</div>
-        </div>
-      {% endif %}
-
-      {% if not about.content_ru and not about.content_en %}
-        {% include "pages/_about_fallback.html" %}
-      {% endif %}
+      <div class="lang-ru"><h3>RU</h3><p style="white-space:pre-wrap">{{ about.content_ru }}</p></div>
+      <div class="lang-en"><h3>EN</h3><p style="white-space:pre-wrap">{{ about.content_en }}</p></div>
     </div>
   {% else %}
-    {% include "pages/_about_fallback.html" %}
+    <p>Раздел пока пуст. Заполните текст в админке.</p>
   {% endif %}
 </section>
 
-<style>
-  .about.container { padding-top: 1rem; padding-bottom: 2rem; }
-  .about-content, .about-fallback { max-width: 900px; margin: 0 auto; line-height: 1.7; }
-  .about-content h2, .about-fallback h2 { margin: 1.2em 0 .6em; }
-  .about-content h3, .about-fallback h3 { margin: 1em 0 .4em; font-weight: 600; }
-  .about-content ul, .about-fallback ul,
-  .about-content ol, .about-fallback ol { padding-left: 1.2em; }
-  .requisites { display: grid; grid-template-columns: 1fr; gap: .25rem; max-width: 700px; }
-  blockquote { background: #f7f7f9; padding: 1rem; border-left: 4px solid #e0e0e0; }
-  hr { margin: 2rem 0; border: 0; border-top: 1px solid #e6e6e6; }
-  .lang { margin-bottom: 1.5rem; }
-  .lang h2 { font-size: 1rem; letter-spacing: .08em; opacity: .7; margin-bottom: .25rem; }
-  .prose p { margin: .5em 0; }
-</style>
+<div class="legal-links" style="margin-top:20px;">
+  {% if offer_file %}<a href="{{ offer_file.url }}" target="_blank" rel="noopener">Оферта</a>{% endif %}
+  {% if privacy_file %} &nbsp;|&nbsp; <a href="{{ privacy_file.url }}" target="_blank" rel="noopener">Политика конфиденциальности</a>{% endif %}
+</div>
 {% endblock %}
+
