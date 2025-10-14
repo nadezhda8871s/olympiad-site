@@ -1,19 +1,15 @@
 {% extends "base.html" %}
-{% load static i18n %}
-{% block title %}{% if page and page.title %}{{ page.title }}{% else %}{% trans "О нас" %}{% endif %}{% endblock %}
+{% block title %}О нас{% endblock %}
 {% block content %}
-<section class="page" style="max-width:900px;margin:0 auto;padding:16px;">
-  <h1 style="margin-bottom:16px;">{% if page and page.title %}{{ page.title }}{% else %}{% trans "О нас" %}{% endif %}</h1>
-  {% if page %}
-    {% if page.body %}{{ page.body|safe }}
-    {% elif page.content %}{{ page.content|safe }}
-    {% elif page.text %}{{ page.text|safe }}
-    {% elif page.description %}{{ page.description|safe }}
-    {% else %}
-      <p>{% trans "Информация о проекте будет размещена здесь." %}</p>
-    {% endif %}
+<section class="about container">
+  <h1>О нас</h1>
+  {% if about %}
+    <div class="about-content">
+      <div class="lang-ru"><h3>RU</h3><p style="white-space:pre-wrap">{{ about.content_ru }}</p></div>
+      <div class="lang-en"><h3>EN</h3><p style="white-space:pre-wrap">{{ about.content_en }}</p></div>
+    </div>
   {% else %}
-    <p>{% trans "Информация о проекте будет размещена здесь." %}</p>
+    <p>Раздел пока пуст. Заполните текст в админке.</p>
   {% endif %}
 </section>
 {% endblock %}
