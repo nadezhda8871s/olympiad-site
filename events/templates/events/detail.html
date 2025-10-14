@@ -1,24 +1,67 @@
 {% extends "base.html" %}
-{% block title %}{{ ev.title|default:"Мероприятие" }}{% endblock %}
+{% block title %}{{ event.title }}{% endblock %}
 {% block content %}
-<style>
-.nav-btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1.1rem;border:1.5px solid rgba(255,255,255,.7);border-radius:999px;color:#fff;text-decoration:none;font-weight:700;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.02));transition:transform .18s ease,box-shadow .18s ease,background .2s ease,color .2s ease;box-shadow:0 6px 18px rgba(0,0,0,.15),inset 0 -8px 12px rgba(0,0,0,.12)}
-.nav-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.2),inset 0 -12px 14px rgba(0,0,0,.18);background:linear-gradient(90deg,#f6c453,#ff4fa3);color:#101114}
-.nav-btn--primary{background:linear-gradient(90deg,#f6c453,#ff4fa3);color:#101114;border-color:rgba(255,79,163,.5)}
-.nav-btn--primary:hover{background:linear-gradient(90deg,#ffd470,#ff6bb8);box-shadow:0 12px 28px rgba(216,27,96,.3),inset 0 -12px 14px rgba(0,0,0,.15)}
-</style>
 <section class="container">
-  {% if ev %}
-  <div class="card">
-    <h1>{{ ev.title }}</h1>
-    <p>{{ ev.description }}</p>
-    <div class="card-actions">
-      {% if ev.info_file %}<a class="nav-btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
-      <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
+  {% if event %}
+  <div class="event-detail">
+    <div class="event-main">
+      <h1 style="margin-bottom:.6rem">{{ event.title }}</h1>
+      <div class="event-meta meta-row">
+        {% if event.start_date %}<span class="badge">{{ event.start_date|date:"d.m.Y" }}</span>{% endif %}
+        {% if event.price_rub %}<span class="badge">{{ event.price_rub }} ₽</span>{% endif %}
+      </div>
+
+      <div class="event-body" style="margin-top:1rem">
+        {{ event.description|linebreaks }}
+      </div>
+
+      {% if event.extra_info %}
+        <div style="margin-top:1rem; color:#475569;">{{ event.extra_info|linebreaks }}</div>
+      {% endif %}
+
+      <!-- файлы/ссылки -->
+      <div style="margin-top:1.2rem;display:flex;gap:.5rem;flex-wrap:wrap">
+        {% if event.info_file %}
+          <a class="nav-btn nav-btn--primary" href="{{ event.info_file.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
+        {% elif event.info_letter %}
+          <a class="nav-btn nav-btn--primary" href="{{ event.info_letter.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
+        {% endif %}
+        {% if event.registration_form %}
+          <a class="nav-btn nav-btn--primary" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">Заявка</a>
+        {% endif %}
+      </div>
     </div>
+
+    <aside>
+      <div class="registration-card">
+        <h4>Регистрация</h4>
+        <div class="muted">Заполните форму — мы свяжемся с вами для подтверждения.</div>
+
+        {% if form %}
+          <form method="post" action="">
+            {% csrf_token %}
+            {% for field in form %}
+              <div class="form-row">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div style="color:#c026d3;font-size:.85rem">{{ field.errors }}</div>{% endif %}
+              </div>
+            {% endfor %}
+            <div class="submit-row">
+              <button type="submit" class="nav-btn nav-btn--primary">Отправить заявку</button>
+              <div class="muted" style="font-size:.88rem">Или свяжитесь: <a href="mailto:vsemnayka@gmail.com">vsemnayka@gmail.com</a></div>
+            </div>
+          </form>
+        {% else %}
+          {% if event.get_register_url %}
+            <a class="nav-btn nav-btn--primary" href="{{ event.get_register_url }}" target="_blank" rel="noopener">Перейти к регистрации</a>
+          {% endif %}
+        {% endif %}
+      </div>
+    </aside>
   </div>
   {% else %}
-  <p>Мероприятие недоступно.</p>
+    <p>Мероприятие недоступно.</p>
   {% endif %}
 </section>
 {% endblock %}

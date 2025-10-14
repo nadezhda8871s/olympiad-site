@@ -1,19 +1,19 @@
-{% comment %}Единая карточка мероприятия{% endcomment %}
-<style>
-.nav-btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1.1rem;border:1.5px solid rgba(255,255,255,.7);border-radius:999px;color:#fff;text-decoration:none;font-weight:700;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.02));transition:transform .18s ease,box-shadow .18s ease,background .2s ease,color .2s ease;box-shadow:0 6px 18px rgba(0,0,0,.15),inset 0 -8px 12px rgba(0,0,0,.12)}
-.nav-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.2),inset 0 -12px 14px rgba(0,0,0,.18);background:linear-gradient(90deg,#f6c453,#ff4fa3);color:#101114}
-.nav-btn--primary{background:linear-gradient(90deg,#f6c453,#ff4fa3);color:#101114;border-color:rgba(255,79,163,.5)}
-.nav-btn--primary:hover{background:linear-gradient(90deg,#ffd470,#ff6bb8);box-shadow:0 12px 28px rgba(216,27,96,.3),inset 0 -12px 14px rgba(0,0,0,.15)}
-</style>
+{# events/templates/events/card.html - карточка события в списке #}
 <div class="card">
   <h3 class="card-title"><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h3>
+
   {% if ev.short_description %}
     <p class="card-desc">{{ ev.short_description|truncatechars:180 }}</p>
   {% elif ev.description %}
     <p class="card-desc">{{ ev.description|truncatechars:180 }}</p>
   {% endif %}
+
   <div class="card-actions">
-    {% if ev.info_file %}<a class="nav-btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
+    {% if ev.info_file %}
+      <a class="nav-btn nav-btn--primary" href="{{ ev.info_file.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
+    {% elif ev.info_letter %}
+      <a class="nav-btn nav-btn--primary" href="{{ ev.info_letter.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
+    {% endif %}
     <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
   </div>
 </div>
