@@ -3,13 +3,19 @@ import mimetypes
 import logging
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponseForbidden, FileResponse, Http404, HttpResponse
+from django.http import JsonResponse, HttpResponseForbidden, FileResponse, Http404
 from django.utils.encoding import smart_str
 from django.utils import timezone
 from django.db.utils import OperationalError, ProgrammingError
 from django.contrib.auth.decorators import user_passes_test
 
-from .models import Event, Category, Registration, Payment, Question, AnswerOption, TestResult
+from .models import Event, Registration, Payment, Question, AnswerOption, TestResult
+# Category может отсутствовать в вашей модели — импортируем защищённо
+try:
+    from .models import Category
+except Exception:
+    Category = None
+
 from .forms import RegistrationForm
 from .services.emails import (
     send_registration_confirmation, send_payment_success, send_payment_failed,
@@ -35,15 +41,14 @@ def _info_file_exists(ev):
             if storage.exists(name):
                 return True
         except Exception:
-            # storage may not implement exists or may fail (S3 misconfiguration etc.)
-            logger.debug("storage.exists raised for %s: %s", name, exc_info=True)
+            logger.debug("storage.exists raised for %s", name, exc_info=True)
             pass
         # fallback: try physical path if available
         try:
             path = ev.info_file.path
             return bool(path and os.path.exists(path))
         except Exception:
-            logger.debug("ev.info_file.path unavailable for %s: %s", getattr(ev, "pk", None), exc_info=True)
+            logger.debug("ev.info_file.path unavailable for %s", getattr(ev, "pk", None), exc_info=True)
             return False
     except Exception:
         logger.exception("Unexpected error when checking info_file existence for ev=%s", getattr(ev, "pk", None))
@@ -136,7 +141,7 @@ def events_list_contests(request):
 
 def events_list_conferences(request):
     try:
-        return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборников", "events/conferences_list.html")
+        return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборниках", "events/conferences_list.html")
     except Exception:
         logger.exception("events_list_conferences failed")
         return _render_service_unavailable(request)
@@ -285,12 +290,15 @@ def event_list(request, slug=None):
         category = None
         try:
             qs = Event.objects.filter(is_published=True)
-            if slug:
+            if slug and Category is not None:
+                # only attempt to filter by category if model exists
                 try:
                     category = Category.objects.get(slug=slug)
                     qs = qs.filter(category=category)
                 except Category.DoesNotExist:
                     raise Http404("Category not found")
+            elif slug and Category is None:
+                logger.warning("Category model is not present, ignoring slug=%s", slug)
             try:
                 qs = qs.order_by("sort_order", "-start_date", "-id")
             except Exception:
