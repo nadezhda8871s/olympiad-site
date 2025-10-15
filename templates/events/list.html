@@ -1,37 +1,17 @@
-<!-- name=templates/events/list.html -->
-{# Временный debug‑шаблон: показывает count и первые объекты, затем обычный список #}
-<h1>{{ page_title }}</h1>
-
-<div style="background:#f8f9fa;border:1px solid #e1e1e1;padding:10px;margin-bottom:1rem;">
-  <strong>DEBUG INFO (временно):</strong>
-  <ul>
-    <li>events var present: {{ events|length }} items</li>
-    <li>q param: "{{ q }}"</li>
-    <li>category: {{ category }}</li>
-  </ul>
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ title|default:_("Мероприятия") }}{% endblock %}
+{% block content %}
+<section class="container" style="max-width:1100px;margin:0 auto;padding:1rem 0;">
+  <h1 style="margin-bottom:.8rem;">{{ title|default:_("Мероприятия") }}</h1>
   {% if events %}
-    <div style="margin-top:0.5rem;padding:8px;background:#fff;border:1px dashed #ccc;">
-      <strong>Первый объект:</strong>
-      <div>title: {{ events.0.title }}</div>
-      <div>slug: {{ events.0.slug }}</div>
-      <div>is_published: {{ events.0.is_published }}</div>
-      <div>info_file.name: {{ events.0.info_file.name }}</div>
-      <div>info_file_exists: {{ events.0.info_file_exists }}</div>
+    <div class="events-grid">
+      {% for event in events %}
+        {% include "events/_card.html" %}
+      {% endfor %}
     </div>
   {% else %}
-    <div style="color:#b00;margin-top:0.5rem;">Нет событий в переменной events.</div>
+    <p>{% trans "Пока нет опубликованных мероприятий." %}</p>
   {% endif %}
-</div>
-
-{# Ниже — обычный вывод (если нужен) #}
-<ul class="events-list">
-  {% for ev in events %}
-    <li>
-      <h2><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h2>
-      {% if ev.info_file_exists %}<a href="{% url 'events:event_info_download' ev.slug %}">Инф. письмо</a>{% endif %}
-      <div>{{ ev.description|truncatewords:30|safe }}</div>
-    </li>
-  {% empty %}
-    <li>Мероприятий не найдено.</li>
-  {% endfor %}
-</ul>
+</section>
+{% endblock %}

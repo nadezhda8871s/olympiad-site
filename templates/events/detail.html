@@ -1,30 +1,23 @@
-{% comment %} Project-level safe event detail template. Uses ev = ev|default:event to be resilient. {% endcomment %}
-{% with ev=ev|default:event %}
-  {% if not ev %}
-    <div class="info-message">
-      <h1>Мероприятие не найдено</h1>
-      <p>Извините, данное мероприятие недоступно.</p>
-    </div>
-  {% else %}
-    <article class="event-detail">
-      <h1>{{ ev.title }}</h1>
-      <div class="event-meta">
-        {% if ev.event_date %}<time>{{ ev.event_date }}</time>{% endif %}
-        {% if ev.location %}<span class="location">{{ ev.location }}</span>{% endif %}
-      </div>
-
-      <div class="event-body">
-        {{ ev.description|safe }}
-      </div>
-
-      <div class="event-actions">
-        {% if ev.info_file_exists %}
-          <a class="nav-btn nav-btn--primary" href="{% url 'events:event_info_download' ev.slug %}" target="_blank" rel="noopener">Скачать информационное письмо</a>
-        {% elif ev.info_letter %}
-          <a class="nav-btn nav-btn--primary" href="{{ ev.info_letter.url }}" download target="_blank" rel="noopener">Скачать информационное письмо</a>
-        {% endif %}
-        <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
-      </div>
-    </article>
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ event.title|default:_("Мероприятие") }}{% endblock %}
+{% block content %}
+<section class="container" style="max-width:900px;margin:0 auto;padding:1rem 0;">
+  <h1>{{ event.title|default:_("Мероприятие") }}</h1>
+  {% if event.image %}
+    <p><img src="{{ event.image.url }}" alt="{{ event.title }}" style="max-width:100%;height:auto"></p>
   {% endif %}
-{% endwith %}
+  {% if event.description %}
+    <div class="event-body">{{ event.description|safe }}</div>
+  {% endif %}
+  <dl class="event-meta">
+    {% if event.start_date %}<dt>{% trans "Дата начала" %}:</dt><dd>{{ event.start_date|date:"d.m.Y" }}</dd>{% endif %}
+    {% if event.end_date %}<dt>{% trans "Дата окончания" %}:</dt><dd>{{ event.end_date|date:"d.m.Y" }}</dd>{% endif %}
+    {% if event.price %}<dt>{% trans "Стоимость" %}:</dt><dd>{{ event.price }} ₽</dd>{% endif %}
+  </dl>
+  <div class="event-files" style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
+    {% if event.info_letter %}<a class="btn" href="{{ event.info_letter.url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% endif %}
+    {% if event.registration_form %}<a class="btn" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">{% trans "Заявка" %}</a>{% endif %}
+  </div>
+</section>
+{% endblock %}
