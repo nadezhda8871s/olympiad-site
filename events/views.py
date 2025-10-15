@@ -80,7 +80,8 @@ def event_detail(request, slug):
         except Exception:
             ev.info_file_exists = False
 
-    return render(request, "events/detail.html", {"ev": ev})
+    # Передаём и 'ev' и 'event' — это защитит проектные шаблоны, которые ожидают 'event'
+    return render(request, "events/detail.html", {"ev": ev, "event": ev})
 
 def event_register(request, slug):
     try:
@@ -106,7 +107,7 @@ def event_register(request, slug):
             return redirect("payment_mock", reg_id=reg.id)
     else:
         form = RegistrationForm()
-    return render(request, "events/register.html", {"ev": ev, "form": form})
+    return render(request, "events/register.html", {"ev": ev, "event": ev, "form": form})
 
 def payment_mock(request, reg_id):
     try:
