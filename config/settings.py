@@ -93,36 +93,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")] if os.path.isdir(os.path.join(BASE_DIR, "static")) else []
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# --- Media (uploads) ---
-# URL under which uploaded media files are served
-MEDIA_URL = os.environ.get("MEDIA_URL", "/media/")
-
-# Filesystem path where media files are stored when not using external storage
-MEDIA_ROOT = os.environ.get("MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
-
-# Optional: use S3-compatible storage when USE_S3 env var is truthy.
-USE_S3 = str(os.environ.get("USE_S3", "0")).lower() in {"1", "true", "yes", "on"}
-
-if USE_S3:
-    # Ensure storages app is present — if you enable USE_S3 also install django-storages[boto3]
-    if "storages" not in INSTALLED_APPS:
-        INSTALLED_APPS.append("storages")
-
-    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-    # Required AWS settings (set as env vars in production)
-    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
-    AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "")
-    # Optional: custom domain or endpoint for S3-like providers
-    AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL")
-    if AWS_S3_ENDPOINT_URL:
-        AWS_S3_CUSTOM_DOMAIN = AWS_S3_ENDPOINT_URL
-    # Set MEDIA_URL for S3 if provided explicitly
-    MEDIA_URL = os.environ.get("MEDIA_URL", MEDIA_URL)
-else:
-    # Default filesystem storage (Django default). Explicitly set to FileSystemStorage.
-    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
