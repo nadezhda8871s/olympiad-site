@@ -67,10 +67,10 @@ def events_list_contests(request):
 def events_list_conferences(request):
     return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборниках", "events/conferences_list.html")
 
-def event_detail(request, pk):
-    ev = None
+def event_detail(request, slug):
+    # Ищем мероприятие по slug (URL использует slug)
     try:
-        ev = get_object_or_404(Event, pk=pk, is_published=True)
+        ev = get_object_or_404(Event, slug=slug, is_published=True)
     except (OperationalError, ProgrammingError):
         ev = None
 
