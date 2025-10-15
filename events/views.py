@@ -13,9 +13,6 @@ from .services.export import export_registrations_csv
 
 # --- patched helper for robust list rendering ---
 def _robust_list_by_type(request, type_code, title, template_name):
-    """Robust list renderer with safe DB fallbacks and stable ordering.
-    Added in patch _ROBUST_LIST_BY_TYPE_PATCH.
-    """
     try:
         qs = Event.objects.filter(is_published=True, type=type_code).order_by("sort_order", "-id")
         q = request.GET.get("q", "").strip()
@@ -24,7 +21,16 @@ def _robust_list_by_type(request, type_code, title, template_name):
     except (OperationalError, ProgrammingError):
         qs = []
         q = ""
-    return render(request, template_name, {"events": qs, "page_title": title, "q": q})
+
+    # materialize queryset and annotate whether info_file exists in storage
+    events = list(qs) if not isinstance(qs, list) else qs
+    for ev in events:
+        try:
+            ev.info_file_exists = bool(ev.info_file and ev.info_file.name and ev.info_file.storage.exists(ev.info_file.name))
+        except Exception:
+            ev.info_file_exists = False
+
+    return render(request, template_name, {"events": events, "page_title": title, "q": q})
 # _ROBUST_LIST_BY_TYPE_PATCH
 
 def _list_by_type(request, type_code, title):
@@ -42,7 +48,15 @@ def _list_by_type(request, type_code, title):
     except (OperationalError, ProgrammingError):
         qs = []
         q = ""
-    return render(request, "events/list.html", {"events": qs, "page_title": title, "q": q})
+
+    events = list(qs) if not isinstance(qs, list) else qs
+    for ev in events:
+        try:
+            ev.info_file_exists = bool(ev.info_file and ev.info_file.name and ev.info_file.storage.exists(ev.info_file.name))
+        except Exception:
+            ev.info_file_exists = False
+
+    return render(request, "events/list.html", {"events": events, "page_title": title, "q": q})
 
 def events_list_olymps(request):
     return _robust_list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады", "events/olympiads_list.html")
@@ -52,17 +66,22 @@ def events_list_contests(request):
 
 def events_list_conferences(request):
     return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборниках", "events/conferences_list.html")
+
 def event_detail(request, pk):
-    """
-    Safe detail view: never 500s if DB columns/relations temporarily unavailable.
-    """
-    from django.db.utils import OperationalError, ProgrammingError
     ev = None
     try:
         ev = get_object_or_404(Event, pk=pk, is_published=True)
     except (OperationalError, ProgrammingError):
         ev = None
+
+    if ev:
+        try:
+            ev.info_file_exists = bool(ev.info_file and ev.info_file.name and ev.info_file.storage.exists(ev.info_file.name))
+        except Exception:
+            ev.info_file_exists = False
+
     return render(request, "events/detail.html", {"ev": ev})
+
 def event_register(request, slug):
     try:
         ev = get_object_or_404(Event, slug=slug, is_published=True)
@@ -70,6 +89,12 @@ def event_register(request, slug):
         ev = None
     if ev is None:
         return render(request, "events/info_message.html", {"title": "Ошибка", "message": "Мероприятие недоступно."})
+
+    try:
+        ev.info_file_exists = bool(ev.info_file and ev.info_file.name and ev.info_file.storage.exists(ev.info_file.name))
+    except Exception:
+        ev.info_file_exists = False
+
     if request.method == "POST":
         form = RegistrationForm(request.POST)
         if form.is_valid():
@@ -105,7 +130,7 @@ def payment_mock(request, reg_id):
             send_instructions_comp_conf(reg.email, reg.event.title)
             return render(request, "events/info_message.html", {
                 "title": "Оплата успешна",
-                "message": "Согласно информационному письму перешлите анкету, научную работу и чек на адрес vsemnayka@gmail.com."
+                "message": "Согласно информационному письму перешлите анкету, научную работу и чек на адрес vsemnayka@gmail.com[...]"
             })
     elif status == "fail":
         reg.payment.status = Payment.Status.FAILED
@@ -163,13 +188,6 @@ def export_csv_view(request):
     return export_registrations_csv()
 
 def event_list(request, slug=None):
-    """
-    Safe list view: never 500s due to DB or missing tables.
-    Shows events filtered by category slug if provided.
-    """
-    from django.db.utils import OperationalError, ProgrammingError
-    from django.http import Http404
-
     events = []
     category = None
     try:
