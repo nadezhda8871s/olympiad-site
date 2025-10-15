@@ -1,25 +1,35 @@
-{% comment %} Events list (defensive with info_file_exists) {% endcomment %}
+<!-- name=templates/events/list.html -->
+{# Временный debug‑шаблон: показывает count и первые объекты, затем обычный список #}
 <h1>{{ page_title }}</h1>
 
-<form method="get" class="search-form">
-  <input type="text" name="q" value="{{ q }}" placeholder="Поиск...">
-  <button type="submit">Искать</button>
-</form>
+<div style="background:#f8f9fa;border:1px solid #e1e1e1;padding:10px;margin-bottom:1rem;">
+  <strong>DEBUG INFO (временно):</strong>
+  <ul>
+    <li>events var present: {{ events|length }} items</li>
+    <li>q param: "{{ q }}"</li>
+    <li>category: {{ category }}</li>
+  </ul>
+  {% if events %}
+    <div style="margin-top:0.5rem;padding:8px;background:#fff;border:1px dashed #ccc;">
+      <strong>Первый объект:</strong>
+      <div>title: {{ events.0.title }}</div>
+      <div>slug: {{ events.0.slug }}</div>
+      <div>is_published: {{ events.0.is_published }}</div>
+      <div>info_file.name: {{ events.0.info_file.name }}</div>
+      <div>info_file_exists: {{ events.0.info_file_exists }}</div>
+    </div>
+  {% else %}
+    <div style="color:#b00;margin-top:0.5rem;">Нет событий в переменной events.</div>
+  {% endif %}
+</div>
 
+{# Ниже — обычный вывод (если нужен) #}
 <ul class="events-list">
   {% for ev in events %}
-    <li class="event-item">
+    <li>
       <h2><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h2>
-      {% if ev.event_date %}<div class="date">{{ ev.event_date }}</div>{% endif %}
-      <div class="excerpt">{{ ev.description|truncatewords:30|safe }}</div>
-      <div class="actions">
-        <a class="nav-btn" href="{{ ev.get_absolute_url }}">Подробнее</a>
-        {% if ev.info_file_exists %}
-          <a class="nav-btn nav-btn--primary" href="{% url 'events:event_info_download' ev.slug %}" target="_blank" rel="noopener">Инф. письмо</a>
-        {% elif ev.info_letter %}
-          <a class="nav-btn nav-btn--primary" href="{{ ev.info_letter.url }}" download target="_blank" rel="noopener">Инф. письмо</a>
-        {% endif %}
-      </div>
+      {% if ev.info_file_exists %}<a href="{% url 'events:event_info_download' ev.slug %}">Инф. письмо</a>{% endif %}
+      <div>{{ ev.description|truncatewords:30|safe }}</div>
     </li>
   {% empty %}
     <li>Мероприятий не найдено.</li>
