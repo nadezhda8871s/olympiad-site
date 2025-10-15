@@ -20,8 +20,8 @@
     </div>
   </a>
   <div class="event-card__actions">
-    {% if event.info_letter %}
-      <a class="btn btn-sm" href="{{ event.info_letter.url }}" target="_blank" rel="noopener">Информационное письмо</a>
+    {% if event.info_file %}
+      <a class="btn btn-sm" href="{{ event.info_file.url }}" target="_blank" rel="noopener">Информационное письмо</a>
     {% endif %}
     {% if event.registration_form %}
       <a class="btn btn-sm" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">Заявка</a>
