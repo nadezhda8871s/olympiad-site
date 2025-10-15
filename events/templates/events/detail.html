@@ -1,28 +1,18 @@
-{# events/templates/events/detail.html - страница события #}
-{% if not ev %}
-  <div class="info-message">
-    <h1>Мероприятие не найдено</h1>
-    <p>Извините, данное мероприятие недоступно.</p>
+{% extends "base.html" %}
+{% block title %}{{ ev.title|default:"Мероприятие" }}{% endblock %}
+{% block content %}
+<section class="container">
+  {% if ev %}
+  <div class="card">
+    <h1>{{ ev.title }}</h1>
+    <p>{{ ev.description }}</p>
+    <div class="card-actions">
+      {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
+      <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
+    </div>
   </div>
-{% else %}
-<article class="event-detail">
-  <h1>{{ ev.title }}</h1>
-  <div class="event-meta">
-    {% if ev.event_date %}<time>{{ ev.event_date }}</time>{% endif %}
-    {% if ev.location %}<span class="location">{{ ev.location }}</span>{% endif %}
-  </div>
-
-  <div class="event-body">
-    {{ ev.description|safe }}
-  </div>
-
-  <div class="event-actions">
-    {% if ev.info_file_exists %}
-      <a class="nav-btn nav-btn--primary" href="{{ ev.info_file.url }}" download target="_blank" rel="noopener">Скачать информационное письмо</a>
-    {% elif ev.info_letter %}
-      <a class="nav-btn nav-btn--primary" href="{{ ev.info_letter.url }}" download target="_blank" rel="noopener">Скачать информационное письмо</a>
-    {% endif %}
-    <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
-  </div>
-</article>
-{% endif %}
+  {% else %}
+  <p>Мероприятие недоступно.</p>
+  {% endif %}
+</section>
+{% endblock %}

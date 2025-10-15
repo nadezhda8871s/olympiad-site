@@ -1,27 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Регистрация на {{ event.title }}{% endblock %}
+{% block title %}Регистрация{% endblock %}
 {% block content %}
 <section class="container">
-  <div style="max-width:820px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:20px">
-    <h1>Регистрация на: {{ event.title }}</h1>
-    <div class="registration-card">
-      <h4>Форма регистрации</h4>
-      <div class="muted">Поля, отмеченные *, обязательны.</div>
-      <form method="post" action="">
-        {% csrf_token %}
-        {% for field in form %}
-          <div class="form-row">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}<div class="muted" style="font-size:.85rem">{{ field.help_text }}</div>{% endif %}
-            {% if field.errors %}<div style="color:#dc2626;font-size:.85rem">{{ field.errors }}</div>{% endif %}
-          </div>
-        {% endfor %}
-        <div class="submit-row">
-          <button type="submit" class="nav-btn nav-btn--primary">Отправить</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <h1>Регистрация: {{ ev.title }}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn primary">Отправить</button>
+  </form>
 </section>
 {% endblock %}
