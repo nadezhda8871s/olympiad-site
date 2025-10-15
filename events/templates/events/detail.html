@@ -7,7 +7,7 @@
     <h1>{{ ev.title }}</h1>
     <p>{{ ev.description }}</p>
     <div class="card-actions">
-      {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
+      {% if ev.info_file %}<a class="btn" href="{% url 'event_info_letter' ev.pk %}" download>Информационное письмо</a>{% endif %}
       <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
     </div>
   </div>

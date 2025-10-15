@@ -27,7 +27,7 @@
       <h3 class="card-title"><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h3>
       <p class="card-desc">{{ ev.description|default:""|truncatechars:180 }}</p>
       <div class="card-actions">
-        {% if ev.info_file %}<a class="btn" href="{{ ev.info_file.url }}" download>Информационное письмо</a>{% endif %}
+        {% if ev.info_file %}<a class="btn" href="{% url 'event_info_letter' ev.pk %}" download>Информационное письмо</a>{% endif %}
         <a class="btn primary" href="{{ ev.get_register_url }}">Регистрация</a>
       </div>
     </div>
