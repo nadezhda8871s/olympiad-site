@@ -1,13 +1,15 @@
-{# Шаблон partial для карточки события (если используется) #}
-<div class="card">
-  <h3 class="card-title"><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h3>
-  <p class="card-desc">{{ ev.short_description|default:ev.description|truncatechars:180 }}</p>
-  <div class="card-actions">
-    {% if ev.info_file_exists %}
-      <a class="nav-btn nav-btn--primary" href="{{ ev.info_file.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
-    {% elif ev.info_letter %}
-      <a class="nav-btn nav-btn--primary" href="{{ ev.info_letter.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
-    {% endif %}
-    <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
+<article class="event-card">
+  <h3><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h3>
+  <div class="meta">
+    {% if ev.event_date %}<time>{{ ev.event_date }}</time>{% endif %}
   </div>
-</div>
+  <div class="summary">{{ ev.description|truncatewords:20|safe }}</div>
+  <div class="card-actions">
+    <a class="btn" href="{{ ev.get_absolute_url }}">Подробнее</a>
+    {% if ev.info_file_exists %}
+      <a class="btn btn-primary" href="{% url 'events:event_info_download' ev.slug %}" target="_blank" rel="noopener">Скачать инф. письмо</a>
+    {% elif ev.info_letter %}
+      <a class="btn btn-primary" href="{{ ev.info_letter.url }}" download target="_blank" rel="noopener">Скачать инф. письмо</a>
+    {% endif %}
+  </div>
+</article>
