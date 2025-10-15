@@ -111,7 +111,7 @@ class AnswerOption(models.Model):
         ordering = ["order", "id"]
 
     def __str__(self):
-        return (self.text or "").strip()[:100] or f"Вариант #{self.pk}"
+        return self.title or f"Событие #{self.pk}"
 
 class TestResult(models.Model):
     registration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name="results")
