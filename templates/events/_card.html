@@ -1,24 +1,13 @@
-<article class="card">
-  <a class="card-link" href="{{ event.get_absolute_url }}">
-    {% if event.image %}<img src="{{ event.image.url }}" alt="{{ event.title|default:'Event' }}">{% elif event.cover %}<img src="{{ event.cover.url }}" alt="{{ event.title|default:'Event' }}">{% endif %}
-    <div class="event-card__body">
-      <h3 class="event-card__title">{{ event.title|default:"Без названия" }}</h3>
-      {% if event.subtitle %}<p class="event-card__subtitle">{{ event.subtitle }}</p>{% endif %}
-      <div class="event-card__meta">
-        {% if event.start_date %}<span class="event-card__date">{{ event.start_date|date:"d.m.Y" }}</span>{% endif %}
-        {% if event.price_rub %}<span class="event-card__price">{{ event.price_rub }} ₽</span>{% elif event.price %}<span class="event-card__price">{{ event.price }} ₽</span>{% endif %}
-      </div>
-    </div>
-  </a>
-
-  <div class="event-card__actions">
-    {% if event.info_file %}
-      <a class="nav-btn nav-btn--primary" href="{{ event.info_file.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
-    {% elif event.info_letter %}
-      <a class="nav-btn nav-btn--primary" href="{{ event.info_letter.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
+{# Шаблон partial для карточки события (если используется) #}
+<div class="card">
+  <h3 class="card-title"><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h3>
+  <p class="card-desc">{{ ev.short_description|default:ev.description|truncatechars:180 }}</p>
+  <div class="card-actions">
+    {% if ev.info_file_exists %}
+      <a class="nav-btn nav-btn--primary" href="{{ ev.info_file.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
+    {% elif ev.info_letter %}
+      <a class="nav-btn nav-btn--primary" href="{{ ev.info_letter.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
     {% endif %}
-    {% if event.registration_form %}
-      <a class="nav-btn nav-btn--primary" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">Заявка</a>
-    {% endif %}
+    <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
   </div>
-</article>
+</div>
