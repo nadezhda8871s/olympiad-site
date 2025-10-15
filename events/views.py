@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db.utils import OperationalError, ProgrammingError
 from django.contrib.auth.decorators import user_passes_test
 
-from .models import Event, Registration, Payment, Question, AnswerOption, TestResult
+from .models import Event, Category, Registration, Payment, Question, AnswerOption, TestResult
 from .forms import RegistrationForm
 from .services.emails import (
     send_registration_confirmation, send_payment_success, send_payment_failed,
