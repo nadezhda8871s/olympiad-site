@@ -11,4 +11,5 @@ urlpatterns = [
     path("test/<int:reg_id>/", views.test_view, name="test_view"),
     path("api/search", views.search_api, name="search_api"),
     path("admin/export/csv/", views.export_csv_view, name="export_csv"),
+    path('events/<slug:slug>/download/', views.event_info_download, name='event_info_download'),
 ]
