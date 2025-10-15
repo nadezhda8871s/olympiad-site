@@ -12,7 +12,7 @@
   </a>
 
   <div class="event-card__actions">
-    {% if event.info_file %}
+    {% if event.info_file_exists %}
       <a class="nav-btn nav-btn--primary" href="{{ event.info_file.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
     {% elif event.info_letter %}
       <a class="nav-btn nav-btn--primary" href="{{ event.info_letter.url }}" download target="_blank" rel="noopener">Информационное письмо</a>

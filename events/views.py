@@ -21,10 +21,17 @@ def _robust_list_by_type(request, type_code, title, template_name):
         q = request.GET.get("q", "").strip()
         if q:
             qs = qs.filter(title__icontains=q)
+        # Materialize queryset and annotate with file existence check
+        events = list(qs)
+        for ev in events:
+            try:
+                ev.info_file_exists = bool(ev.info_file and ev.info_file.storage.exists(ev.info_file.name))
+            except Exception:
+                ev.info_file_exists = False
     except (OperationalError, ProgrammingError):
-        qs = []
+        events = []
         q = ""
-    return render(request, template_name, {"events": qs, "page_title": title, "q": q})
+    return render(request, template_name, {"events": events, "page_title": title, "q": q})
 # _ROBUST_LIST_BY_TYPE_PATCH
 
 def _list_by_type(request, type_code, title):
@@ -39,10 +46,17 @@ def _list_by_type(request, type_code, title):
             qs = qs.filter(event_date__gte=date_from)
         if date_to:
             qs = qs.filter(event_date__lte=date_to)
+        # Materialize queryset and annotate with file existence check
+        events = list(qs)
+        for ev in events:
+            try:
+                ev.info_file_exists = bool(ev.info_file and ev.info_file.storage.exists(ev.info_file.name))
+            except Exception:
+                ev.info_file_exists = False
     except (OperationalError, ProgrammingError):
-        qs = []
+        events = []
         q = ""
-    return render(request, "events/list.html", {"events": qs, "page_title": title, "q": q})
+    return render(request, "events/list.html", {"events": events, "page_title": title, "q": q})
 
 def events_list_olymps(request):
     return _robust_list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады", "events/olympiads_list.html")
@@ -57,15 +71,25 @@ def event_detail(request, pk):
     Safe detail view: never 500s if DB columns/relations temporarily unavailable.
     """
     from django.db.utils import OperationalError, ProgrammingError
-    ev = None
+    event = None
     try:
-        ev = get_object_or_404(Event, pk=pk, is_published=True)
+        event = get_object_or_404(Event, pk=pk, is_published=True)
+        # Annotate with file existence check
+        try:
+            event.info_file_exists = bool(event.info_file and event.info_file.storage.exists(event.info_file.name))
+        except Exception:
+            event.info_file_exists = False
     except (OperationalError, ProgrammingError):
-        ev = None
-    return render(request, "events/detail.html", {"ev": ev})
+        event = None
+    return render(request, "events/detail.html", {"event": event})
 def event_register(request, slug):
     try:
         ev = get_object_or_404(Event, slug=slug, is_published=True)
+        # Annotate with file existence check
+        try:
+            ev.info_file_exists = bool(ev.info_file and ev.info_file.storage.exists(ev.info_file.name))
+        except Exception:
+            ev.info_file_exists = False
     except (OperationalError, ProgrammingError):
         ev = None
     if ev is None:

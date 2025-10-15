@@ -9,7 +9,7 @@
   {% endif %}
 
   <div class="card-actions">
-    {% if ev.info_file %}
+    {% if ev.info_file_exists %}
       <a class="nav-btn nav-btn--primary" href="{{ ev.info_file.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
     {% elif ev.info_letter %}
       <a class="nav-btn nav-btn--primary" href="{{ ev.info_letter.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
