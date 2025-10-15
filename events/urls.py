@@ -1,4 +1,5 @@
 from django.urls import path
+from .views_infoletter import download_info_letter
 from . import views
 
 urlpatterns = [
@@ -12,3 +13,5 @@ urlpatterns = [
     path("api/search", views.search_api, name="search_api"),
     path("admin/export/csv/", views.export_csv_view, name="export_csv"),
 ]
+
+urlpatterns += [path('event/<int:pk>/info-letter/', download_info_letter, name='event_info_letter')]
