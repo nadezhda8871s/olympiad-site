@@ -1,8 +1,9 @@
 import os
 import mimetypes
+import logging
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponseForbidden, FileResponse, Http404
+from django.http import JsonResponse, HttpResponseForbidden, FileResponse, Http404, HttpResponse
 from django.utils.encoding import smart_str
 from django.utils import timezone
 from django.db.utils import OperationalError, ProgrammingError
@@ -15,6 +16,8 @@ from .services.emails import (
     send_instructions_comp_conf, send_test_result
 )
 from .services.export import export_registrations_csv
+
+logger = logging.getLogger(__name__)
 
 # --- helper: robust check for file existence ---
 def _info_file_exists(ev):
@@ -33,18 +36,21 @@ def _info_file_exists(ev):
                 return True
         except Exception:
             # storage may not implement exists or may fail (S3 misconfiguration etc.)
+            logger.debug("storage.exists raised for %s: %s", name, exc_info=True)
             pass
         # fallback: try physical path if available
         try:
             path = ev.info_file.path
             return bool(path and os.path.exists(path))
         except Exception:
+            logger.debug("ev.info_file.path unavailable for %s: %s", getattr(ev, "pk", None), exc_info=True)
             return False
     except Exception:
+        logger.exception("Unexpected error when checking info_file existence for ev=%s", getattr(ev, "pk", None))
         return False
 
 def _info_file_physical_path(ev):
-    """Возвращает физический путь файла если доступен, иначе None."""
+    """Return physical path if available, else None."""
     try:
         if ev and getattr(ev, "info_file", None) and ev.info_file.name:
             try:
@@ -55,6 +61,10 @@ def _info_file_physical_path(ev):
         return None
     return None
 # --- end helpers
+
+def _render_service_unavailable(request, title="Временно недоступно", message="Сайт временно недоступен. Попробуйте позже."):
+    """Centralized fallback render to avoid 500s on public pages."""
+    return render(request, "events/info_message.html", {"title": title, "message": message})
 
 # --- patched helper for robust list rendering ---
 def _robust_list_by_type(request, type_code, title, template_name):
@@ -67,16 +77,19 @@ def _robust_list_by_type(request, type_code, title, template_name):
         qs = []
         q = ""
 
-    # materialize queryset and annotate whether info_file exists
-    events = list(qs) if not isinstance(qs, list) else qs
-    for ev in events:
-        try:
-            ev.info_file_exists = _info_file_exists(ev)
-        except Exception:
-            ev.info_file_exists = False
-
-    return render(request, template_name, {"events": events, "page_title": title, "q": q})
-# _ROBUST_LIST_BY_TYPE_PATCH
+    try:
+        # materialize queryset and annotate whether info_file exists
+        events = list(qs) if not isinstance(qs, list) else qs
+        for ev in events:
+            try:
+                ev.info_file_exists = _info_file_exists(ev)
+            except Exception:
+                logger.exception("Failed to annotate info_file_exists for event %s", getattr(ev, "pk", None))
+                ev.info_file_exists = False
+        return render(request, template_name, {"events": events, "page_title": title, "q": q})
+    except Exception:
+        logger.exception("Unhandled error in _robust_list_by_type for type %s", type_code)
+        return _render_service_unavailable(request)
 
 def _list_by_type(request, type_code, title):
     try:
@@ -94,65 +107,85 @@ def _list_by_type(request, type_code, title):
         qs = []
         q = ""
 
-    events = list(qs) if not isinstance(qs, list) else qs
-    for ev in events:
-        try:
-            ev.info_file_exists = _info_file_exists(ev)
-        except Exception:
-            ev.info_file_exists = False
-
-    return render(request, "events/list.html", {"events": events, "page_title": title, "q": q})
+    try:
+        events = list(qs) if not isinstance(qs, list) else qs
+        for ev in events:
+            try:
+                ev.info_file_exists = _info_file_exists(ev)
+            except Exception:
+                logger.exception("Failed to annotate info_file_exists for event %s", getattr(ev, "pk", None))
+                ev.info_file_exists = False
+        return render(request, "events/list.html", {"events": events, "page_title": title, "q": q})
+    except Exception:
+        logger.exception("Unhandled error in _list_by_type for type %s", type_code)
+        return _render_service_unavailable(request)
 
 def events_list_olymps(request):
-    return _robust_list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады", "events/olympiads_list.html")
+    try:
+        return _robust_list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады", "events/olympiads_list.html")
+    except Exception:
+        logger.exception("events_list_olymps failed")
+        return _render_service_unavailable(request)
 
 def events_list_contests(request):
-    return _robust_list_by_type(request, Event.EventType.CONTEST, "Конкурсы статей, ВКР, научных работ", "events/contests_list.html")
+    try:
+        return _robust_list_by_type(request, Event.EventType.CONTEST, "Конкурсы статей, ВКР, научных работ", "events/contests_list.html")
+    except Exception:
+        logger.exception("events_list_contests failed")
+        return _render_service_unavailable(request)
 
 def events_list_conferences(request):
-    return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборниках", "events/conferences_list.html")
+    try:
+        return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборников", "events/conferences_list.html")
+    except Exception:
+        logger.exception("events_list_conferences failed")
+        return _render_service_unavailable(request)
 
 def event_detail(request, slug):
-    # Ищем мероприятие по slug (URL использует slug)
     try:
+        # Find event
         ev = get_object_or_404(Event, slug=slug, is_published=True)
-    except (OperationalError, ProgrammingError):
-        ev = None
-
-    if ev:
         try:
             ev.info_file_exists = _info_file_exists(ev)
         except Exception:
             ev.info_file_exists = False
-
-    # Передаём и 'ev' и 'event' — это защитит проектные шаблоны, которые ожидают 'event'
-    return render(request, "events/detail.html", {"ev": ev, "event": ev})
+        return render(request, "events/detail.html", {"ev": ev, "event": ev})
+    except Http404:
+        raise
+    except Exception:
+        logger.exception("Unhandled error in event_detail for slug=%s", slug)
+        return _render_service_unavailable(request)
 
 def event_register(request, slug):
     try:
         ev = get_object_or_404(Event, slug=slug, is_published=True)
-    except (OperationalError, ProgrammingError):
-        ev = None
-    if ev is None:
-        return render(request, "events/info_message.html", {"title": "Ошибка", "message": "Мероприятие недоступно."})
+    except Http404:
+        raise
+    except Exception:
+        logger.exception("Error fetching event for register slug=%s", slug)
+        return _render_service_unavailable(request)
 
     try:
         ev.info_file_exists = _info_file_exists(ev)
     except Exception:
         ev.info_file_exists = False
 
-    if request.method == "POST":
-        form = RegistrationForm(request.POST)
-        if form.is_valid():
-            reg = form.save(commit=False)
-            reg.event = ev
-            reg.save()
-            Payment.objects.create(registration=reg, status=Payment.Status.PENDING)
-            send_registration_confirmation(reg.email, ev.title, reg.fio)
-            return redirect("payment_mock", reg_id=reg.id)
-    else:
-        form = RegistrationForm()
-    return render(request, "events/register.html", {"ev": ev, "event": ev, "form": form})
+    try:
+        if request.method == "POST":
+            form = RegistrationForm(request.POST)
+            if form.is_valid():
+                reg = form.save(commit=False)
+                reg.event = ev
+                reg.save()
+                Payment.objects.create(registration=reg, status=Payment.Status.PENDING)
+                send_registration_confirmation(reg.email, ev.title, reg.fio)
+                return redirect("payment_mock", reg_id=reg.id)
+        else:
+            form = RegistrationForm()
+        return render(request, "events/register.html", {"ev": ev, "event": ev, "form": form})
+    except Exception:
+        logger.exception("Unhandled error in event_register for slug=%s", slug)
+        return _render_service_unavailable(request)
 
 def payment_mock(request, reg_id):
     try:
@@ -162,29 +195,32 @@ def payment_mock(request, reg_id):
     if reg is None:
         return render(request, "events/info_message.html", {"title": "Оплата", "message": "Регистрация не найдена."})
 
-    status = request.GET.get("status")
-    if status == "success":
-        p = reg.payment
-        p.status = Payment.Status.PAID
-        p.paid_at = timezone.now()
-        p.txn_id = f"demo-{p.paid_at.timestamp()}"
-        p.save()
-        send_payment_success(reg.email, reg.event.title)
-        if reg.event.type == Event.EventType.OLYMPIAD:
-            return redirect("test_view", reg_id=reg.id)
-        else:
-            send_instructions_comp_conf(reg.email, reg.event.title)
-            return render(request, "events/info_message.html", {
-                "title": "Оплата успешна",
-                "message": "Согласно информационному письму перешлите анкету, научную работу и чек на адрес vsemnayka@gmail.com[...]"
-            })
-    elif status == "fail":
-        reg.payment.status = Payment.Status.FAILED
-        reg.payment.save()
-        send_payment_failed(reg.email, reg.event.title)
-        return render(request, "events/payment_result.html", {"success": False, "reg": reg})
-
-    return render(request, "events/payment_mock.html", {"reg": reg})
+    try:
+        status = request.GET.get("status")
+        if status == "success":
+            p = reg.payment
+            p.status = Payment.Status.PAID
+            p.paid_at = timezone.now()
+            p.txn_id = f"demo-{p.paid_at.timestamp()}"
+            p.save()
+            send_payment_success(reg.email, reg.event.title)
+            if reg.event.type == Event.EventType.OLYMPIAD:
+                return redirect("test_view", reg_id=reg.id)
+            else:
+                send_instructions_comp_conf(reg.email, reg.event.title)
+                return render(request, "events/info_message.html", {
+                    "title": "Оплата успешна",
+                    "message": "Согласно информационному письму перешлите анкету, научную работу и чек на адрес vsemnayka@gmail.com[...]"
+                })
+        elif status == "fail":
+            reg.payment.status = Payment.Status.FAILED
+            reg.payment.save()
+            send_payment_failed(reg.email, reg.event.title)
+            return render(request, "events/payment_result.html", {"success": False, "reg": reg})
+        return render(request, "events/payment_mock.html", {"reg": reg})
+    except Exception:
+        logger.exception("Unhandled error in payment_mock for reg_id=%s", reg_id)
+        return _render_service_unavailable(request)
 
 def test_view(request, reg_id):
     try:
@@ -192,31 +228,35 @@ def test_view(request, reg_id):
         ev = reg.event
     except (Registration.DoesNotExist, OperationalError, ProgrammingError):
         return HttpResponseForbidden("Тест недоступен.")
-    if ev.type != Event.EventType.OLYMPIAD:
-        return HttpResponseForbidden("Тест доступен только для олимпиад.")
-    if reg.payment.status != Payment.Status.PAID:
-        return HttpResponseForbidden("Тест доступен только после успешной оплаты.")
-    if reg.results.exists():
-        return render(request, "events/test_done.html", {"reg": reg, "score": reg.results.latest("id").score})
+    try:
+        if ev.type != Event.EventType.OLYMPIAD:
+            return HttpResponseForbidden("Тест доступен только для олимпиад.")
+        if reg.payment.status != Payment.Status.PAID:
+            return HttpResponseForbidden("Тест доступен только после успешной оплаты.")
+        if reg.results.exists():
+            return render(request, "events/test_done.html", {"reg": reg, "score": reg.results.latest("id").score})
 
-    questions = list(ev.questions.prefetch_related("options").all())
-    if request.method == "POST":
-        score = 0
-        answers = {}
-        for q in questions:
-            chosen_id = request.POST.get(f"q_{q.id}")
-            answers[str(q.id)] = chosen_id
-            if chosen_id:
-                try:
-                    opt = q.options.get(id=int(chosen_id))
-                    if opt.is_correct:
-                        score += 1
-                except Exception:
-                    pass
-        TestResult.objects.create(registration=reg, score=score, answers=answers, finished_at=timezone.now())
-        send_test_result(reg.email, ev.title, score)
-        return render(request, "events/test_done.html", {"reg": reg, "score": score})
-    return render(request, "events/test.html", {"reg": reg, "questions": questions})
+        questions = list(ev.questions.prefetch_related("options").all())
+        if request.method == "POST":
+            score = 0
+            answers = {}
+            for q in questions:
+                chosen_id = request.POST.get(f"q_{q.id}")
+                answers[str(q.id)] = chosen_id
+                if chosen_id:
+                    try:
+                        opt = q.options.get(id=int(chosen_id))
+                        if opt.is_correct:
+                            score += 1
+                    except Exception:
+                        pass
+            TestResult.objects.create(registration=reg, score=score, answers=answers, finished_at=timezone.now())
+            send_test_result(reg.email, ev.title, score)
+            return render(request, "events/test_done.html", {"reg": reg, "score": score})
+        return render(request, "events/test.html", {"reg": reg, "questions": questions})
+    except Exception:
+        logger.exception("Unhandled error in test_view for reg_id=%s", reg_id)
+        return _render_service_unavailable(request)
 
 def search_api(request):
     q = request.GET.get("q", "").strip()
@@ -227,37 +267,49 @@ def search_api(request):
                 results.append({"title": ev.title, "url": ev.get_absolute_url()})
     except (OperationalError, ProgrammingError):
         pass
+    except Exception:
+        logger.exception("Unhandled error in search_api")
     return JsonResponse({"results": results})
 
 @user_passes_test(lambda u: u.is_staff)
 def export_csv_view(request):
-    return export_registrations_csv()
+    try:
+        return export_registrations_csv()
+    except Exception:
+        logger.exception("export_csv_view failed")
+        return _render_service_unavailable(request)
 
 def event_list(request, slug=None):
-    events = []
-    category = None
     try:
-        qs = Event.objects.filter(is_published=True)
-        if slug:
-            try:
-                category = Category.objects.get(slug=slug)
-                qs = qs.filter(category=category)
-            except Category.DoesNotExist:
-                raise Http404("Category not found")
-        try:
-            qs = qs.order_by("sort_order", "-start_date", "-id")
-        except Exception:
-            qs = qs.order_by("-id")
-        events = list(qs)
-    except (OperationalError, ProgrammingError):
         events = []
-    for ev in events:
+        category = None
         try:
-            ev.info_file_exists = _info_file_exists(ev)
-        except Exception:
-            ev.info_file_exists = False
-    ctx = {"events": events, "category": category}
-    return render(request, "events/list.html", ctx)
+            qs = Event.objects.filter(is_published=True)
+            if slug:
+                try:
+                    category = Category.objects.get(slug=slug)
+                    qs = qs.filter(category=category)
+                except Category.DoesNotExist:
+                    raise Http404("Category not found")
+            try:
+                qs = qs.order_by("sort_order", "-start_date", "-id")
+            except Exception:
+                qs = qs.order_by("-id")
+            events = list(qs)
+        except (OperationalError, ProgrammingError):
+            events = []
+        for ev in events:
+            try:
+                ev.info_file_exists = _info_file_exists(ev)
+            except Exception:
+                ev.info_file_exists = False
+        ctx = {"events": events, "category": category}
+        return render(request, "events/list.html", ctx)
+    except Http404:
+        raise
+    except Exception:
+        logger.exception("Unhandled error in event_list slug=%s", slug)
+        return _render_service_unavailable(request)
 
 # --- Fallback download view: stream file via Django ---
 def event_info_download(request, slug):
@@ -297,8 +349,7 @@ def event_info_download(request, slug):
             response["Content-Disposition"] = f'attachment; filename="{smart_str(filename)}"'
             return response
         except Exception:
-            # try physical path below
-            pass
+            logger.exception("Failed to stream file from storage for %s", name)
 
     # Fallback to local path if available
     path = _info_file_physical_path(ev)
