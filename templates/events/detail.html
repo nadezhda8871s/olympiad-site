@@ -16,7 +16,7 @@
     {% if event.price %}<dt>{% trans "Стоимость" %}:</dt><dd>{{ event.price }} ₽</dd>{% endif %}
   </dl>
   <div class="event-files" style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
-    {% if event.info_file %}<a class="btn" href="{{ event.info_file.url }}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% endif %}
+    {% if event.info_letter %}<a class="btn" href="{% url 'event_info_letter' event.pk %}" target="_blank" rel="noopener">{% trans "Информационное письмо" %}</a>{% endif %}
     {% if event.registration_form %}<a class="btn" href="{{ event.registration_form.url }}" target="_blank" rel="noopener">{% trans "Заявка" %}</a>{% endif %}
   </div>
 </section>
