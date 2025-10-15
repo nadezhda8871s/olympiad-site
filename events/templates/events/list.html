@@ -1,33 +1,17 @@
 {% extends "base.html" %}
-{% block title %}{{ page_title }}{% endblock %}
+{% load i18n %}
+{% block title %}{{ title|default:_("Мероприятия") }}{% endblock %}
 {% block content %}
-<section class="container">
-  <h1>{{ page_title }}</h1>
-
-  <form class="filters" method="get">
-    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по заголовку...">
-    <label>с даты <input type="date" name="date_from" value="{{ request.GET.date_from }}"></label>
-    <label>по дату <input type="date" name="date_to" value="{{ request.GET.date_to }}"></label>
-    <button class="nav-btn">Фильтровать</button>
-  </form>
-
-  <div class="cards-grid">
-  {% for ev in events %}
-    <div class="card">
-      <h3 class="card-title"><a href="{{ ev.get_absolute_url }}">{{ ev.title }}</a></h3>
-      <p class="card-desc">{{ ev.description|default:""|truncatechars:180 }}</p>
-      <div class="card-actions">
-        {% if ev.info_file %}
-          <a class="nav-btn nav-btn--primary" href="{{ ev.info_file.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
-        {% elif ev.info_letter %}
-          <a class="nav-btn nav-btn--primary" href="{{ ev.info_letter.url }}" download target="_blank" rel="noopener">Информационное письмо</a>
-        {% endif %}
-        <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
-      </div>
+<section class="container" style="max-width:1100px;margin:0 auto;padding:1rem 0;">
+  <h1 style="margin-bottom:.8rem;">{{ title|default:_("Мероприятия") }}</h1>
+  {% if events %}
+    <div class="events-grid">
+      {% for event in events %}
+        {% include "events/_card.html" %}
+      {% endfor %}
     </div>
-  {% empty %}
-    <p>Нет мероприятий по заданным критериям.</p>
-  {% endfor %}
-  </div>
+  {% else %}
+    <p>{% trans "Пока нет опубликованных мероприятий." %}</p>
+  {% endif %}
 </section>
 {% endblock %}
