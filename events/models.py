@@ -31,6 +31,13 @@ class Event(models.Model):
         verbose_name_plural = _("Мероприятия")
         ordering = ["sort_order", "-id"]
 
+
+    # Backward-compatible alias for templates expecting 'info_letter'
+    @property
+    def info_letter(self):
+        """Return the same file as info_file; safe when field is missing."""
+        return getattr(self, 'info_file', None)
+
     def __str__(self):
         return self.title
 
