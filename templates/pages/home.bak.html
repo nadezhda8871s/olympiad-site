@@ -47,8 +47,8 @@
           {% if ev.price %}<span class="badge">{{ ev.price }} ₽</span>{% endif %}
         </div>
         <div class="card-actions">
-          {% if ev.info_file %}
-            <a class="btn ghost" href="{{ ev.info_file.url }}" download>{% trans "Информационное письмо" %}</a>
+          {% if ev.info_letter %}
+            <a class="btn ghost" href="{% url 'event_info_letter' ev.pk %}" download>{% trans "Информационное письмо" %}</a>
           {% endif %}
           <a class="btn solid" href="{{ ev.get_registration_url }}">{% trans "Регистрация" %}</a>
         </div>
