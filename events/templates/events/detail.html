@@ -1,4 +1,10 @@
 {# events/templates/events/detail.html - страница события #}
+{% if not ev %}
+  <div class="info-message">
+    <h1>Мероприятие не найдено</h1>
+    <p>Извините, данное мероприятие недоступно.</p>
+  </div>
+{% else %}
 <article class="event-detail">
   <h1>{{ ev.title }}</h1>
   <div class="event-meta">
@@ -19,3 +25,4 @@
     <a class="nav-btn nav-btn--primary" href="{{ ev.get_register_url }}">Регистрация</a>
   </div>
 </article>
+{% endif %}
