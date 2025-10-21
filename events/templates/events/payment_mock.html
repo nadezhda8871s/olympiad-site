@@ -1,12 +1,41 @@
 {% extends "base.html" %}
 {% block title %}Оплата{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://yookassa.ru/integration/simplepay/css/yookassa_construct_form.css?v=1.28.0">
+<script src="https://yookassa.ru/integration/simplepay/js/yookassa_construct_form.js?v=1.28.0"></script>
+{% endblock %}
 {% block content %}
 <section class="container">
-  <h1>Оплата (демо)</h1>
-  <p>Имитация страницы Robokassa для регистрации № {{ reg.id }}. Выберите результат:</p>
-  <div class="btn-row">
-    <a class="btn primary" href="?status=success">Оплата успешна</a>
-    <a class="btn" href="?status=fail">Оплата неуспешна</a>
-  </div>
+  <h1>Оплата участия — {{ reg.event.title }}</h1>
+  <p>Регистрация № {{ reg.id }}. Пожалуйста, проверьте контактные данные и сумму перед оплатой.</p>
+
+  <form class="yoomoney-payment-form" action="https://yookassa.ru/integration/simplepay/payment" method="post" accept-charset="utf-8">
+    <div class="ym-customer-info">
+      <div class="ym-block-title">О покупателе</div>
+      <input name="cps_email" class="ym-input" placeholder="Email" type="text" value="{{ reg.email }}">
+      <input name="cps_phone" class="ym-input" placeholder="Телефон" type="text" value="{{ reg.phone }}">
+      <input name="custName" class="ym-input" placeholder="ФИО" type="text" value="{{ reg.fio }}">
+    </div>
+
+    <div class="ym-hidden-inputs">
+      <!-- Если в личном кабинете ЮKassa задана Страница успеха, редирект произойдёт на неё -->
+    </div>
+
+    <div class="ym-payment-btn-block ym-before-line ym-align-space-between">
+      <div class="ym-input-icon-rub">
+        <input name="sum" placeholder="0.00" class="ym-input ym-sum-input ym-required-input" type="number" step="any" value="{{ reg.event.price_rub|floatformat:2 }}">
+      </div>
+      <button data-text="Оплатить" class="ym-btn-pay ym-result-price">
+        <span class="ym-text-crop">Оплатить</span>
+        <span class="ym-price-output"></span>
+      </button>
+      <img src="https://yookassa.ru/integration/simplepay/img/iokassa-gray.svg?v=1.28.0" class="ym-logo" width="114" height="27" alt="ЮKassa">
+    </div>
+
+    <input name="shopId" type="hidden" value="1174287">
+  </form>
+
+  <p class="mt-2">После успешного платежа вы будете перенаправлены на страницу с подтверждением.<br>
+  Если перенаправление не произошло, вернитесь на сайт и откройте <a href="{% url 'payment_success' %}">cтраницу успеха</a>.</p>
 </section>
 {% endblock %}
