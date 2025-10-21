@@ -41,3 +41,21 @@ gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
 - **Disk**: Name `media`, Mount `/opt/render/project/src/media`.
 
 Можно также задеплоить через `render.yaml` (см. корень).
+
+
+## Оплата через ЮKassa
+
+Добавлена интеграция с ЮKassa. Для работы задайте переменные окружения:
+
+```env
+YOOKASSA_SHOP_ID=1174287
+YOOKASSA_SECRET_KEY=***
+```
+
+Страница успеха (return_url), которую нужно указать в личном кабинете ЮKassa:  
+**`/pay/success/`** (полный адрес вида `https://<ваш-домен>/pay/success/`).
+
+Вебхук (уведомления):  
+**`/pay/webhook/`** (полный адрес вида `https://<ваш-домен>/pay/webhook/`).
+
+При создании регистрации пользователь автоматически перенаправляется на оплату.

@@ -10,6 +10,10 @@ services:
       python3 manage.py init_admin
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
+      - key: YOOKASSA_SHOP_ID
+        value: ""
+      - key: YOOKASSA_SECRET_KEY
+        value: ""
       - key: PYTHON_VERSION
         value: 3.12.3
       - key: DJANGO_SETTINGS_MODULE
