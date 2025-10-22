@@ -1,5 +1,4 @@
 # events/urls.py
-
 from django.urls import path
 from . import views
 
@@ -18,11 +17,5 @@ urlpatterns = [
     # Оплата ЮKassa
     path("pay/<int:reg_id>/", views.payment_start, name="payment_start"),
     path("pay/success/", views.payment_success, name="payment_success"),
-    # Webhook НЕ обязателен, можно не настраивать в ЛК — оставляем для совместимости
-    path("pay/webhook/", views.payment_webhook, name="payment_webhook"),
-
-    # Прочее (если у вас используется)
-    path("test/<int:reg_id>/", views.test_view, name="test_view"),
-    path("api/search", views.search_api, name="search_api"),
-    path("admin/export/csv/", views.export_csv_view, name="export_csv"),
+    path("pay/webhook/", views.payment_webhook, name="payment_webhook"),  # НЕ обязателен
 ]
