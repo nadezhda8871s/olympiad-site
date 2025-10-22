@@ -2,12 +2,12 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.db.utils import OperationalError, ProgrammingError
+from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from decimal import Decimal, ROUND_HALF_UP
 import uuid
 from yookassa import Configuration, Payment as YooPayment
-from django.contrib.auth.decorators import user_passes_test
 from .models import Event, Registration, Payment, Question, AnswerOption, TestResult
 from .forms import RegistrationForm
 from .services.emails import (
@@ -62,11 +62,6 @@ def event_detail(request, pk):
     Safe detail view: never 500s if DB columns/relations temporarily unavailable.
     """
     from django.db.utils import OperationalError, ProgrammingError
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-from decimal import Decimal, ROUND_HALF_UP
-import uuid
-from yookassa import Configuration, Payment as YooPayment
     ev = None
     try:
         ev = get_object_or_404(Event, pk=pk, is_published=True)
@@ -92,6 +87,38 @@ def event_register(request, slug):
     else:
         form = RegistrationForm()
     return render(request, "events/register.html", {"ev": ev, "form": form})
+
+def payment_mock(request, reg_id):
+    try:
+        reg = Registration.objects.get(id=reg_id)
+    except (Registration.DoesNotExist, OperationalError, ProgrammingError):
+        reg = None
+    if reg is None:
+        return render(request, "events/info_message.html", {"title": "Оплата", "message": "Регистрация не найдена."})
+
+    status = request.GET.get("status")
+    if status == "success":
+        p = reg.payment
+        p.status = Payment.Status.PAID
+        p.paid_at = timezone.now()
+        p.txn_id = f"demo-{p.paid_at.timestamp()}"
+        p.save()
+        send_payment_success(reg.email, reg.event.title)
+        if reg.event.type == Event.EventType.OLYMPIAD:
+            return redirect("test_view", reg_id=reg.id)
+        else:
+            send_instructions_comp_conf(reg.email, reg.event.title)
+            return render(request, "events/info_message.html", {
+                "title": "Оплата успешна",
+                "message": "Согласно информационному письму перешлите анкету, научную работу и чек на адрес vsemnayka@gmail.com."
+            })
+    elif status == "fail":
+        reg.payment.status = Payment.Status.FAILED
+        reg.payment.save()
+        send_payment_failed(reg.email, reg.event.title)
+        return render(request, "events/payment_result.html", {"success": False, "reg": reg})
+
+    return render(request, "events/payment_mock.html", {"reg": reg})
 
 def test_view(request, reg_id):
     try:
@@ -146,11 +173,6 @@ def event_list(request, slug=None):
     Shows events filtered by category slug if provided.
     """
     from django.db.utils import OperationalError, ProgrammingError
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-from decimal import Decimal, ROUND_HALF_UP
-import uuid
-from yookassa import Configuration, Payment as YooPayment
     from django.http import Http404
 
     events = []
@@ -173,39 +195,29 @@ from yookassa import Configuration, Payment as YooPayment
     ctx = {"events": events, "category": category}
     return render(request, "events/list.html", ctx)
 
+# --- YooKassa integration ---
 def _yookassa_configure():
-    # Configure YooKassa SDK
     Configuration.account_id = settings.YOOKASSA_SHOP_ID
     Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
 
 def _as_minor_units(value):
-    # Ensure string with 2 decimals
     return f"{Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)}"
 
 def payment_start(request, reg_id):
-    """Create a YooKassa payment for a registration and redirect to confirmation_url."""
     try:
         reg = Registration.objects.select_related("event").get(id=reg_id)
     except (Registration.DoesNotExist, OperationalError, ProgrammingError):
         return render(request, "events/info_message.html", {"title": "Ошибка", "message": "Регистрация не найдена."})
     ev = reg.event
-    if ev is None or getattr(settings, "YOOKASSA_SHOP_ID", None) is None or getattr(settings, "YOOKASSA_SECRET_KEY", None) is None:
+    if not (getattr(settings, "YOOKASSA_SHOP_ID", None) and getattr(settings, "YOOKASSA_SECRET_KEY", None)):
         return render(request, "events/info_message.html", {"title": "Оплата недоступна", "message": "Платёжный провайдер не настроен."})
 
-    # Compute amount
-    amount = _as_minor_units(ev.price_rub or 0)
-
-    # Configure SDK
+    amount = _as_minor_units(getattr(ev, "price_rub", 0) or 0)
     _yookassa_configure()
-
-    # Return URL with registration id to map back
     return_url = request.build_absolute_uri(settings.YOOKASSA_SUCCESS_PATH)
-    if "?" in return_url:
-        return_url = f"{return_url}&reg_id={reg.id}"
-    else:
-        return_url = f"{return_url}?reg_id={reg.id}"
+    sep = "&" if "?" in return_url else "?"
+    return_url = f"{return_url}{sep}reg_id={reg.id}"
 
-    # Create payment
     payload = {
         "amount": {"value": amount, "currency": "RUB"},
         "capture": True,
@@ -214,28 +226,22 @@ def payment_start(request, reg_id):
         "metadata": {"reg_id": reg.id},
     }
     try:
-        idemp = str(uuid.uuid4())
-        payment = YooPayment.create(payload, idemp)
+        payment = YooPayment.create(payload, str(uuid.uuid4()))
     except Exception as e:
         return render(request, "events/info_message.html", {"title": "Ошибка оплаты", "message": f"Не удалось создать платёж: {e}"})
-    # Save payment id and keep pending
     try:
-        pay = getattr(reg, "payment", None)
-        if pay:
-            pay.txn_id = payment.id
-            pay.status = Payment.Status.PENDING
-            pay.save()
+        if hasattr(reg, "payment") and reg.payment:
+            reg.payment.txn_id = payment.id
+            reg.payment.status = Payment.Status.PENDING
+            reg.payment.save()
     except Exception:
         pass
-
-    # Redirect customer to YooKassa
-    conf_url = getattr(payment.confirmation, "confirmation_url", None)
-    if conf_url:
-        return redirect(conf_url)
+    url = getattr(payment.confirmation, "confirmation_url", None)
+    if url:
+        return redirect(url)
     return render(request, "events/info_message.html", {"title": "Ошибка оплаты", "message": "Не удалось получить ссылку подтверждения."})
 
 def payment_success(request):
-    """Handle return from YooKassa and show result page after we verify status."""
     reg_id = request.GET.get("reg_id")
     reg = None
     if not reg_id:
@@ -254,41 +260,30 @@ def payment_success(request):
         return render(request, "events/payment_result.html", {"success": False, "reg": reg})
 
     if getattr(payment, "status", "") == "succeeded":
-        # Mark paid if not already
         if reg.payment.status != Payment.Status.PAID:
             reg.payment.status = Payment.Status.PAID
             reg.payment.paid_at = timezone.now()
             reg.payment.save()
             send_payment_success(reg.email, reg.event.title)
-        else:
-            # already paid - idempotent
-            pass
-        # Send instructions for conf/comp if applicable
-        if reg.event.type in [Event.EventType.CONFERENCE, Event.EventType.CONTEST]:
-            send_instructions_comp_conf(reg.email, reg.event.title)
+            if reg.event.type in [Event.EventType.CONFERENCE, Event.EventType.CONTEST]:
+                send_instructions_comp_conf(reg.email, reg.event.title)
         return render(request, "events/payment_result.html", {"success": True, "reg": reg})
-    else:
-        # leave pending or failed
-        return render(request, "events/payment_result.html", {"success": False, "reg": reg})
+    return render(request, "events/payment_result.html", {"success": False, "reg": reg})
 
 @csrf_exempt
 def payment_webhook(request):
-    """Minimal YooKassa webhook endpoint to update payment status asynchronously."""
     if request.method != "POST":
         return HttpResponseForbidden("Method not allowed")
     try:
         import json as _json
-        body = request.body.decode("utf-8")
-        data = _json.loads(body)
+        data = _json.loads(request.body.decode("utf-8"))
     except Exception:
         data = {}
-    # Expect notification with object.id and status
     obj = data.get("object") or {}
     payment_id = obj.get("id")
     status = obj.get("status")
     metadata = obj.get("metadata") or {}
     reg_id = metadata.get("reg_id")
-    # If we don't have reg_id, try to map by payment_id
     try:
         if reg_id:
             reg = Registration.objects.select_related("payment").get(id=reg_id)
