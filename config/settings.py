@@ -101,10 +101,3 @@ MEDIA_URL = "/media/"
 import os as _os
 BASE_DIR = BASE_DIR if 'BASE_DIR' in globals() else _os.path.dirname(_os.path.dirname(__file__))
 MEDIA_ROOT = _os.path.join(BASE_DIR, "media")
-
-
-# --- YooKassa configuration ---
-YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
-YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
-YOOKASSA_SUCCESS_PATH = os.getenv("YOOKASSA_SUCCESS_PATH", "/pay/success/")
-YOOKASSA_WEBHOOK_PATH = os.getenv("YOOKASSA_WEBHOOK_PATH", "/pay/webhook/")
