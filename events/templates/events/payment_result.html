@@ -3,7 +3,8 @@
 {% block content %}
 <section class="container">
   {% if success %}
-    <h1>Оплата прошла успешно</h1><p>Спасибо! Платёж подтверждён ЮKassa.</p>
+    <h1>Оплата прошла успешно</h1>
+    <p>Спасибо! Платёж подтверждён ЮKassa.</p>
   {% else %}
     <h1>Оплата не прошла</h1>
     <a class="btn" href="/pay/{{ reg.id }}">Повторить оплату</a>

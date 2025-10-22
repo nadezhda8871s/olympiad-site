@@ -2,10 +2,11 @@
 {% block title %}Оплата{% endblock %}
 {% block content %}
 <section class="container">
-  <h1>Перенаправление на оплату</h1>
-  <p>Если вы видите эту страницу, нажмите кнопку, чтобы перейти к оплате в ЮKassa.</p>
+  <h1>Оплата (демо)</h1>
+  <p>Имитация страницы Robokassa для регистрации № {{ reg.id }}. Выберите результат:</p>
   <div class="btn-row">
-    <a class="btn primary" href="/pay/{{ reg.id }}/">Оплатить через ЮKassa</a>
+    <a class="btn primary" href="?status=success">Оплата успешна</a>
+    <a class="btn" href="?status=fail">Оплата неуспешна</a>
   </div>
 </section>
 {% endblock %}
