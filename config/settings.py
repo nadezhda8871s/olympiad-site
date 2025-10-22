@@ -1,35 +1,39 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-import dj_database_url
-
-# Загружаем .env (локально)
-load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ── Безопасность
-SECRET_KEY = os.getenv("SECRET_KEY", "replace-this-in-production")
-DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes", "on")
+# --- Core ---
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key-for-dev")
+DEBUG = str(os.environ.get("DEBUG", os.environ.get("DJANGO_DEBUG", "0"))).lower() in {"1","true","yes","on"}
 
-# ── ДОМЕНЫ: укажите ВСЕ, где сайт реально открывается
-ALLOWED_HOSTS = [
-    "www.vsemnauka.ru",
-    "vsemnauka.ru",
-    "olympiad-site-1.onrender.com",   # ваш Render-домен
-    ".onrender.com",
-    "127.0.0.1",
-    "localhost",
+def _split_env_list(val):
+    if not val:
+        return []
+    return [x.strip() for x in str(val).replace(";", ",").split(",") if x.strip()]
+
+# Allowed hosts
+ALLOWED_HOSTS = _split_env_list(os.environ.get("ALLOWED_HOSTS")) or [
+    "localhost", "127.0.0.1", ".onrender.com", ".vsemnauka.ru"
 ]
 
-# Django 4/5: обязательно указать HTTPS-источники для POST/CSRF
-CSRF_TRUSTED_ORIGINS = [
-    "https://www.vsemnauka.ru",
-    "https://vsemnauka.ru",
-    "https://olympiad-site-1.onrender.com",
-    "https://*.onrender.com",
-]
+# CSRF trusted origins
+_csrf = _split_env_list(os.environ.get("CSRF_TRUSTED_ORIGINS"))
+_default_csrf = ["https://localhost", "https://127.0.0.1", "https://*.onrender.com", "https://www.vsemnauka.ru", "https://vsemnauka.ru"]
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_csrf or _default_csrf))
 
+# Proper behavior behind Render proxy
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = str(os.environ.get("SECURE_SSL_REDIRECT", "1")).lower() in {"1","true","yes","on"}
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 0  # set >0 later if you want HSTS
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+
+# Apps (minimal; keep existing apps in your project additively)
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -37,15 +41,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
-    # ваши приложения
-    "pages",     # если у вас есть pages.urls (у вас он подключён в config/urls.py)
-    "events",
 ]
 
+# Middleware
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # статика на проде
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -54,8 +55,22 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "config.urls"
+# Optional debug of 400 host issues
+if str(os.environ.get("ENABLE_HOST_DEBUG", "0")).lower() in {"1","true","yes","on"}:
+    MIDDLEWARE.insert(0, "config.host_debug_middleware.HostDebugMiddleware")
 
+ROOT_URLCONF = "config.urls"
+WSGI_APPLICATION = "config.wsgi.application"
+
+# Database (leave your existing DATABASES if present)
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+
+# Templates (works with your current templates directory)
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -72,51 +87,17 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
-
-# ── База данных: по умолчанию SQLite; на Render лучше задать DATABASE_URL
-default_db_url = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-DATABASES = {
-    "default": dj_database_url.parse(os.getenv("DATABASE_URL", default_db_url), conn_max_age=600)
-}
-
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
-
-LANGUAGE_CODE = "ru-ru"
-TIME_ZONE = os.getenv("TIME_ZONE", "Europe/Moscow")
-USE_I18N = True
-USE_TZ = True
-
-# ── Статика/медиа
+# Static files via WhiteNoise
 STATIC_URL = "/static/"
-STATIC_ROOT = os.getenv("STATIC_ROOT", str(BASE_DIR / "staticfiles"))
-STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")] if os.path.isdir(os.path.join(BASE_DIR, "static")) else []
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.getenv("MEDIA_ROOT", str(BASE_DIR / "media"))
-
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@localhost")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ── YooKassa (ключи в окружении!)
-YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
-YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
-YOOKASSA_SUCCESS_PATH = os.getenv("YOOKASSA_SUCCESS_PATH", "/pay/success/")
-YOOKASSA_WEBHOOK_PATH = os.getenv("YOOKASSA_WEBHOOK_PATH", "/pay/webhook/")  # не обязателен
 
-# ── HTTPS за прокси (Render)
-if os.getenv("USE_X_FORWARDED_PROTO", "1") == "1":
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-else:
-    SECURE_PROXY_SSL_HEADER = None
-
-SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "1") == "1"
-CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "1") == "1"
+# Media settings
+MEDIA_URL = "/media/"
+import os as _os
+BASE_DIR = BASE_DIR if 'BASE_DIR' in globals() else _os.path.dirname(_os.path.dirname(__file__))
+MEDIA_ROOT = _os.path.join(BASE_DIR, "media")
