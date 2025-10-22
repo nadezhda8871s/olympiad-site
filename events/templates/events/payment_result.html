@@ -2,11 +2,32 @@
 {% block title %}Результат оплаты{% endblock %}
 {% block content %}
 <section class="container">
-  {% if success %}
+  {% if success is True %}
     <h1>Оплата прошла успешно</h1>
-  {% else %}
+    <p>Спасибо! Платёж подтверждён ЮKassa.</p>
+  {% elif success is False %}
     <h1>Оплата не прошла</h1>
-    <a class="btn" href="/pay/{{ reg.id }}">Повторить оплату</a>
+    {% if reg %}<a class="btn" href="/pay/{{ reg.id }}/">Повторить оплату</a>{% endif %}
+    <a class="btn" href="/">На главную</a>
+  {% else %}
+    <h1>Платёж обрабатывается…</h1>
+    <p>Мы проверяем статус платежа в ЮKassa. Это обычно занимает несколько секунд.</p>
+    <div class="btn-row" style="margin-top:12px;">
+      <a class="btn" href="?reg_id={{ reg.id }}&retry={{ retry|default:1 }}">Проверить статус</a>
+    </div>
+    <script>
+      (function(){
+        var retry={{ retry|default:1 }};
+        if(retry <= 10){
+          setTimeout(function(){
+            var url = new URL(window.location.href);
+            url.searchParams.set('reg_id', '{{ reg.id }}');
+            url.searchParams.set('retry', retry);
+            window.location.href = url.toString();
+          }, 3000);
+        }
+      })();
+    </script>
   {% endif %}
 </section>
 {% endblock %}

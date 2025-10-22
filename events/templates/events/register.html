@@ -1,59 +1,12 @@
 {% extends "base.html" %}
-{% load static %}
 {% block title %}Регистрация{% endblock %}
 {% block content %}
-<style>
-.form-card{max-width:720px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:24px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.form-row{display:flex;flex-direction:column;gap:6px}
-.form-row--full{grid-column:1 / -1}
-.form-label{font-weight:600}
-.form-input{border:1px solid #d1d5db;border-radius:8px;padding:10px 12px;font-size:16px}
-.form-actions{margin-top:16px;display:flex;gap:12px;justify-content:flex-end}
-@media(max-width:700px){.form-grid{grid-template-columns:1fr}}
-</style>
 <section class="container">
   <h1>Регистрация: {{ ev.title }}</h1>
-  <div class="form-card">
-    <form method="post">
-      {% csrf_token %}
-      <div class="form-grid">
-        <div class="form-row form-row--full">
-          <label class="form-label" for="{{ form.fio.id_for_label }}">{{ form.fio.label }}</label>
-          {{ form.fio }}
-          {% if form.fio.errors %}<div class="errorlist">{{ form.fio.errors }}</div>{% endif %}
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="{{ form.org.id_for_label }}">{{ form.org.label }}</label>
-          {{ form.org }}
-          {% if form.org.errors %}<div class="errorlist">{{ form.org.errors }}</div>{% endif %}
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
-          {{ form.city }}
-          {% if form.city.errors %}<div class="errorlist">{{ form.city.errors }}</div>{% endif %}
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
-          {{ form.email }}
-          {% if form.email.errors %}<div class="errorlist">{{ form.email.errors }}</div>{% endif %}
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
-          {{ form.phone }}
-          {% if form.phone.errors %}<div class="errorlist">{{ form.phone.errors }}</div>{% endif %}
-        </div>
-        <div class="form-row form-row--full">
-          <label class="form-label">
-            {{ form.consent_pd }} {{ form.consent_pd.label }}
-          </label>
-          {% if form.consent_pd.errors %}<div class="errorlist">{{ form.consent_pd.errors }}</div>{% endif %}
-        </div>
-      </div>
-      <div class="form-actions">
-        <button class="btn primary" type="submit">Отправить</button>
-      </div>
-    </form>
-  </div>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn primary">Отправить</button>
+  </form>
 </section>
 {% endblock %}
