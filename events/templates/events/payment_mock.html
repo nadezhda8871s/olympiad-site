@@ -1,4 +1,12 @@
 {% extends "base.html" %}
+{% block title %}Оплата{% endblock %}
 {% block content %}
-<meta http-equiv="refresh" content="0;url=/pay/{{ reg.id }}/">
+<section class="container">
+  <h1>Оплата (демо)</h1>
+  <p>Имитация страницы Robokassa для регистрации № {{ reg.id }}. Выберите результат:</p>
+  <div class="btn-row">
+    <a class="btn primary" href="?status=success">Оплата успешна</a>
+    <a class="btn" href="?status=fail">Оплата неуспешна</a>
+  </div>
+</section>
 {% endblock %}
