@@ -26,7 +26,11 @@ services:
         value: "True"
       - key: DEFAULT_FROM_EMAIL
         value: vsemnayka@gmail.com
-      - key: ROBOKASSA_DEMO
+      - key: YOOKASSA_SHOP_ID
+        sync: false
+      - key: YOOKASSA_SECRET_KEY
+        sync: false
+      - key: YOOKASSA_TEST_MODE
         value: "True"
     disks:
       - name: media
