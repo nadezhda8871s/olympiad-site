@@ -2,7 +2,6 @@ from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
 
 class Event(models.Model):
     class EventType(models.TextChoices):
@@ -28,12 +27,15 @@ class Event(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = _("Мероприятия")
+        verbose_name = _("Мероприятие")
         verbose_name_plural = _("Мероприятия")
         ordering = ["sort_order", "-id"]
 
+
+    # Backward-compatible alias for templates expecting 'info_letter'
     @property
     def info_letter(self):
+        """Return the same file as info_file; safe when field is missing."""
         return getattr(self, 'info_file', None)
 
     def __str__(self):
@@ -57,7 +59,6 @@ class Event(models.Model):
     def get_register_url(self):
         return reverse("event_register", args=[self.slug])
 
-
 class Registration(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="registrations")
     fio = models.CharField(max_length=255)
@@ -75,7 +76,6 @@ class Registration(models.Model):
     def __str__(self):
         return f"{self.fio} — {self.event.title}"
 
-
 class Payment(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", _("Ожидает")
@@ -84,23 +84,49 @@ class Payment(models.Model):
 
     registration = models.OneToOneField(Registration, on_delete=models.CASCADE, related_name="payment")
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
-    txn_id = models.CharField(max_length=128, blank=True)
+    txn_id = models.CharField(max_length=64, blank=True)
     paid_at = models.DateTimeField(blank=True, null=True)
-    yookassa_payment_id = models.CharField(max_length=128, blank=True, null=True, db_index=True, verbose_name="YooKassa payment id")
-    payment_status = models.CharField(max_length=64, blank=True, null=True, verbose_name="Статус платежа")
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = _("Оплата")
         verbose_name_plural = _("Оплаты")
 
-    def update_from_yookassa(self, yookassa_payment):
-        try:
-            self.yookassa_payment_id = getattr(yookassa_payment, "id", self.yookassa_payment_id)
-            self.payment_status = getattr(yookassa_payment, "status", self.payment_status)
-            if getattr(yookassa_payment, "paid", False) or getattr(yookassa_payment, "status", "") in ("succeeded", "succeeded_wait_for_capture", "succeeded"):
-                self.status = Payment.Status.PAID
-                self.paid_at = timezone.now()
-            self.save()
-        except Exception:
-            pass
+class Question(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="questions")
+    text = models.TextField(verbose_name=_("Вопрос"))
+    text_en = models.TextField(blank=True, verbose_name=_("Вопрос (EN)"))
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = _("Вопрос")
+        verbose_name_plural = _("Вопросы")
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.event.title}: {self.text[:50]}"
+
+class AnswerOption(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="options")
+    text = models.CharField(max_length=500, verbose_name=_("Вариант"))
+    text_en = models.CharField(max_length=500, blank=True, verbose_name=_("Вариант (EN)"))
+    is_correct = models.BooleanField(default=False)
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = _("Вариант ответа")
+        verbose_name_plural = _("Варианты ответа")
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return self.title or f"Событие #{self.pk}"
+
+class TestResult(models.Model):
+    registration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name="results")
+    score = models.IntegerField(default=0)
+    answers = models.JSONField(default=dict, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = _("Результат теста")
+        verbose_name_plural = _("Результаты теста")
