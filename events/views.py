@@ -1,12 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponseForbidden, HttpResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.db.utils import OperationalError, ProgrammingError
 from django.contrib.auth.decorators import user_passes_test
-from django.views.decorators.csrf import csrf_exempt
-from decimal import Decimal, ROUND_DOWN
-import os
-
 from .models import Event, Registration, Payment, Question, AnswerOption, TestResult
 from .forms import RegistrationForm
 from .services.emails import (
@@ -15,55 +11,65 @@ from .services.emails import (
 )
 from .services.export import export_registrations_csv
 
-# Try import YooKassa SDK (optional - will fallback to mock)
-try:
-    from yookassa import Configuration, Payment as YooPayment
-except Exception:
-    YooPayment = None
-    Configuration = None
-
 # --- patched helper for robust list rendering ---
 def _robust_list_by_type(request, type_code, title, template_name):
     """Robust list renderer with safe DB fallbacks and stable ordering.
-    This returns a rendered template with 'events' context variable.
+    Added in patch _ROBUST_LIST_BY_TYPE_PATCH.
     """
     try:
-        from .models import Event as Ev
-        qs = Ev.objects.filter(type=type_code, is_published=True)
-        try:
-            qs = qs.order_by("sort_order", "-event_date", "-id")
-        except Exception:
-            qs = qs.order_by("-id")
-        events = list(qs)
+        qs = Event.objects.filter(is_published=True, type=type_code).order_by("sort_order", "-id")
+        q = request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(title__icontains=q)
     except (OperationalError, ProgrammingError):
-        events = []
-    return render(request, template_name, {"events": events, "title": title})
+        qs = []
+        q = ""
+    return render(request, template_name, {"events": qs, "page_title": title, "q": q})
+# _ROBUST_LIST_BY_TYPE_PATCH
+
+def _list_by_type(request, type_code, title):
+    try:
+        qs = Event.objects.filter(is_published=True, type=type_code)
+        q = request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(title__icontains=q)
+        date_from = request.GET.get("date_from")
+        date_to = request.GET.get("date_to")
+        if date_from:
+            qs = qs.filter(event_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(event_date__lte=date_to)
+    except (OperationalError, ProgrammingError):
+        qs = []
+        q = ""
+    return render(request, "events/list.html", {"events": qs, "page_title": title, "q": q})
 
 def events_list_olymps(request):
     return _robust_list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады", "events/olympiads_list.html")
 
 def events_list_contests(request):
-    return _robust_list_by_type(request, Event.EventType.CONTEST, "Конкурсы", "events/contests_list.html")
+    return _robust_list_by_type(request, Event.EventType.CONTEST, "Конкурсы статей, ВКР, научных работ", "events/contests_list.html")
 
 def events_list_conferences(request):
-    return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции", "events/conferences_list.html")
-
-def event_detail(request, slug):
+    return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборниках", "events/conferences_list.html")
+def event_detail(request, pk):
+    """
+    Safe detail view: never 500s if DB columns/relations temporarily unavailable.
+    """
+    from django.db.utils import OperationalError, ProgrammingError
+    ev = None
     try:
-        ev = Event.objects.get(slug=slug)
-    except (Event.DoesNotExist, OperationalError, ProgrammingError):
+        ev = get_object_or_404(Event, pk=pk, is_published=True)
+    except (OperationalError, ProgrammingError):
         ev = None
-    if ev is None:
-        return render(request, "events/info_message.html", {"title": "Мероприятие", "message": "Мероприятие не найдено."})
     return render(request, "events/detail.html", {"ev": ev})
-
 def event_register(request, slug):
     try:
-        ev = Event.objects.get(slug=slug)
-    except (Event.DoesNotExist, OperationalError, ProgrammingError):
+        ev = get_object_or_404(Event, slug=slug, is_published=True)
+    except (OperationalError, ProgrammingError):
         ev = None
     if ev is None:
-        return render(request, "events/info_message.html", {"title": "Регистрация", "message": "Мероприятие не найдено."})
+        return render(request, "events/info_message.html", {"title": "Ошибка", "message": "Мероприятие недоступно."})
     if request.method == "POST":
         form = RegistrationForm(request.POST)
         if form.is_valid():
@@ -72,13 +78,12 @@ def event_register(request, slug):
             reg.save()
             Payment.objects.create(registration=reg, status=Payment.Status.PENDING)
             send_registration_confirmation(reg.email, ev.title, reg.fio)
-            return redirect("payment_start", reg_id=reg.id)
+            return redirect("payment_mock", reg_id=reg.id)
     else:
         form = RegistrationForm()
     return render(request, "events/register.html", {"ev": ev, "form": form})
 
 def payment_mock(request, reg_id):
-    # legacy demo mock kept for compatibility (now labelled YooKassa mock)
     try:
         reg = Registration.objects.get(id=reg_id)
     except (Registration.DoesNotExist, OperationalError, ProgrammingError):
@@ -100,198 +105,87 @@ def payment_mock(request, reg_id):
             send_instructions_comp_conf(reg.email, reg.event.title)
             return render(request, "events/info_message.html", {
                 "title": "Оплата успешна",
-                "message": "В ближайшее время вам придёт письмо с инструкциями."
+                "message": "Согласно информационному письму перешлите анкету, научную работу и чек на адрес vsemnayka@gmail.com."
             })
     elif status == "fail":
-        p = reg.payment
-        p.status = Payment.Status.FAILED
-        p.save()
+        reg.payment.status = Payment.Status.FAILED
+        reg.payment.save()
         send_payment_failed(reg.email, reg.event.title)
-        return render(request, "events/info_message.html", {
-            "title": "Оплата неуспешна",
-            "message": "Платёж не прошёл."
-        })
+        return render(request, "events/payment_result.html", {"success": False, "reg": reg})
 
     return render(request, "events/payment_mock.html", {"reg": reg})
 
 def test_view(request, reg_id):
     try:
         reg = Registration.objects.get(id=reg_id)
+        ev = reg.event
     except (Registration.DoesNotExist, OperationalError, ProgrammingError):
-        reg = None
-    if reg is None:
-        return render(request, "events/info_message.html", {"title": "Тест", "message": "Регистрация не найдена."})
-    # Placeholder: actual test flow
-    questions = []
-    try:
-        questions = Question.objects.filter(event=reg.event)
-    except Exception:
-        questions = []
+        return HttpResponseForbidden("Тест недоступен.")
+    if ev.type != Event.EventType.OLYMPIAD:
+        return HttpResponseForbidden("Тест доступен только для олимпиад.")
+    if reg.payment.status != Payment.Status.PAID:
+        return HttpResponseForbidden("Тест доступен только после успешной оплаты.")
+    if reg.results.exists():
+        return render(request, "events/test_done.html", {"reg": reg, "score": reg.results.latest("id").score})
+
+    questions = list(ev.questions.prefetch_related("options").all())
+    if request.method == "POST":
+        score = 0
+        answers = {}
+        for q in questions:
+            chosen_id = request.POST.get(f"q_{q.id}")
+            answers[str(q.id)] = chosen_id
+            if chosen_id:
+                try:
+                    opt = q.options.get(id=int(chosen_id))
+                    if opt.is_correct:
+                        score += 1
+                except Exception:
+                    pass
+        TestResult.objects.create(registration=reg, score=score, answers=answers, finished_at=timezone.now())
+        send_test_result(reg.email, ev.title, score)
+        return render(request, "events/test_done.html", {"reg": reg, "score": score})
     return render(request, "events/test.html", {"reg": reg, "questions": questions})
 
 def search_api(request):
-    q = request.GET.get("q", "")
+    q = request.GET.get("q", "").strip()
+    results = []
     try:
-        qs = Event.objects.filter(title__icontains=q)[:10]
-        results = [{"id": e.id, "title": e.title, "slug": e.slug} for e in qs]
-    except Exception:
-        results = []
+        if q:
+            for ev in Event.objects.filter(is_published=True, title__icontains=q).order_by("sort_order")[:10]:
+                results.append({"title": ev.title, "url": ev.get_absolute_url()})
+    except (OperationalError, ProgrammingError):
+        pass
     return JsonResponse({"results": results})
 
+@user_passes_test(lambda u: u.is_staff)
 def export_csv_view(request):
     return export_registrations_csv()
 
-def _decimal_to_str(amount):
-    """Convert Decimal or numeric to string with 2 decimal places for YooKassa."""
-    if amount is None:
-        return "0.00"
-    if isinstance(amount, Decimal):
-        return str(amount.quantize(Decimal("0.01"), rounding=ROUND_DOWN))
+def event_list(request, slug=None):
+    """
+    Safe list view: never 500s due to DB or missing tables.
+    Shows events filtered by category slug if provided.
+    """
+    from django.db.utils import OperationalError, ProgrammingError
+    from django.http import Http404
+
+    events = []
+    category = None
     try:
-        return "{:.2f}".format(float(amount))
-    except Exception:
-        return "0.00"
-
-def payment_start(request, reg_id):
-    """Create a YooKassa payment and redirect user to confirmation_url."""
-    try:
-        reg = Registration.objects.get(id=reg_id)
-    except Registration.DoesNotExist:
-        return render(request, "events/info_message.html", {"title": "Оплата", "message": "Регистрация не найдена."})
-    # prevent paying already paid
-    if hasattr(reg, 'payment') and reg.payment.status == Payment.Status.PAID:
-        return render(request, "events/payment_result.html", {"success": True})
-    # load credentials
-    shop_id = os.getenv('YOOKASSA_SHOP_ID')
-    secret = os.getenv('YOOKASSA_SECRET_KEY')
-    if not shop_id or not secret or YooPayment is None:
-        # fallback to mock
-        return redirect('payment_mock', reg_id=reg.id)
-
-    Configuration.account_id = shop_id
-    Configuration.secret_key = secret
-
-    amount_value = _decimal_to_str(getattr(reg.event, "price_rub", 0))
-    amount = {
-        "value": amount_value,
-        "currency": "RUB"
-    }
-    # create payment
-    try:
-        payment = YooPayment.create({
-            "amount": amount,
-            "capture": True,
-            "confirmation": {"type": "redirect", "return_url": request.build_absolute_uri('/pay/success/')},
-            "description": f"Оплата регистрации #{reg.id} — {reg.event.title}",
-            "metadata": {"registration_id": str(reg.id)}
-        }, uuid=None)
-    except Exception as e:
-        # On error, show informative message
-        return render(request, "events/info_message.html", {"title": "Ошибка оплаты", "message": f"Не удалось создать платёж: {e}"})
-
-    # save payment record if exists
-    p = None
-    if hasattr(reg, 'payment'):
-        p = reg.payment
-        p.status = Payment.Status.PENDING
-        p.txn_id = getattr(payment, "id", None) or getattr(payment, "payment_id", None)
-        p.save()
-    else:
-        p = Payment.objects.create(registration=reg, status=Payment.Status.PENDING, txn_id=getattr(payment, "id", None))
-
-    # redirect to confirmation url
-    try:
-        url = payment.confirmation.confirmation_url
-    except Exception:
-        url = None
-        if isinstance(payment, dict):
-            conf = payment.get("confirmation") or {}
-            url = conf.get("confirmation_url") or conf.get("confirmation_url")  # fallback
-
-    if not url:
-        # As a last resort, try to extract from payment object
+        qs = Event.objects.filter(is_published=True)
+        if slug:
+            try:
+                category = Category.objects.get(slug=slug)
+                qs = qs.filter(category=category)
+            except Category.DoesNotExist:
+                raise Http404("Category not found")
         try:
-            url = payment.get("confirmation", {}).get("confirmation_url") if isinstance(payment, dict) else None
+            qs = qs.order_by("sort_order", "-start_date", "-id")
         except Exception:
-            url = None
-
-    if not url:
-        return render(request, "events/info_message.html", {"title": "Ошибка оплаты", "message": "Не удалось получить URL для оплаты."})
-
-    return redirect(url)
-
-
-def pay_success(request):
-    """Return URL after successful payment (user is redirected here). We will check payment status via API or rely on webhook."""
-    # For simplicity, show success page. Webhook will update payment status.
-    return render(request, "events/payment_result.html", {"success": True})
-
-
-@csrf_exempt
-def pay_webhook(request):
-    """Handle YooKassa webhook notifications (Payment events)."""
-    if request.method != 'POST':
-        return HttpResponseBadRequest('Invalid method')
-    import json
-    try:
-        payload = json.loads(request.body.decode('utf-8'))
-    except Exception:
-        return HttpResponseBadRequest('Bad JSON')
-
-    # YooKassa sends event with object containing payment info
-    # Example: {"event":"payment.succeeded","object":{...}}
-    obj = payload.get('object') or payload.get('notification') or payload
-    payment_obj = None
-    if isinstance(obj, dict):
-        # yookassa may nest payment under 'payment' or 'object'
-        payment_obj = obj.get('payment') or obj.get('object') or obj
-    elif isinstance(payload, dict):
-        payment_obj = payload.get('payment') or payload
-
-    # Extract metadata or description to find registration
-    metadata = payment_obj.get('metadata') if isinstance(payment_obj, dict) else {}
-    reg_id = None
-    if isinstance(metadata, dict):
-        reg_id = metadata.get('registration_id')
-    if not reg_id:
-        desc = payment_obj.get('description') if isinstance(payment_obj, dict) else None
-        if desc:
-            # try extract '#<id>' from description
-            import re
-            m = re.search(r"#(\d+)", desc)
-            if m:
-                reg_id = m.group(1)
-
-    if not reg_id:
-        return HttpResponse('no registration', status=200)
-
-    try:
-        reg = Registration.objects.get(id=int(reg_id))
-    except Exception:
-        return HttpResponse('registration not found', status=200)
-
-    status = (payment_obj.get('status') or "").lower() if isinstance(payment_obj, dict) else ""
-    p = getattr(reg, 'payment', None)
-    if status in ('succeeded', 'succeeded', 'succeeded', 'completed', 'paid'):
-        if p:
-            p.status = Payment.Status.PAID
-            p.paid_at = timezone.now()
-            p.txn_id = payment_obj.get('id') or p.txn_id
-            p.save()
-        else:
-            Payment.objects.create(registration=reg, status=Payment.Status.PAID, paid_at=timezone.now(), txn_id=payment_obj.get('id'))
-        try:
-            send_payment_success(reg.email, reg.event.title)
-        except Exception:
-            pass
-    elif status in ('canceled', 'failed', 'waiting_for_capture'):
-        if p:
-            p.status = Payment.Status.FAILED
-            p.txn_id = payment_obj.get('id') or p.txn_id
-            p.save()
-        try:
-            send_payment_failed(reg.email, reg.event.title)
-        except Exception:
-            pass
-
-    return HttpResponse('ok', status=200)
+            qs = qs.order_by("-id")
+        events = list(qs)
+    except (OperationalError, ProgrammingError):
+        events = []
+    ctx = {"events": events, "category": category}
+    return render(request, "events/list.html", ctx)
