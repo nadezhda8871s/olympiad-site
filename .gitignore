@@ -1,20 +1,49 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*.pyc
+*$py.class
 
-# Env
-.env
-.env.*
-venv/
+# Virtual environments
 .venv/
+venv/
+env/
+ENV/
 
-# Django
-media/
-staticfiles/
-db.sqlite3
+# Environment variables
+.env
+.env.*.local
+.env.local
 
-# IDE
-.idea/
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# Test / coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+
+# IDEs and editors
 .vscode/
+.idea/
+*.swp
+*.swo
 
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node (if any)
+node_modules/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Caches
+.mypy_cache/
+.cache/
