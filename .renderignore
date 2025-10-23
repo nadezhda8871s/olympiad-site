@@ -1,0 +1,15 @@
+# Build artifacts and dependencies
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+*.sqlite3
+*.pyc
+__pycache__/
+.vscode/
+.idea/
+.DS_Store
+/*.zip
+/*.tar.gz
