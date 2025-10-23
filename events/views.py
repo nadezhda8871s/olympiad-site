@@ -1,191 +1,215 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponseForbidden
-from django.utils import timezone
-from django.db.utils import OperationalError, ProgrammingError
-from django.contrib.auth.decorators import user_passes_test
-from .models import Event, Registration, Payment, Question, AnswerOption, TestResult
+import logging
+from decimal import Decimal
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+from django.http import HttpResponse, JsonResponse
+from django.urls import reverse
+from django.conf import settings
+from .models import Event, Registration
 from .forms import RegistrationForm
-from .services.emails import (
-    send_registration_confirmation, send_payment_success, send_payment_failed,
-    send_instructions_comp_conf, send_test_result
-)
-from .services.export import export_registrations_csv
+from .services.yookassa import YooKassaService
 
-# --- patched helper for robust list rendering ---
-def _robust_list_by_type(request, type_code, title, template_name):
-    """Robust list renderer with safe DB fallbacks and stable ordering.
-    Added in patch _ROBUST_LIST_BY_TYPE_PATCH.
-    """
+logger = logging.getLogger(__name__)
+
+
+def event_list(request):
+    """Display list of all events"""
     try:
-        qs = Event.objects.filter(is_published=True, type=type_code).order_by("sort_order", "-id")
-        q = request.GET.get("q", "").strip()
-        if q:
-            qs = qs.filter(title__icontains=q)
-    except (OperationalError, ProgrammingError):
-        qs = []
-        q = ""
-    return render(request, template_name, {"events": qs, "page_title": title, "q": q})
-# _ROBUST_LIST_BY_TYPE_PATCH
+        events = Event.objects.filter(is_active=True).order_by('-start_date')
+        context = {
+            'events': events,
+            'title': 'Мероприятия'
+        }
+        return render(request, 'events/list.html', context)
+    except Exception as e:
+        logger.error(f'Error loading event list: {str(e)}')
+        messages.error(request, 'Произошла ошибка при загрузке мероприятий')
+        return render(request, 'events/list.html', {'events': []})
 
-def _list_by_type(request, type_code, title):
-    try:
-        qs = Event.objects.filter(is_published=True, type=type_code)
-        q = request.GET.get("q", "").strip()
-        if q:
-            qs = qs.filter(title__icontains=q)
-        date_from = request.GET.get("date_from")
-        date_to = request.GET.get("date_to")
-        if date_from:
-            qs = qs.filter(event_date__gte=date_from)
-        if date_to:
-            qs = qs.filter(event_date__lte=date_to)
-    except (OperationalError, ProgrammingError):
-        qs = []
-        q = ""
-    return render(request, "events/list.html", {"events": qs, "page_title": title, "q": q})
 
-def events_list_olymps(request):
-    return _robust_list_by_type(request, Event.EventType.OLYMPIAD, "Олимпиады", "events/olympiads_list.html")
-
-def events_list_contests(request):
-    return _robust_list_by_type(request, Event.EventType.CONTEST, "Конкурсы статей, ВКР, научных работ", "events/contests_list.html")
-
-def events_list_conferences(request):
-    return _robust_list_by_type(request, Event.EventType.CONFERENCE, "Конференции с публикацией в РИНЦ сборниках", "events/conferences_list.html")
 def event_detail(request, pk):
-    """
-    Safe detail view: never 500s if DB columns/relations temporarily unavailable.
-    """
-    from django.db.utils import OperationalError, ProgrammingError
-    ev = None
+    """Display event details"""
     try:
-        ev = get_object_or_404(Event, pk=pk, is_published=True)
-    except (OperationalError, ProgrammingError):
-        ev = None
-    return render(request, "events/detail.html", {"ev": ev})
-def event_register(request, slug):
-    try:
-        ev = get_object_or_404(Event, slug=slug, is_published=True)
-    except (OperationalError, ProgrammingError):
-        ev = None
-    if ev is None:
-        return render(request, "events/info_message.html", {"title": "Ошибка", "message": "Мероприятие недоступно."})
-    if request.method == "POST":
-        form = RegistrationForm(request.POST)
-        if form.is_valid():
-            reg = form.save(commit=False)
-            reg.event = ev
-            reg.save()
-            Payment.objects.create(registration=reg, status=Payment.Status.PENDING)
-            send_registration_confirmation(reg.email, ev.title, reg.fio)
-            return redirect("payment_mock", reg_id=reg.id)
-    else:
-        form = RegistrationForm()
-    return render(request, "events/register.html", {"ev": ev, "form": form})
+        event = get_object_or_404(Event, pk=pk, is_active=True)
+        context = {
+            'event': event,
+            'title': event.title
+        }
+        return render(request, 'events/detail.html', context)
+    except Event.DoesNotExist:
+        messages.error(request, 'Мероприятие не найдено')
+        return redirect('events:list')
+    except Exception as e:
+        logger.error(f'Error loading event {pk}: {str(e)}')
+        messages.error(request, 'Произошла ошибка при загрузке мероприятия')
+        return redirect('events:list')
 
-def payment_mock(request, reg_id):
-    try:
-        reg = Registration.objects.get(id=reg_id)
-    except (Registration.DoesNotExist, OperationalError, ProgrammingError):
-        reg = None
-    if reg is None:
-        return render(request, "events/info_message.html", {"title": "Оплата", "message": "Регистрация не найдена."})
 
-    status = request.GET.get("status")
-    if status == "success":
-        p = reg.payment
-        p.status = Payment.Status.PAID
-        p.paid_at = timezone.now()
-        p.txn_id = f"demo-{p.paid_at.timestamp()}"
-        p.save()
-        send_payment_success(reg.email, reg.event.title)
-        if reg.event.type == Event.EventType.OLYMPIAD:
-            return redirect("test_view", reg_id=reg.id)
+@require_http_methods(['GET', 'POST'])
+def event_register(request, pk):
+    """Register for event"""
+    try:
+        event = get_object_or_404(Event, pk=pk, is_active=True)
+        
+        if request.method == 'POST':
+            form = RegistrationForm(request.POST)
+            if form.is_valid():
+                registration = form.save(commit=False)
+                registration.event = event
+                
+                if request.user.is_authenticated:
+                    registration.user = request.user
+                
+                registration.save()
+                
+                # Create payment if event has fee
+                if event.fee and event.fee > 0:
+                    return_url = request.build_absolute_uri(
+                        reverse('events:payment_result')
+                    )
+                    
+                    payment_data = YooKassaService.create_payment(
+                        amount=event.fee,
+                        description=f'Регистрация на {event.title}',
+                        return_url=return_url,
+                        metadata={
+                            'registration_id': registration.id,
+                            'event_id': event.id,
+                        }
+                    )
+                    
+                    if payment_data:
+                        registration.payment_id = payment_data['id']
+                        registration.payment_status = 'pending'
+                        registration.save()
+                        
+                        return redirect(payment_data['confirmation_url'])
+                    else:
+                        messages.error(request, 'Ошибка создания платежа. Попробуйте позже.')
+                        registration.delete()
+                        return redirect('events:detail', pk=event.pk)
+                else:
+                    registration.payment_status = 'completed'
+                    registration.save()
+                    messages.success(request, 'Вы успешно зарегистрированы!')
+                    return redirect('events:detail', pk=event.pk)
+            else:
+                messages.error(request, 'Пожалуйста, исправьте ошибки в форме')
         else:
-            send_instructions_comp_conf(reg.email, reg.event.title)
-            return render(request, "events/info_message.html", {
-                "title": "Оплата успешна",
-                "message": "Согласно информационному письму перешлите анкету, научную работу и чек на адрес vsemnayka@gmail.com."
-            })
-    elif status == "fail":
-        reg.payment.status = Payment.Status.FAILED
-        reg.payment.save()
-        send_payment_failed(reg.email, reg.event.title)
-        return render(request, "events/payment_result.html", {"success": False, "reg": reg})
+            form = RegistrationForm()
+        
+        context = {
+            'form': form,
+            'event': event,
+            'title': f'Регистрация на {event.title}'
+        }
+        return render(request, 'events/register.html', context)
+        
+    except Event.DoesNotExist:
+        messages.error(request, 'Мероприятие не найдено')
+        return redirect('events:list')
+    except Exception as e:
+        logger.error(f'Error registering for event {pk}: {str(e)}')
+        messages.error(request, 'Произошла ошибка при регистрации')
+        return redirect('events:detail', pk=pk)
 
-    return render(request, "events/payment_mock.html", {"reg": reg})
 
-def test_view(request, reg_id):
+@require_http_methods(['GET'])
+def payment_result(request):
+    """Handle payment result"""
     try:
-        reg = Registration.objects.get(id=reg_id)
-        ev = reg.event
-    except (Registration.DoesNotExist, OperationalError, ProgrammingError):
-        return HttpResponseForbidden("Тест недоступен.")
-    if ev.type != Event.EventType.OLYMPIAD:
-        return HttpResponseForbidden("Тест доступен только для олимпиад.")
-    if reg.payment.status != Payment.Status.PAID:
-        return HttpResponseForbidden("Тест доступен только после успешной оплаты.")
-    if reg.results.exists():
-        return render(request, "events/test_done.html", {"reg": reg, "score": reg.results.latest("id").score})
-
-    questions = list(ev.questions.prefetch_related("options").all())
-    if request.method == "POST":
-        score = 0
-        answers = {}
-        for q in questions:
-            chosen_id = request.POST.get(f"q_{q.id}")
-            answers[str(q.id)] = chosen_id
-            if chosen_id:
-                try:
-                    opt = q.options.get(id=int(chosen_id))
-                    if opt.is_correct:
-                        score += 1
-                except Exception:
-                    pass
-        TestResult.objects.create(registration=reg, score=score, answers=answers, finished_at=timezone.now())
-        send_test_result(reg.email, ev.title, score)
-        return render(request, "events/test_done.html", {"reg": reg, "score": score})
-    return render(request, "events/test.html", {"reg": reg, "questions": questions})
-
-def search_api(request):
-    q = request.GET.get("q", "").strip()
-    results = []
-    try:
-        if q:
-            for ev in Event.objects.filter(is_published=True, title__icontains=q).order_by("sort_order")[:10]:
-                results.append({"title": ev.title, "url": ev.get_absolute_url()})
-    except (OperationalError, ProgrammingError):
-        pass
-    return JsonResponse({"results": results})
-
-@user_passes_test(lambda u: u.is_staff)
-def export_csv_view(request):
-    return export_registrations_csv()
-
-def event_list(request, slug=None):
-    """
-    Safe list view: never 500s due to DB or missing tables.
-    Shows events filtered by category slug if provided.
-    """
-    from django.db.utils import OperationalError, ProgrammingError
-    from django.http import Http404
-
-    events = []
-    category = None
-    try:
-        qs = Event.objects.filter(is_published=True)
-        if slug:
-            try:
-                category = Category.objects.get(slug=slug)
-                qs = qs.filter(category=category)
-            except Category.DoesNotExist:
-                raise Http404("Category not found")
+        payment_id = request.GET.get('payment_id')
+        
+        if not payment_id:
+            messages.error(request, 'Неверные параметры платежа')
+            return redirect('events:list')
+        
+        payment_data = YooKassaService.get_payment(payment_id)
+        
+        if not payment_data:
+            messages.error(request, 'Ошибка проверки платежа')
+            return redirect('events:list')
+        
         try:
-            qs = qs.order_by("sort_order", "-start_date", "-id")
-        except Exception:
-            qs = qs.order_by("-id")
-        events = list(qs)
-    except (OperationalError, ProgrammingError):
-        events = []
-    ctx = {"events": events, "category": category}
-    return render(request, "events/list.html", ctx)
+            registration = Registration.objects.get(payment_id=payment_id)
+            
+            if payment_data['status'] == 'succeeded':
+                registration.payment_status = 'completed'
+                registration.save()
+                messages.success(request, 'Оплата прошла успешно! Вы зарегистрированы на мероприятие.')
+            elif payment_data['status'] == 'canceled':
+                registration.payment_status = 'failed'
+                registration.save()
+                messages.warning(request, 'Платеж отменен')
+            else:
+                registration.payment_status = 'pending'
+                registration.save()
+                messages.info(request, 'Платеж в обработке')
+            
+            return redirect('events:detail', pk=registration.event.pk)
+            
+        except Registration.DoesNotExist:
+            logger.error(f'Registration not found for payment {payment_id}')
+            messages.error(request, 'Регистрация не найдена')
+            return redirect('events:list')
+            
+    except Exception as e:
+        logger.error(f'Error processing payment result: {str(e)}')
+        messages.error(request, 'Произошла ошибка при обработке платежа')
+        return redirect('events:list')
+
+
+def olympiads_list(request):
+    """Display list of olympiads"""
+    try:
+        events = Event.objects.filter(
+            event_type='olympiad',
+            is_active=True
+        ).order_by('-start_date')
+        context = {
+            'events': events,
+            'title': 'Олимпиады'
+        }
+        return render(request, 'events/olympiads_list.html', context)
+    except Exception as e:
+        logger.error(f'Error loading olympiads: {str(e)}')
+        messages.error(request, 'Произошла ошибка при загрузке олимпиад')
+        return render(request, 'events/olympiads_list.html', {'events': []})
+
+
+def contests_list(request):
+    """Display list of contests"""
+    try:
+        events = Event.objects.filter(
+            event_type='contest',
+            is_active=True
+        ).order_by('-start_date')
+        context = {
+            'events': events,
+            'title': 'Конкурсы'
+        }
+        return render(request, 'events/contests_list.html', context)
+    except Exception as e:
+        logger.error(f'Error loading contests: {str(e)}')
+        messages.error(request, 'Произошла ошибка при загрузке конкурсов')
+        return render(request, 'events/contests_list.html', {'events': []})
+
+
+def conferences_list(request):
+    """Display list of conferences"""
+    try:
+        events = Event.objects.filter(
+            event_type='conference',
+            is_active=True
+        ).order_by('-start_date')
+        context = {
+            'events': events,
+            'title': 'Конференции'
+        }
+        return render(request, 'events/conferences_list.html', context)
+    except Exception as e:
+        logger.error(f'Error loading conferences: {str(e)}')
+        messages.error(request, 'Произошла ошибка при загрузке конференций')
+        return render(request, 'events/conferences_list.html', {'events': []})
