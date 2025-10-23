@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Оплата{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Перенаправление к платёжной системе</h1>
+  <p>Если перенаправление не произошло автоматически, нажмите <a id="paylink" href="{{ url }}">сюда</a>.</p>
+  <script>
+    setTimeout(function(){ window.location = document.getElementById('paylink').href; }, 500);
+  </script>
+</section>
+{% endblock %}
