@@ -7,7 +7,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('events/', include('events.urls')),
     path('pages/', include('pages.urls')),
-    path('', include('pages.urls')),  # Home page
+    path('', include('pages.urls')),  # Главная страница
+
+    # ✅ Добавлено: маршруты для смены языка (исправляет ошибку set_language)
+    path('i18n/', include('django.conf.urls.i18n')),
 ]
 
 if settings.DEBUG:
