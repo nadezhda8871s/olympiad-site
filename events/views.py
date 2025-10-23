@@ -1,8 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse, HttpResponseBadRequest
 from django.utils import timezone
 from django.db.utils import OperationalError, ProgrammingError
 from django.contrib.auth.decorators import user_passes_test
+from django.views.decorators.csrf import csrf_exempt
+from decimal import Decimal, ROUND_DOWN
+import os
+
 from .models import Event, Registration, Payment, Question, AnswerOption, TestResult
 from .forms import RegistrationForm
 from .services.emails import (
@@ -11,6 +15,13 @@ from .services.emails import (
 )
 from .services.export import export_registrations_csv
 
+# Try import YooKassa SDK (optional - will fallback to mock)
+try:
+    from yookassa import Configuration, Payment as YooPayment
+except Exception:
+    YooPayment = None
+    Configuration = None
+
 # --- patched helper for robust list rendering ---
 def _robust_list_by_type(request, type_code, title, template_name):
     """Robust list renderer with safe DB fallbacks and stable ordering.
@@ -18,9 +29,9 @@ def _robust_list_by_type(request, type_code, title, template_name):
     """
     try:
         from .models import Event as Ev
-        qs = Ev.objects.filter(type=type_code, published=True)
+        qs = Ev.objects.filter(type=type_code, is_published=True)
         try:
-            qs = qs.order_by("sort_order", "-start_date", "-id")
+            qs = qs.order_by("sort_order", "-event_date", "-id")
         except Exception:
             qs = qs.order_by("-id")
         events = list(qs)
@@ -61,13 +72,13 @@ def event_register(request, slug):
             reg.save()
             Payment.objects.create(registration=reg, status=Payment.Status.PENDING)
             send_registration_confirmation(reg.email, ev.title, reg.fio)
-            return redirect("payment_mock", reg_id=reg.id)
+            return redirect("payment_start", reg_id=reg.id)
     else:
         form = RegistrationForm()
     return render(request, "events/register.html", {"ev": ev, "form": form})
 
 def payment_mock(request, reg_id):
-    # legacy demo mock kept for compatibility
+    # legacy demo mock kept for compatibility (now labelled YooKassa mock)
     try:
         reg = Registration.objects.get(id=reg_id)
     except (Registration.DoesNotExist, OperationalError, ProgrammingError):
@@ -130,14 +141,16 @@ def search_api(request):
 def export_csv_view(request):
     return export_registrations_csv()
 
-import os
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, HttpResponseBadRequest
-try:
-    from yookassa import Configuration, Payment as YooPayment
-except Exception:
-    YooPayment = None
-    Configuration = None
+def _decimal_to_str(amount):
+    """Convert Decimal or numeric to string with 2 decimal places for YooKassa."""
+    if amount is None:
+        return "0.00"
+    if isinstance(amount, Decimal):
+        return str(amount.quantize(Decimal("0.01"), rounding=ROUND_DOWN))
+    try:
+        return "{:.2f}".format(float(amount))
+    except Exception:
+        return "0.00"
 
 def payment_start(request, reg_id):
     """Create a YooKassa payment and redirect user to confirmation_url."""
@@ -158,8 +171,9 @@ def payment_start(request, reg_id):
     Configuration.account_id = shop_id
     Configuration.secret_key = secret
 
+    amount_value = _decimal_to_str(getattr(reg.event, "price_rub", 0))
     amount = {
-        "value": str(reg.event.price_rub.quantize(reg.event.price_rub.as_tuple().exponent * 0) if hasattr(reg.event.price_rub, 'quantize') else reg.event.price_rub),
+        "value": amount_value,
         "currency": "RUB"
     }
     # create payment
@@ -180,16 +194,26 @@ def payment_start(request, reg_id):
     if hasattr(reg, 'payment'):
         p = reg.payment
         p.status = Payment.Status.PENDING
-        p.txn_id = payment.id
+        p.txn_id = getattr(payment, "id", None) or getattr(payment, "payment_id", None)
         p.save()
     else:
-        p = Payment.objects.create(registration=reg, status=Payment.Status.PENDING, txn_id=payment.id)
+        p = Payment.objects.create(registration=reg, status=Payment.Status.PENDING, txn_id=getattr(payment, "id", None))
 
     # redirect to confirmation url
     try:
         url = payment.confirmation.confirmation_url
     except Exception:
-        url = payment.confirmation.get('confirmation_url') if isinstance(payment.confirmation, dict) else None
+        url = None
+        if isinstance(payment, dict):
+            conf = payment.get("confirmation") or {}
+            url = conf.get("confirmation_url") or conf.get("confirmation_url")  # fallback
+
+    if not url:
+        # As a last resort, try to extract from payment object
+        try:
+            url = payment.get("confirmation", {}).get("confirmation_url") if isinstance(payment, dict) else None
+        except Exception:
+            url = None
 
     if not url:
         return render(request, "events/info_message.html", {"title": "Ошибка оплаты", "message": "Не удалось получить URL для оплаты."})
@@ -217,14 +241,27 @@ def pay_webhook(request):
     # YooKassa sends event with object containing payment info
     # Example: {"event":"payment.succeeded","object":{...}}
     obj = payload.get('object') or payload.get('notification') or payload
-    payment_obj = obj.get('payment') if isinstance(obj, dict) else None
-    if payment_obj is None:
-        # try top-level
+    payment_obj = None
+    if isinstance(obj, dict):
+        # yookassa may nest payment under 'payment' or 'object'
+        payment_obj = obj.get('payment') or obj.get('object') or obj
+    elif isinstance(payload, dict):
         payment_obj = payload.get('payment') or payload
 
     # Extract metadata or description to find registration
     metadata = payment_obj.get('metadata') if isinstance(payment_obj, dict) else {}
-    reg_id = metadata.get('registration_id') or (payment_obj.get('description') and payment_obj.get('description').split('#')[-1].split()[0])
+    reg_id = None
+    if isinstance(metadata, dict):
+        reg_id = metadata.get('registration_id')
+    if not reg_id:
+        desc = payment_obj.get('description') if isinstance(payment_obj, dict) else None
+        if desc:
+            # try extract '#<id>' from description
+            import re
+            m = re.search(r"#(\d+)", desc)
+            if m:
+                reg_id = m.group(1)
+
     if not reg_id:
         return HttpResponse('no registration', status=200)
 
@@ -233,9 +270,9 @@ def pay_webhook(request):
     except Exception:
         return HttpResponse('registration not found', status=200)
 
-    status = payment_obj.get('status')
+    status = (payment_obj.get('status') or "").lower() if isinstance(payment_obj, dict) else ""
     p = getattr(reg, 'payment', None)
-    if status == 'succeeded' or status == 'succeeded' or status == 'succeeded':
+    if status in ('succeeded', 'succeeded', 'succeeded', 'completed', 'paid'):
         if p:
             p.status = Payment.Status.PAID
             p.paid_at = timezone.now()
@@ -247,7 +284,7 @@ def pay_webhook(request):
             send_payment_success(reg.email, reg.event.title)
         except Exception:
             pass
-    elif status == 'canceled' or status == 'failed' or status == 'waiting_for_capture':
+    elif status in ('canceled', 'failed', 'waiting_for_capture'):
         if p:
             p.status = Payment.Status.FAILED
             p.txn_id = payment_obj.get('id') or p.txn_id
