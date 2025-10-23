@@ -1,12 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Оплата{% endblock %}
+{% block title %}Оплата (резерв){% endblock %}
 {% block content %}
 <section class="container">
-  <h1>Оплата (демо)</h1>
-  <p>Имитация страницы Robokassa для регистрации № {{ reg.id }}. Выберите результат:</p>
+  <h1>Оплата (резервная страница)</h1>
+  <p>Имитация страницы оплаты для регистрации № {{ reg.id }}. Обратите внимание: фактическая оплата идёт через YooKassa (ЮKassa).</p>
   <div class="btn-row">
-    <a class="btn primary" href="?status=success">Оплата успешна</a>
-    <a class="btn" href="?status=fail">Оплата неуспешна</a>
+    {% if checkout_url %}
+      <a class="btn primary" href="{{ checkout_url }}">Перейти к оплате (YooKassa)</a>
+    {% else %}
+      <span class="notice">Ссылка на оплату недоступна.</span>
+    {% endif %}
   </div>
+  <p>Используйте эту страницу только для тестирования внутренних сценариев.</p>
 </section>
 {% endblock %}
