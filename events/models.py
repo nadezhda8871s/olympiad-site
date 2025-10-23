@@ -104,3 +104,46 @@ class Payment(models.Model):
             self.save()
         except Exception:
             pass
+
+
+class Question(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="questions")
+    text = models.TextField(verbose_name=_("Вопрос"))
+    text_en = models.TextField(blank=True, verbose_name=_("Вопрос (EN)"))
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = _("Вопрос")
+        verbose_name_plural = _("Вопросы")
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.event.title}: {self.text[:50]}"
+
+
+class AnswerOption(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="options")
+    text = models.CharField(max_length=500, verbose_name=_("Вариант"))
+    text_en = models.CharField(max_length=500, blank=True, verbose_name=_("Вариант (EN)"))
+    is_correct = models.BooleanField(default=False)
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = _("Вариант ответа")
+        verbose_name_plural = _("Варианты ответа")
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return self.text[:50] if self.text else f"Option #{self.pk}"
+
+
+class TestResult(models.Model):
+    registration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name="results")
+    score = models.IntegerField(default=0)
+    answers = models.JSONField(default=dict, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = _("Результат теста")
+        verbose_name_plural = _("Результаты теста")
