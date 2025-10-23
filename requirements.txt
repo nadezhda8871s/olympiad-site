@@ -4,3 +4,7 @@ gunicorn>=21.2
 whitenoise>=6.7
 psycopg2-binary>=2.9
 dj-database-url>=2.2
+
+# Добавлено для YooKassa
+yookassa>=3.0.0
+requests>=2.0
