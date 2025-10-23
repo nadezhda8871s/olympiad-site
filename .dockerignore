@@ -1,6 +1,0 @@
-# Ignore local node_modules and Python caches in docker build context
-node_modules
-**/__pycache__
-*.pyc
-.env
-.DS_Store
