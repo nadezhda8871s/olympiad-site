@@ -1,51 +1,145 @@
-import os
+import uuid
 import logging
+from decimal import Decimal
+from typing import Optional, Dict, Any
+from django.conf import settings
 from yookassa import Configuration, Payment
+from yookassa.domain.exceptions import ApiError, BadRequestError, UnauthorizedError
 
 logger = logging.getLogger(__name__)
 
-YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
-YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
-YOOKASSA_TEST_MODE = os.getenv("YOOKASSA_TEST_MODE", "True").lower() in ("1", "true", "yes")
+# Configure YooKassa
+Configuration.account_id = settings.YOOKASSA_SHOP_ID
+Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
 
-if YOOKASSA_SHOP_ID and YOOKASSA_SECRET_KEY:
-    Configuration.account_id = YOOKASSA_SHOP_ID
-    Configuration.secret_key = YOOKASSA_SECRET_KEY
 
-def create_payment(registration, amount_rub, return_url):
-    """
-    Создаёт платёж в YooKassa и возвращает словарь с id, status и checkout_url.
-    registration: экземпляр модели Registration (используется для metadata.registration_id)
-    amount_rub: сумма в рублях (число или строка)
-    return_url: URL, на который вернётся пользователь после оплаты
-    """
-    amount = {
-        "value": "{:.2f}".format(float(amount_rub)),
-        "currency": "RUB"
-    }
-    try:
-        payment = Payment.create({
-            "amount": amount,
-            "confirmation": {
-                "type": "redirect",
-                "return_url": return_url
-            },
-            "capture": True,
-            "description": f"Оплата регистрации #{getattr(registration, 'id', '')}",
-            "metadata": {"registration_id": str(getattr(registration, "id", ""))}
-        }, uuid=None)
-        checkout_url = None
-        confirmation = getattr(payment, "confirmation", {}) or {}
-        checkout_url = confirmation.get("confirmation_url") or getattr(confirmation, "confirmation_url", None)
-        return {"id": payment.id, "status": payment.status, "checkout_url": checkout_url, "raw": payment}
-    except Exception:
-        logger.exception("YooKassa create_payment error")
-        raise
+class YooKassaService:
+    """Service for working with YooKassa payment system"""
 
-def get_payment(payment_id):
-    try:
-        p = Payment.find_one(payment_id)
-        return p
-    except Exception:
-        logger.exception("YooKassa get_payment error")
-        return None
+    @staticmethod
+    def create_payment(
+        amount: Decimal,
+        description: str,
+        return_url: str,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Create payment in YooKassa
+        
+        Args:
+            amount: Payment amount
+            description: Payment description
+            return_url: URL to redirect after payment
+            metadata: Additional payment data
+            
+        Returns:
+            Dictionary with payment data or None if error
+        """
+        if not settings.YOOKASSA_SHOP_ID or not settings.YOOKASSA_SECRET_KEY:
+            logger.error('YooKassa credentials not configured')
+            return None
+
+        try:
+            idempotence_key = str(uuid.uuid4())
+            
+            payment_data = {
+                'amount': {
+                    'value': str(amount),
+                    'currency': 'RUB'
+                },
+                'confirmation': {
+                    'type': 'redirect',
+                    'return_url': return_url
+                },
+                'capture': True,
+                'description': description,
+            }
+            
+            if metadata:
+                payment_data['metadata'] = metadata
+
+            payment = Payment.create(payment_data, idempotence_key)
+            
+            logger.info(f'Payment created: {payment.id}')
+            
+            return {
+                'id': payment.id,
+                'status': payment.status,
+                'confirmation_url': payment.confirmation.confirmation_url,
+                'amount': payment.amount.value,
+                'currency': payment.amount.currency,
+                'created_at': payment.created_at,
+            }
+            
+        except UnauthorizedError as e:
+            logger.error(f'YooKassa authentication error: {str(e)}')
+            return None
+        except BadRequestError as e:
+            logger.error(f'YooKassa bad request: {str(e)}')
+            return None
+        except ApiError as e:
+            logger.error(f'YooKassa API error: {str(e)}')
+            return None
+        except Exception as e:
+            logger.error(f'Unexpected error creating payment: {str(e)}')
+            return None
+
+    @staticmethod
+    def get_payment(payment_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get payment information
+        
+        Args:
+            payment_id: Payment ID in YooKassa
+            
+        Returns:
+            Dictionary with payment data or None if error
+        """
+        try:
+            payment = Payment.find_one(payment_id)
+            
+            return {
+                'id': payment.id,
+                'status': payment.status,
+                'amount': payment.amount.value,
+                'currency': payment.amount.currency,
+                'paid': payment.paid,
+                'created_at': payment.created_at,
+                'metadata': payment.metadata,
+            }
+            
+        except ApiError as e:
+            logger.error(f'Error getting payment {payment_id}: {str(e)}')
+            return None
+        except Exception as e:
+            logger.error(f'Unexpected error getting payment {payment_id}: {str(e)}')
+            return None
+
+    @staticmethod
+    def cancel_payment(payment_id: str) -> bool:
+        """
+        Cancel payment
+        
+        Args:
+            payment_id: Payment ID in YooKassa
+            
+        Returns:
+            True if cancelled successfully, False otherwise
+        """
+        try:
+            payment = Payment.find_one(payment_id)
+            
+            if payment.status == 'pending':
+                Payment.cancel(payment_id)
+                logger.info(f'Payment {payment_id} cancelled')
+                return True
+            else:
+                logger.warning(f'Cannot cancel payment {payment_id} with status {payment.status}')
+                return False
+                
+        except ApiError as e:
+            logger.error(f'Error cancelling payment {payment_id}: {str(e)}')
+            return False
+        except Exception as e:
+            logger.error(f'Unexpected error cancelling payment {payment_id}: {str(e)}')
+            return False
