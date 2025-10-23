@@ -18,6 +18,7 @@ urlpatterns = [
     path("i18n/setlang/", set_language, name="set_language"),
     path("", include("pages.urls")),
     path("", include("events.urls")),
+    path("payments/yookassa/", include("events.urls_yookassa")),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
