@@ -4,6 +4,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+
+    # YooKassa: webhook at /pay/success/ and payment start endpoints
+    path('pay/success/', __import__('events.yookassa_views', fromlist=['']).yookassa_webhook, name='yookassa_webhook'),
+    path('pay/', include('events.urls_yookassa')),
+
     path('admin/', admin.site.urls),
     path('events/', include('events.urls')),
     path('pages/', include('pages.urls')),
