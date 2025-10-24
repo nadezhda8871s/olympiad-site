@@ -2,16 +2,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from events import views as event_views  # 👈 добавлено, чтобы вызывать функции напрямую
 
 urlpatterns = [
     # === YooKassa ===
-    # Вебхук от ЮКассы (сюда приходят уведомления о статусе платежа)
     path(
         'pay/success/',
         __import__('events.yookassa_views', fromlist=['']).yookassa_webhook,
         name='yookassa_webhook'
     ),
-    # Остальные маршруты ЮКассы: форма оплаты, success-страница и т.д.
     path('pay/', include('events.urls_yookassa')),
 
     # === Админка и основные приложения ===
@@ -20,8 +19,12 @@ urlpatterns = [
     path('pages/', include('pages.urls')),
     path('', include('pages.urls')),  # Главная страница
 
-    # === Дополнительно ===
-    # Исправляет ошибку set_language (переключение языка)
+    # === Короткие адреса для разделов ===
+    path('contests/', event_views.contests_list, name='contests_list'),
+    path('olympiads/', event_views.olympiads_list, name='olympiads_list'),
+    path('conferences/', event_views.conferences_list, name='conferences_list'),
+
+    # === Переключение языка ===
     path('i18n/', include('django.conf.urls.i18n')),
 ]
 
