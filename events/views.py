@@ -1,13 +1,12 @@
 import logging
 from decimal import Decimal
-from django.db import models
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 from django.conf import settings
+from django.db import models
 from .models import Event, Registration
 from .forms import RegistrationForm
 from .services.yookassa import YooKassaService
@@ -16,28 +15,26 @@ logger = logging.getLogger(__name__)
 
 
 def event_list(request):
-    """Отображает все активные мероприятия"""
+    """Отображает список всех активных мероприятий"""
     try:
         events = Event.objects.filter(is_active=True).order_by('-start_date')
-        context = {'events': events, 'title': 'Мероприятия'}
-        return render(request, 'events/list.html', context)
+        return render(request, 'events/list.html', {'events': events, 'title': 'Мероприятия'})
     except Exception as e:
-        logger.error(f'Ошибка при загрузке списка мероприятий: {str(e)}')
+        logger.error(f'Ошибка загрузки списка мероприятий: {str(e)}')
         messages.error(request, 'Произошла ошибка при загрузке мероприятий')
         return render(request, 'events/list.html', {'events': []})
 
 
 def event_detail(request, pk):
-    """Отображает детальную страницу мероприятия"""
+    """Детальная страница мероприятия"""
     try:
         event = get_object_or_404(Event, pk=pk, is_active=True)
-        context = {'event': event, 'title': event.title}
-        return render(request, 'events/detail.html', context)
+        return render(request, 'events/detail.html', {'event': event, 'title': event.title})
     except Event.DoesNotExist:
         messages.error(request, 'Мероприятие не найдено')
         return redirect('events:list')
     except Exception as e:
-        logger.error(f'Ошибка при загрузке мероприятия {pk}: {str(e)}')
+        logger.error(f'Ошибка загрузки мероприятия {pk}: {str(e)}')
         messages.error(request, 'Произошла ошибка при загрузке мероприятия')
         return redirect('events:list')
 
@@ -47,7 +44,7 @@ def event_register(request, pk):
     """Регистрация на мероприятие"""
     try:
         event = get_object_or_404(Event, pk=pk, is_active=True)
-
+        
         if request.method == 'POST':
             form = RegistrationForm(request.POST)
             if form.is_valid():
@@ -57,7 +54,7 @@ def event_register(request, pk):
                     registration.user = request.user
                 registration.save()
 
-                # Создание платежа через YooKassa
+                # Платёж через YooKassa
                 if event.fee and event.fee > 0:
                     return_url = request.build_absolute_uri(reverse('events:payment_result'))
                     payment_data = YooKassaService.create_payment(
@@ -66,7 +63,6 @@ def event_register(request, pk):
                         return_url=return_url,
                         metadata={'registration_id': registration.id, 'event_id': event.id}
                     )
-
                     if payment_data:
                         registration.payment_id = payment_data['id']
                         registration.payment_status = 'pending'
@@ -100,7 +96,7 @@ def event_register(request, pk):
 
 @require_http_methods(['GET'])
 def payment_result(request):
-    """Обработка результата оплаты"""
+    """Обработка результата платежа"""
     try:
         payment_id = request.GET.get('payment_id')
         if not payment_id:
@@ -140,45 +136,39 @@ def payment_result(request):
 
 
 def olympiads_list(request):
-    """Выводит список олимпиад"""
+    """Показывает все активные олимпиады"""
     try:
         events = Event.objects.filter(is_active=True).filter(
-            models.Q(event_type__iexact='olympiad') | models.Q(title__icontains='олимпиад')
+            models.Q(event_type__iexact='olympiad') |
+            models.Q(title__icontains='олимпиад')
         ).order_by('-start_date')
-        return render(request, 'events/olympiads_list.html', {
-            'events': events,
-            'title': 'Олимпиады'
-        })
+        return render(request, 'events/olympiads_list.html', {'events': events, 'title': 'Олимпиады'})
     except Exception as e:
         logger.error(f'Ошибка загрузки олимпиад: {str(e)}')
         return render(request, 'events/olympiads_list.html', {'events': []})
 
 
 def contests_list(request):
-    """Выводит список конкурсов"""
+    """Показывает все активные конкурсы"""
     try:
         events = Event.objects.filter(is_active=True).filter(
-            models.Q(event_type__iexact='contest') | models.Q(title__icontains='конкурс')
+            models.Q(event_type__iexact='contest') |
+            models.Q(title__icontains='конкурс')
         ).order_by('-start_date')
-        return render(request, 'events/contests_list.html', {
-            'events': events,
-            'title': 'Конкурсы'
-        })
+        return render(request, 'events/contests_list.html', {'events': events, 'title': 'Конкурсы'})
     except Exception as e:
         logger.error(f'Ошибка загрузки конкурсов: {str(e)}')
         return render(request, 'events/contests_list.html', {'events': []})
 
 
 def conferences_list(request):
-    """Выводит список конференций"""
+    """Показывает все активные конференции"""
     try:
         events = Event.objects.filter(is_active=True).filter(
-            models.Q(event_type__iexact='conference') | models.Q(title__icontains='конференц')
+            models.Q(event_type__iexact='conference') |
+            models.Q(title__icontains='конференц')
         ).order_by('-start_date')
-        return render(request, 'events/conferences_list.html', {
-            'events': events,
-            'title': 'Конференции'
-        })
+        return render(request, 'events/conferences_list.html', {'events': events, 'title': 'Конференции'})
     except Exception as e:
         logger.error(f'Ошибка загрузки конференций: {str(e)}')
         return render(request, 'events/conferences_list.html', {'events': []})
