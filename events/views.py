@@ -52,30 +52,44 @@ def event_register(request, pk):
             if form.is_valid():
                 registration = form.save(commit=False)
                 registration.event = event
-
                 if request.user.is_authenticated:
                     registration.user = request.user
-
                 registration.save()
 
-                # 🔹 После сохранения — переходим на страницу с формой SimplePay
-                return redirect('yookassa_payment_form', reg_id=registration.id)
-
+                # Payment via YooKassa
+                if event.fee and event.fee > 0:
+                    return_url = request.build_absolute_uri(reverse('events:payment_result'))
+                    payment_data = YooKassaService.create_payment(
+                        amount=event.fee,
+                        description=f'Регистрация на {event.title}',
+                        return_url=return_url,
+                        metadata={'registration_id': registration.id, 'event_id': event.id}
+                    )
+                    if payment_data:
+                        registration.payment_id = payment_data['id']
+                        registration.payment_status = 'pending'
+                        registration.save()
+                        return redirect(payment_data['confirmation_url'])
+                    else:
+                        messages.error(request, 'Ошибка создания платежа. Попробуйте позже.')
+                        registration.delete()
+                        return redirect('events:detail', pk=event.pk)
+                else:
+                    registration.payment_status = 'completed'
+                    registration.save()
+                    messages.success(request, 'Вы успешно зарегистрированы!')
+                    return redirect('events:detail', pk=event.pk)
             else:
                 messages.error(request, 'Пожалуйста, исправьте ошибки в форме')
         else:
             form = RegistrationForm()
 
-        context = {
+        return render(request, 'events/register.html', {
             'form': form,
             'event': event,
             'title': f'Регистрация на {event.title}'
-        }
-        return render(request, 'events/register.html', context)
+        })
 
-    except Event.DoesNotExist:
-        messages.error(request, 'Мероприятие не найдено')
-        return redirect('events:list')
     except Exception as e:
         logger.error(f'Error registering for event {pk}: {str(e)}')
         messages.error(request, 'Произошла ошибка при регистрации')
@@ -87,86 +101,73 @@ def payment_result(request):
     """Handle payment result"""
     try:
         payment_id = request.GET.get('payment_id')
-
         if not payment_id:
             messages.error(request, 'Неверные параметры платежа')
             return redirect('events:list')
 
         payment_data = YooKassaService.get_payment(payment_id)
-
         if not payment_data:
             messages.error(request, 'Ошибка проверки платежа')
             return redirect('events:list')
 
-        try:
-            registration = Registration.objects.get(payment_id=payment_id)
+        registration = Registration.objects.get(payment_id=payment_id)
+        status = payment_data.get('status')
 
-            if payment_data['status'] == 'succeeded':
-                registration.payment_status = 'completed'
-                registration.save()
-                messages.success(request, 'Оплата прошла успешно! Вы зарегистрированы на мероприятие.')
-            elif payment_data['status'] == 'canceled':
-                registration.payment_status = 'failed'
-                registration.save()
-                messages.warning(request, 'Платеж отменен')
-            else:
-                registration.payment_status = 'pending'
-                registration.save()
-                messages.info(request, 'Платеж в обработке')
+        if status == 'succeeded':
+            registration.payment_status = 'completed'
+            registration.save()
+            messages.success(request, 'Оплата прошла успешно! Вы зарегистрированы.')
+        elif status == 'canceled':
+            registration.payment_status = 'failed'
+            registration.save()
+            messages.warning(request, 'Платёж отменён.')
+        else:
+            registration.payment_status = 'pending'
+            registration.save()
+            messages.info(request, 'Платёж обрабатывается.')
 
-            return redirect('events:detail', pk=registration.event.pk)
+        return redirect('events:detail', pk=registration.event.pk)
 
-        except Registration.DoesNotExist:
-            logger.error(f'Registration not found for payment {payment_id}')
-            messages.error(request, 'Регистрация не найдена')
-            return redirect('events:list')
-
+    except Registration.DoesNotExist:
+        messages.error(request, 'Регистрация не найдена.')
+        return redirect('events:list')
     except Exception as e:
         logger.error(f'Error processing payment result: {str(e)}')
-        messages.error(request, 'Произошла ошибка при обработке платежа')
+        messages.error(request, 'Произошла ошибка при обработке платежа.')
         return redirect('events:list')
 
 
 def olympiads_list(request):
-    """Display list of olympiads"""
+    """List of olympiads"""
     try:
-        events = Event.objects.filter(
-            event_type='olympiad',
-            is_active=True
-        ).order_by('-start_date')
-        context = {'events': events, 'title': 'Олимпиады'}
-        return render(request, 'events/olympiads_list.html', context)
+        events = Event.objects.filter(is_active=True, event_type__iexact='olympiad').order_by('-start_date')
+        if not events.exists():
+            events = Event.objects.filter(is_active=True, title__icontains='олимпиад').order_by('-start_date')
+        return render(request, 'events/olympiads_list.html', {'events': events, 'title': 'Олимпиады'})
     except Exception as e:
         logger.error(f'Error loading olympiads: {str(e)}')
-        messages.error(request, 'Произошла ошибка при загрузке олимпиад')
         return render(request, 'events/olympiads_list.html', {'events': []})
 
 
 def contests_list(request):
-    """Display list of contests"""
+    """List of contests"""
     try:
-        events = Event.objects.filter(
-            event_type='contest',
-            is_active=True
-        ).order_by('-start_date')
-        context = {'events': events, 'title': 'Конкурсы'}
-        return render(request, 'events/contests_list.html', context)
+        events = Event.objects.filter(is_active=True, event_type__iexact='contest').order_by('-start_date')
+        if not events.exists():
+            events = Event.objects.filter(is_active=True, title__icontains='конкурс').order_by('-start_date')
+        return render(request, 'events/contests_list.html', {'events': events, 'title': 'Конкурсы'})
     except Exception as e:
         logger.error(f'Error loading contests: {str(e)}')
-        messages.error(request, 'Произошла ошибка при загрузке конкурсов')
         return render(request, 'events/contests_list.html', {'events': []})
 
 
 def conferences_list(request):
-    """Display list of conferences"""
+    """List of conferences"""
     try:
-        events = Event.objects.filter(
-            event_type='conference',
-            is_active=True
-        ).order_by('-start_date')
-        context = {'events': events, 'title': 'Конференции'}
-        return render(request, 'events/conferences_list.html', context)
+        events = Event.objects.filter(is_active=True, event_type__iexact='conference').order_by('-start_date')
+        if not events.exists():
+            events = Event.objects.filter(is_active=True, title__icontains='конференц').order_by('-start_date')
+        return render(request, 'events/conferences_list.html', {'events': events, 'title': 'Конференции'})
     except Exception as e:
         logger.error(f'Error loading conferences: {str(e)}')
-        messages.error(request, 'Произошла ошибка при загрузке конференций')
         return render(request, 'events/conferences_list.html', {'events': []})
