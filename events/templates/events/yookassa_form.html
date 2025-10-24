@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="https://yookassa.ru/integration/simplepay/css/yookassa_construct_form.css?v=1.28.0">
+
+<div class="container" style="max-width: 600px; margin: 40px auto;">
+  <h2 style="text-align:center;">Оплата участия</h2>
+  <p style="text-align:center;">Пожалуйста, заполните форму и оплатите участие.</p>
+
+  <form class="yoomoney-payment-form"
+        action="https://yookassa.ru/integration/simplepay/payment"
+        method="post"
+        accept-charset="utf-8">
+
+      <div class="ym-customer-info">
+          <div class="ym-block-title">О покупателе</div>
+          <input name="cps_email" class="ym-input" placeholder="Email" type="email" required value="{{ email }}">
+          <input name="cps_phone" class="ym-input" placeholder="Телефон" type="tel" value="{{ phone }}">
+          <input name="custName" class="ym-input" placeholder="ФИО" type="text" value="{{ name }}">
+      </div>
+
+      <div class="ym-hidden-inputs">
+          <input name="shopSuccessURL" type="hidden" value="https://vsemnauka.ru/pay/success/">
+          <input name="shopFailURL" type="hidden" value="https://vsemnauka.ru/pay/error/">
+          <input name="shopId" type="hidden" value="1174287">
+      </div>
+
+      <div class="ym-payment-btn-block ym-before-line ym-align-space-between">
+          <div class="ym-input-icon-rub">
+              <input name="sum" placeholder="0.00" class="ym-input ym-sum-input ym-required-input" type="number" step="any" value="{{ amount }}">
+          </div>
+          <button data-text="Заплатить" class="ym-btn-pay ym-result-price">
+              <span class="ym-text-crop">Заплатить</span>
+              <span class="ym-price-output"></span>
+          </button>
+          <img src="https://yookassa.ru/integration/simplepay/img/iokassa-gray.svg?v=1.28.0"
+               class="ym-logo" width="114" height="27" alt="ЮKassa">
+      </div>
+  </form>
+
+  <script src="https://yookassa.ru/integration/simplepay/js/yookassa_construct_form.js?v=1.28.0"></script>
+</div>
+{% endblock %}
