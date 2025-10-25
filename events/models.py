@@ -23,26 +23,13 @@ class Event(models.Model):
     registration_deadline = models.DateField(blank=True, null=True, verbose_name=_("Дедлайн регистрации"))
     slug = models.SlugField(max_length=255, unique=True, blank=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         verbose_name = _("Мероприятие")
         verbose_name_plural = _("Мероприятия")
         ordering = ["sort_order", "-id"]
 
-
-    # Backward-compatible alias for templates expecting 'info_letter'
-    @property
-    def info_letter(self):
-        """Return the same file as info_file; safe when field is missing."""
-        return getattr(self, 'info_file', None)
-
-    def __str__(self):
-        return self.title
-
     def save(self, *args, **kwargs):
-        if not self.slug:
+        if not self.slug and self.title:
             base = slugify(self.title)[:50]
             slug = base
             i = 1
@@ -53,72 +40,66 @@ class Event(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse("event_detail", args=[self.slug])
+        # Используем существующие имена из events/urls.py и pk
+        return reverse("detail", args=[self.pk])
 
     @property
     def get_register_url(self):
-        return reverse("event_register", args=[self.slug])
+        return reverse("register", args=[self.pk])
 
 class Registration(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="registrations")
     fio = models.CharField(max_length=255)
-    org = models.CharField(max_length=255, verbose_name=_("Учебное заведение"))
-    city = models.CharField(max_length=120)
+    org = models.CharField(max_length=255, blank=True, default="")
+    city = models.CharField(max_length=255, blank=True, default="")
     email = models.EmailField()
-    phone = models.CharField(max_length=64)
-    consent_pd = models.BooleanField(default=False, verbose_name=_("Согласие на обработку ПДн"))
+    phone = models.CharField(max_length=50, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
+    payment_id = models.CharField(max_length=100, blank=True, default="")
+    payment_status = models.CharField(max_length=20, blank=True, default="")
 
     class Meta:
         verbose_name = _("Регистрация")
         verbose_name_plural = _("Регистрации")
 
     def __str__(self):
-        return f"{self.fio} — {self.event.title}"
+        return f"{self.fio} → {self.event}"
 
 class Payment(models.Model):
-    class Status(models.TextChoices):
-        PENDING = "pending", _("Ожидает")
-        PAID = "paid", _("Оплачено")
-        FAILED = "failed", _("Ошибка")
-
     registration = models.OneToOneField(Registration, on_delete=models.CASCADE, related_name="payment")
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
-    txn_id = models.CharField(max_length=64, blank=True)
+    status = models.CharField(max_length=50, default="pending")
     paid_at = models.DateTimeField(blank=True, null=True)
+    txn_id = models.CharField(max_length=100, blank=True, default="")
 
     class Meta:
-        verbose_name = _("Оплата")
-        verbose_name_plural = _("Оплаты")
+        verbose_name = _("Платёж")
+        verbose_name_plural = _("Платежи")
+
+    def __str__(self):
+        return f"Платёж {self.txn_id} ({self.status})"
 
 class Question(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="questions")
-    text = models.TextField(verbose_name=_("Вопрос"))
-    text_en = models.TextField(blank=True, verbose_name=_("Вопрос (EN)"))
-    order = models.IntegerField(default=0)
+    text = models.TextField()
 
     class Meta:
         verbose_name = _("Вопрос")
         verbose_name_plural = _("Вопросы")
-        ordering = ["order", "id"]
 
     def __str__(self):
-        return f"{self.event.title}: {self.text[:50]}"
+        return self.text[:60]
 
 class AnswerOption(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="options")
-    text = models.CharField(max_length=500, verbose_name=_("Вариант"))
-    text_en = models.CharField(max_length=500, blank=True, verbose_name=_("Вариант (EN)"))
+    text = models.CharField(max_length=500)
     is_correct = models.BooleanField(default=False)
-    order = models.IntegerField(default=0)
 
     class Meta:
         verbose_name = _("Вариант ответа")
-        verbose_name_plural = _("Варианты ответа")
-        ordering = ["order", "id"]
+        verbose_name_plural = _("Варианты ответов")
 
     def __str__(self):
-        return self.title or f"Событие #{self.pk}"
+        return self.text[:60]
 
 class TestResult(models.Model):
     registration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name="results")
